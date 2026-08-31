@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pluto Monthly Strategy"
+  short_description: "Package monthly Pluto intelligence safely"
+  default_prompt: "Use $pluto-monthly-strategy for the monthly Honcho and Mempalace handoff."
