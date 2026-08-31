@@ -52,7 +52,7 @@ React has no inheritance model for components. Compose with `children`, render p
 
 ## Hooks Discipline
 
-See [rules/react/hooks.md](../../rules/react/hooks.md) for the full ruleset. Highlights:
+See the Hooks Discipline section below for the full ruleset. Highlights:
 
 - Top-level only, never conditional
 - Cleanup every subscription, interval, listener
@@ -265,7 +265,7 @@ This skill is router-agnostic. The patterns above work with React Router, TanSta
 ## Related
 
 - Rules: [rules/react/](../../rules/react/) — coding-style, hooks, patterns, security, testing
-- Skills: [react-performance](../react-performance/SKILL.md) for the Vercel-derived performance ruleset, [frontend-patterns](../frontend-patterns/SKILL.md) for cross-framework UI concerns, [accessibility](../accessibility/SKILL.md), [angular-developer](../angular-developer/SKILL.md) for framework comparison
+- Skills: **react-performance** (Vercel-derived performance ruleset) and **frontend-patterns** (cross-framework patterns) ship as sibling skills in the full pack; the core hooks/rendering discipline is covered inline here. Accessibility is covered in the accessibility skill; framework comparison with Angular is out of scope.
 - Agents: `react-reviewer` for code review, `react-build-resolver` for build/bundler errors
 - Commands: `/react-review`, `/react-build`, `/react-test`
 
