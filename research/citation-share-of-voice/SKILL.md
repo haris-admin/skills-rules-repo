@@ -84,6 +84,16 @@ section. Wiring steps (done for AMLHive):
   `enabled_toolsets=["terminal"]` whose prompt runs the script and delivers
   stdout verbatim. Leave the script itself unchanged.
 
+## Stop condition (added 01 Sep 2026 — month-end rule)
+
+**3 consecutive BLOCKED runs = stop condition** (met 14/21/28 Aug 2026: DDG+Bing
+anti-automation walls for every query). Do NOT keep hammering; record the
+outcome as BLOCKED and surface the measurement decision to Haris:
+- Option A: keep the scrape (recover when cooldowns pass; slow, fragile)
+- Option B: switch to the authorised **Bing Webmaster API** for query data
+- Option C: accept BLOCKED as the standing state until console access exists
+Recheck date: **Fri 4 Sep** (first Friday after the 3rd consecutive BLOCKED).
+
 ## Pitfalls
 
 - **Baseline matters**: record the first run explicitly as baseline (e.g. "zero

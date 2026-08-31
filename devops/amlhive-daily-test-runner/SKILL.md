@@ -24,6 +24,20 @@ The OLD stash-push-then-pop flow was popping `stash@{0}` (unrelated old WIP)
 when nothing was stashed, re-corrupting the index every run — do NOT
 reintroduce stash/pop. (Earlier it was `reset --hard origin/dev` directly.)
 
+**01 Sep 2026 (month-end rule):** two additions to the runner —
+1. **Pre-merge untracked-file cleanup**: after `reset --hard origin/pluto_pr`
+   the runner runs `git clean -fd` (untracked NON-IGNORED files only; gitignored
+   .env etc. are safe). Fixes the Aug 31 blocker where a stray untracked
+   `frontend/tests/screening-page-resilience.test.ts` made `git merge
+   origin/dev` abort with "untracked working tree file would be overwritten".
+2. **Known-flake whitelist with 3-run escalation** (`~/.hermes/state/
+amlhive_known_flaky.json`): the recurring frontend set (Blob/JSDOM issue-279
+   test, reduced-motion E2E, signOut race) drifted 17 days without escalation.
+   Runs 1–2 whose failures match `KNOWN_FLAKY_PATTERNS` stay green
+   (reported whitelisted); run 3+ escalates to a real failure + Codex route.
+   Exit code still reflects real failure state (`sys.exit(1)` on un-whitelisted
+   fail/error).
+
 ## Pitfalls
 - As of W32 (Aug 16): **11 failing tests** (6,320 passed) — 9 backend pytest,
   1 frontend `signOut` double-call race, 1 E2E `a11y-reduced-motion-parity`.

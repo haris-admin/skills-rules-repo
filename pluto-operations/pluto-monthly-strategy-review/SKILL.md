@@ -7,7 +7,8 @@ tags: [pluto, amlhive, monthly, seo, geo, strategy-review]
 
 # Pluto Monthly Strategy Review (operating contract)
 
-Recurring first-Monday cron (`0 11 1-7 * 1`, job id `50eea054f911`) under the
+Recurring first-Monday cron (`0 11 * * 1`, job id `50eea054f911`; in-job gate
+keeps day ≤ 7 — OR-semantics fix applied 01 Sep 2026, see Pitfalls) under the
 pluto-amlhive-operating-contract. **Distinct from the `pluto-monthly-strategy` handoff skill**
 (Honcho/Mempalace → local executor with ad-spend context) — see Pitfalls.
 
@@ -101,11 +102,16 @@ right this month (measured wins). Deliver the review as the final response — t
   (Mondays only; gate filters day ≤ 7). Off-window firings eliminated — job now fires ~4-5×/month
   with silent skips. Keep the in-job gate (weekday=1 AND day ∈ 1..7). Verify next_run_at lands on
   the first Monday (2026-09-07) and no longer advances daily.
-- **Month-end output location (learned 01 Sep 2026):** the Month-End job (09d6d950544f) does NOT
-  reliably write `~/.hermes/research_outputs/month-end-YYYY-MM.md` — it writes the cron output file
-  `cron/output/09d6d950544f/<ts>.md` and `monitor_last_output.txt` (`MONTH_END YYYY-MM-DD`). If the
-  expected research_outputs file is absent when Start-of-Month fires (monitor race), read the cron
-  output file's `## Response` section instead of deferring blindly — the review content is there.
+- **Month-end output location (learned 01 Sep 2026, refined 01 Sep 00:15):** the Month-End job
+  (09d6d950544f) writes BOTH the cron output file `cron/output/09d6d950544f/<ts>.md` AND (since the
+  00:05 AEST generation) `~/.hermes/research_outputs/month-end-YYYY-MM.md` with an explicit
+  `## RULES TO REFRESH` section. CHECK `research_outputs/month-end-YYYY-MM.md` FIRST and verify its
+  generation timestamp + RULES TO REFRESH; if absent (monitor race / early partial output), read the
+  latest cron output file's `## Response` section instead of deferring blindly.
+  **Watch for double-firing:** the completion monitor can trigger Start-of-Month on a NON-canonical
+  early month-end run (00:02 firing consumed a 31 Aug 14:35 partial; the canonical 00:05 review
+  triggered a second firing at 00:15). If the injected review lacks a RULES TO REFRESH section,
+  re-check for a newer month-end output before concluding.
 - **Watch for timeouts:** the 08-05 off-window run hit `TimeoutError: idle for 603s (limit 600s)`
   waiting for a non-streaming API response and recorded nothing. A timeout on the real first-Monday
   run would silently lose the monthly review — check last_status/executions.db if a month is missing.
