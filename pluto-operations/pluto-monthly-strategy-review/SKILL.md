@@ -11,6 +11,14 @@ Recurring first-Monday cron (`0 11 1-7 * 1`, job id `50eea054f911`) under the
 pluto-amlhive-operating-contract. **Distinct from the `pluto-monthly-strategy` handoff skill**
 (Honcho/Mempalace → local executor with ad-spend context) — see Pitfalls.
 
+**Sibling chain (31 Aug 2026):** the Month-End Review (`09d6d950544f`, 1st 00:01) →
+Start-of-Month Rule Refresh (`2f4e89762abb`, completion-gated, consumes the month-end
+output to refresh rules) forms the monthly bookend; the first-Monday strategy review sits
+in the middle of the month. The month-end review's "RULES TO REFRESH" section and this
+review's priorities should cross-pollinate — Start-of-Month applies rule/skill/doc refreshes
+from month-end evidence; this review supplies strategy priorities. See
+`date-gated-crons` skill for the completion-gate mechanism.
+
 ## Trigger / window check (do this FIRST)
 
 1. `date +%u` (weekday, Monday=1) and `date +%d` (day of month).
