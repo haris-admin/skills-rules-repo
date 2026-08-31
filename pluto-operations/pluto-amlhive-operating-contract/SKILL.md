@@ -396,6 +396,6 @@ Ask Harish one concrete question when a human decision is required. Send technic
 | Weekly evidence summary | `0 15 * * 5` | LLM job (`f7e6cb145925`) |
 | Weekly citation share-of-voice (SOV) | `5 4 * * 5` | LLM job (`4ff9720d6a8c`) → runs `pluto_citation_sov.py`; feeds Friday 5:20 briefing |
 | Weekly security scan | `0 17 * * 5` | `weekly_amlhive_codex_review.py` |
-| Monthly strategy review | `0 11 1-7 * 1` | LLM job (`50eea054f911`) |
+| Monthly strategy review | `0 11 * * 1` (Mondays; in-job gate filters day ≤ 7 — OR-semantics fix applied 01 Sep 2026) | LLM job (`50eea054f911`) |
 | AMLHive daily test suite | `0 3 * * *` | `amlhive_daily_test_runner.py` |
 | A2Square weekly test suite | `30 2 * * 1` | `a2square_weekly_test_runner.py` |

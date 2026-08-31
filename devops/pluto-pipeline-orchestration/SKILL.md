@@ -64,7 +64,9 @@ PLUTO OPERATING SCHEDULE (per pluto-amlhive-operating-contract):
   Wed 10:30 ★ Weekly AI-Answer Review           f1b73c7cd48d  controlled prompt set        agent ✅ (fortnightly)
   Thu 11:00 ★ Weekly Metadata/Blog/Social Audit 7059cc6796d6  page audit + blog inventory  agent ✅
   Fri 15:00 ★ Weekly Evidence Summary           f7e6cb145925  operating record              agent ✅
-  1st Mon 11:00 ★ Monthly Strategy Review        50eea054f911  three priorities from gaps   agent ✅
+  1st Mon 11:00 ★ Monthly Strategy Review        50eea054f911  three priorities from gaps  agent ✅ (expr 0 11 * * 1 — OR-semantics fix applied 01 Sep; gate filters day ≤ 7)
+   1st 00:01 ☿ Month-End Review                   09d6d950544f  month in numbers + RULES TO REFRESH  agent ✅ (bookend chain; runs 00:01 on 1st reviewing just-ended month)
+   1st 00:15-03:59 ☿ Start-of-Month Rule Refresh   2f4e89762abb  completion-gated on month-end; refreshes skills/docs on pluto_pr (local only, no push)  agent ✅
 
 FLEET MONITORS (4x daily at 5/11/17/23):
 🔵 TapEase (direct AWS)             dbd3cb1b5bd3  EC2+SSM+CW+RDS       no_agent 4x jobs ✅ NEW Jul 8

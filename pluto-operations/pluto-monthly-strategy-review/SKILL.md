@@ -97,9 +97,15 @@ right this month (measured wins). Deliver the review as the final response — t
   between day-of-month and day-of-week — when both are restricted the job fires when EITHER matches,
   i.e. every day 1–7 PLUS every Monday (verified 08-2026: runs 07-20, 07-27, 08-01…08-06). The
   in-job first-Monday gate (weekday=1 AND day ∈ 1..7) already handles this, so off-window runs just
-  record SKIPPED — but they waste API calls and risk timeouts. Recommended one-line fix in
-  ~/.hermes/cron/jobs.json: schedule.expr `0 11 * * 1` (Mondays only; gate filters day ≤ 7), or
-  `0 11 1-7 * *` (days 1–7 only; gate filters Monday). Verify next_run_at stops advancing daily.
+  record SKIPPED — but they waste API calls and risk timeouts. FIX APPLIED 01 Sep 2026 (Start-of-Month rule refresh): schedule.expr is now `0 11 * * 1`
+  (Mondays only; gate filters day ≤ 7). Off-window firings eliminated — job now fires ~4-5×/month
+  with silent skips. Keep the in-job gate (weekday=1 AND day ∈ 1..7). Verify next_run_at lands on
+  the first Monday (2026-09-07) and no longer advances daily.
+- **Month-end output location (learned 01 Sep 2026):** the Month-End job (09d6d950544f) does NOT
+  reliably write `~/.hermes/research_outputs/month-end-YYYY-MM.md` — it writes the cron output file
+  `cron/output/09d6d950544f/<ts>.md` and `monitor_last_output.txt` (`MONTH_END YYYY-MM-DD`). If the
+  expected research_outputs file is absent when Start-of-Month fires (monitor race), read the cron
+  output file's `## Response` section instead of deferring blindly — the review content is there.
 - **Watch for timeouts:** the 08-05 off-window run hit `TimeoutError: idle for 603s (limit 600s)`
   waiting for a non-streaming API response and recorded nothing. A timeout on the real first-Monday
   run would silently lose the monthly review — check last_status/executions.db if a month is missing.
