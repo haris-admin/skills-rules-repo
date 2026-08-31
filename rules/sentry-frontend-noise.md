@@ -1,0 +1,73 @@
+# Sentry frontend noise resilience (all agents)
+
+Applies when triage'ing or fixing production `javascript-nextjs` Sentry events, editing
+`frontend/sentry.client.config.ts`, `frontend/lib/sentry-event-policy.ts`, or adding
+monitoring filters after a Sentry alert.
+
+Canonical skill: `.claude/skills/sentry-triage/SKILL.md`  
+Policy module: `frontend/lib/sentry-event-policy.ts`  
+Catalog: `SENTRY_BROWSER_NOISE_SIGNATURES`
+
+## Why this keeps recurring (and what was missing)
+
+1. **Too-narrow filters** — each prod alert (114 DataCloneError, 145 CefSharp, 147 Jsloader)
+   got a one-off message regex. The next injected script with a new message slipped through.
+2. **Transaction URL bias** — agents treat `/austrac-compliance` (or any page URL) as the
+   bug site. Sentry records *where the tab was*, not who owns `app:///tracking_script.js`.
+3. **No structural rule** — until issue-147 follow-up, we lacked “exclusive injected frames
+   + no first-party `/_next` frames → drop”.
+4. **No agent rule / signature catalog** — `/sentry-triage` existed but agents only opened
+   it when asked; nothing required a catalog row + fixture before closing a noise issue.
+5. **Reactive only** — noise reached production dashboards before a filter existed; CI never
+   required fixtures for known noise fingerprints.
+
+## Required behaviour
+
+### Classify before fixing
+
+Per `/sentry-triage`: if stack frames are `app://`, `chrome-extension://`, `moz-extension://`,
+`tracking_script.js`, or other non-`/_next/` injectors with **no** first-party frames →
+**extension / third-party noise**. Do not “fix” the marketing page named in `transaction`.
+
+### Prefer structural drop, then specific signature
+
+1. `isExclusiveInjectedScriptNoise` — every frame injected, zero first-party.
+2. `isInjectedThrowSiteNoise` — the throw site (last frame; Sentry orders frames
+   outermost-first) is injected and every frame inward of the last first-party frame is
+   injected. Covers the issue-195 shape where the only first-party frame is Sentry's own
+   minified `addEventListener` / `setTimeout` wrapper inside our Turbopack chunk.
+3. Message-specific droppers when there is no stack (`isCefSharpCrawlerNoise`) or when the
+   message is a known vendor failure (`isInjectedGoogleApiLoaderNoise`).
+4. Wire new checks through `shouldDropBrowserSentryEvent` only (single `beforeSend` entry).
+
+Sentry's Next SDK rewrites our own bundles to `app:///_next/static/chunks/…`, which the
+`app://` injector marker also matches. Any "is this frame injected" test must exclude
+first-party frames first — `isInjectedFrame` does this; new helpers must reuse it.
+
+### When closing a new noise issue (mandatory closeout)
+
+1. Log `/prod-issue` with Sentry event ID + stack evidence.
+2. Add a row to `SENTRY_BROWSER_NOISE_SIGNATURES` (or document why structural filter already
+   covers it).
+3. Add a **Red→Green** fixture in `frontend/tests/unit/lib/sentry-event-policy.test.ts`
+   copied from the real Sentry exception value + filenames.
+4. Confirm `shouldDropBrowserSentryEvent(fixture) === true` and a first-party control stays
+   `false`.
+5. Update `prod_issues/README.md` index + issue Status.
+
+### Do not
+
+- Add a page-route workaround for extension noise.
+- Drop events that include `yourapp.com.au/_next/` frames solely because an extension also
+  appears in the stack. The **only** exception is issue-195's positional rule: first-party
+  frames strictly *outside* the injected throw path (the Sentry wrapper that observed the
+  error). If first-party code appears inward of an injected frame — or is itself the throw
+  site — keep the event.
+- Invent filters without a failing fixture from a real (or realistic) Sentry payload.
+
+## Verify
+
+```bash
+cd frontend && npx vitest run tests/unit/lib/sentry-event-policy.test.ts
+cd frontend && npm test -- __tests__/sentry.test.ts
+```

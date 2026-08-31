@@ -1,0 +1,311 @@
+---
+description: ACR evidence-capture standard (all agents)
+globs: *
+alwaysApply: false
+---
+
+# ACR evidence-capture standard (all agents)
+
+**Blocking, not guidance.** Requirement A429.12 in
+`openspec/changes/429-acr-annual-compliance-report-real-estate/` (proposal + design).
+
+Applies whenever a change **adds or materially changes AML/CTF compliance evidence** — a new
+completing-event source table, a new qualifying status/transition, a new producer path (API,
+service, worker, reuse helper), a new or renamed locator, a registry/question-set obligation, or
+a backfill/qualification rule. It also applies when a change *looks* like evidence but is
+deliberately out of ACR scope.
+
+A change that neither **registers** ACR capture treatment nor **states an explicit out-of-scope
+reason in that change's proposal** is **not ready to mark implemented**, even with green tests.
+
+Authority for the architecture: C429 `proposal.md` (approved implementation direction, 23 August
+2026) and `design.md`. Do not re-litigate those decisions here. Do not invent a "Human decision"
+that is not already recorded in those files.
+
+This file is the canonical rule. Cursor/agent pointer mirrors
+(`.cursor/rules/acr-evidence-capture-standard.mdc`,
+`.agents/rules/acr-evidence-capture-standard.md`) and blocking-rule index entries must
+point here; they must not fork the text.
+
+## Why this exists
+
+YourApp already stores most records that can substantiate a real-estate Annual Compliance Report
+(ACR). C429 organises that evidence by reporting period and obligation through an append-only
+manifest, allowlisted locators, and immutable artifacts. A later feature that writes a new
+qualifying compliance record **without** a completing-event capture path silently creates a
+capture gap: live writers miss it, backfill cannot invent a completing event it does not know,
+and locators either omit it or surface `PARTIAL/CAPTURE_GAP` after reconciliation.
+
+C429 does **not** add ACR foreign keys or period columns to source tables. Membership lives only
+in `acr_evidence_manifest_entries`. Future evidence changes must therefore hook the capture
+helper (or explicitly exclude themselves), not stamp source rows.
+
+C429 is real-estate and standalone-reporting-entity only. It does not claim to reproduce or
+submit the final Compliance Regulator form.
+
+## 1. Register or explicitly scope out
+
+Every future OpenSpec change that adds or materially changes a compliance-evidence producer MUST
+do **one** of the following in **that change's** `proposal.md` (and matching `design.md` /
+`tasks.md`):
+
+1. **Register** the source for ACR:
+   - named completing event and authoritative effective timestamp (see §2);
+   - `capture_acr_evidence(...)` on **every** real producer path in the same transaction;
+   - `source_record_type` = live `__tablename__`;
+   - registry row / obligation mapping (or a new published question-set version — never mutate a
+     PUBLISHED version in place; see §4);
+   - `locator_key` present in the static `ALLOWED_ACR_LOCATORS` map, or an approved `null`
+     (manual / no-source) entry;
+   - backfill qualification using the same completing event and stamp, never a source-row update.
+2. **Scope out** with an explicit reason: the producer is not ACR evidence for this sector,
+   not a completing event, not in the current question-set, or deferred to a named later change.
+   Silence is not a scope-out.
+
+C429's own explicit scope-outs (do not quietly reverse them without a new approved change):
+
+- no IFTI locator or guessed IFTI model;
+- `ACR-GOVERNANCE-REPORTING` has no source (`UNRESOLVED/NO_SOURCE_CONFIGURED`);
+- `ACR-DECLARATION` is a manual Compliance Regulator Online step (`MANUAL/MANUAL_PORTAL_STEP`);
+- reporting groups, agency-facing ACR, auto-submission, and the unpublished final Compliance Regulator
+  questionnaire are out of C429.
+
+`screening_results.INITIAL` is intentionally non-applicable and emits no ACR alert. Draft and
+in-progress rows are not evidence.
+
+### Blocking checklist for a new completing-event source
+
+A new qualifying producer is not done until all of these are either implemented with tests or
+explicitly scoped out in the proposal:
+
+| Gate | What "registered" looks like |
+|------|------------------------------|
+| Completing event | Qualifying transition named (e.g. `SIGNED_OFF`, `SUBMITTED`, original qualifying INSERT). Draft create is not enough. |
+| Authoritative stamp | Period membership uses the source's completion timestamp, **never** `created_at` (see §2). |
+| Capture helper | Idempotent `capture_acr_evidence(...)` in the **same transaction** as the completing event. Inventory API, service, background, and cross-entity reuse paths — covering one public endpoint is insufficient. |
+| Parent preserved | Invalid parent-domain values still 422. A valid write that cannot be classified for ACR succeeds, creates no manifest row, and emits the non-PII diagnostic. Sentry failure never rolls back the parent. |
+| Locator | `locator_key` is in `ALLOWED_ACR_LOCATORS`, or the registry row is an approved null/manual entry. No dotted-path import. |
+| Backfill | Qualification uses the same event + stamp; source rows are never updated. |
+| Notifications | Only if a **real** notification writer exists for that type — see §8. Do not invent mapper keys. |
+| RLS / retention | Agency-scoped writes use 00e Option B (§6). Retention and audit follow the existing mandate (§7). |
+
+## 2. Completing-event capture — authoritative stamp, not `created_at`
+
+Draft creation is not evidence. Capture runs when the source reaches its **qualifying completing
+event**. The effective timestamp stored on the manifest (`evidence_effective_at`) and used to
+choose the reporting period is the source's **authoritative completion stamp**, interpreted
+through the shared `acr_period_window` helper (Australia/Sydney half-open UTC range).
+
+**`created_at` is never the qualifying instant.** It may appear as a deterministic tie-breaker
+(for example period-effective AML/CTF program order `approved_at DESC, created_at DESC, id DESC`)
+but it must not decide whether a row falls inside a period.
+
+C429 `design.md` §4 completing events:
+
+| Source | Qualifying event | Authoritative stamp |
+|--------|------------------|---------------------|
+| `cdd_checklists` | status becomes `SIGNED_OFF` | `signed_off_at` |
+| `training_certificates` | certificate issued | `issued_at` |
+| `amlctf_program_reviews` | review row created | `review_date` at Sydney start-of-day |
+| `screening_results` | original INSERT with any `MONITORING_*` value | `performed_at` |
+| `employee_screening_records` | original INSERT of a completed record, including KYC | `performed_at` |
+| `smr_drafts` | status becomes `SUBMITTED` | `submitted_at` |
+| `ttr_records` | status becomes `SUBMITTED` | `submitted_at` |
+| `cbm_records` | status becomes `SUBMITTED` | `submitted_at` |
+
+Period-effective AML/CTF program selection uses `approved_at` (not `created_at`) against the
+end-exclusive bound. Date-only evidence such as `review_date` is Sydney start-of-day. No locator,
+writer, backfill, or close operation re-derives the period window.
+
+For a valid completing event the helper: resolves the unique OPEN period containing the stamp;
+resolves the registry UUID from that period's published question-set version; inserts the
+manifest row with conflict-do-nothing idempotency. Missing/ambiguous period, missing registry,
+unmapped valid domain value, or CLOSED-period target preserves the parent write and emits the
+matching non-PII key (`acr_tagging_reporting_period_missing`,
+`acr_tagging_reporting_period_ambiguous`, `acr_tagging_registry_entry_missing`,
+`acr_tagging_unmapped_domain_value`, `acr_tagging_closed_period_write_attempt`).
+
+A later-dated compliance record whose stamp points into a CLOSED period must not silently amend
+canonical membership. C429 detects and surfaces that condition; an explicit audited late-evidence
+correction workflow is a future change, not a licence to UPDATE the manifest.
+
+## 3. Locator allowlist
+
+Registry rows store a stable `locator_key`, **never** a Python dotted path, import string, or
+callable name.
+
+Runtime resolution goes only through the static `ALLOWED_ACR_LOCATORS` map
+(`design.md` §3 signature: `resolve(db, agency_id, period, registry_row) -> list[EvidenceRef]`).
+
+Forbidden:
+
+- `importlib`, reflection, `eval` / `exec`, or any registry-supplied code execution;
+- looking up an arbitrary attribute/function from a string the registry provided;
+- adding a locator key that cannot publish because it is absent from the allowlist.
+
+Publish validates every non-null `locator_key` against that map. An unknown or corrupted key
+must fail closed: no arbitrary function is invoked; the obligation is
+`UNRESOLVED/RESOLVER_FAILED` with a structured error (`acr_locator_failed`).
+
+Approved null locator keys exist only for the two planning-baseline cases: governance (no source
+configured) and declaration (manual portal step). Do not add a third null without registering it
+in a new published question-set version.
+
+## 4. Immutable registry, period, and artifact data
+
+Once evidence is bound, history is append-only. Do not add UPDATE/DELETE paths, TTLs, or
+"regenerate in place" shortcuts.
+
+| Data | Immutability (C429 `design.md` §2 / §8) |
+|------|----------------------------------------|
+| PUBLISHED `acr_question_set_versions` and child `acr_obligation_registry` rows | DB trigger rejects later UPDATE/DELETE, including under platform-admin bypass. Edit a DRAFT, or publish a new version. |
+| `acr_reporting_periods` dates and `fiscal_label` | Immutable after creation. DELETE rejected. OPEN periods may rebind only to another PUBLISHED question set via an audited admin action. CLOSED-period binding is immutable. |
+| `acr_evidence_manifest_entries` | Append-only. UPDATE/DELETE rejected for every DB role, including bypass. INSERT into a CLOSED period rejected. |
+| `acr_agency_period_snapshots` | Append-only at DB level, including bypass. One row per agency per period. |
+| `acr_export_artifacts` and stored R2 objects | Every generation **appends** a version plus a canonical input snapshot with hashes. Regeneration never overwrites a prior artifact. Generation-time source-object checksum mismatch is `409 acr_artifact_source_drift` (no insert, never overwrite v1). Download verifies stored object hashes; mismatch is `409 artifact_integrity_failed` — a different code, not a rewrite. |
+
+Manifest uniqueness is
+`(agency_id, reporting_period_id, obligation_registry_id, source_record_type, source_record_id)`.
+One source record may appear under more than one obligation (e.g. pre-commencement STANDARD CDD).
+
+### Lived operator facts (C429, 24 Aug 2026)
+
+Do not fork `design.md`. These are standing facts from the planning-baseline implementation:
+
+- **Three artifact types** on the same canonical snapshot: `EVIDENCE_READINESS_WORKBOOK` (PDF), `EVIDENCE_READINESS_CSV` (one row per planning-baseline obligation), `EVIDENCE_PACK` (JSON). CSV watermark: `Planning baseline — not the confirmed Compliance Regulator form.` OPEN → PREVIEW/preview; CLOSED → FROZEN/frozen.
+- Generate and access are **separately** audited (`ACR_*_GENERATED` / `ACR_*_ACCESSED` for workbook, CSV, and pack).
+- **Admin-only UI:** `/admin/acr` (period close / backfill) and the ACR section on `/admin/agencies/[id]`. **No `/dashboard` ACR route.** SUPPORT cannot generate. Generate APIs use `require_admin_only`.
+- A new `frontend/app/admin/**` page must be listed in `frontend/proxy.ts` `PRIVATE_ADMIN_ROUTE_TEMPLATES`. Bidirectional filesystem guard: `frontend/tests/unit/proxy-public-paths.test.ts`. See [new-public-page-registration-checklist.md](new-public-page-registration-checklist.md) § Private admin pages.
+- Do not mark C429 `status: implemented` while issue 273's production training upsert is unevidenced, or while the change is not shipped to origin/`dev` (`openspec/changes/README.md`).
+- Governance-and-reporting capture (`ACR-GOVERNANCE-REPORTING`) remains **C430**. Do not expand C429 into that obligation.
+
+### Lived operator facts (issue-277, 25 Aug 2026)
+
+- **A trigger guard function's `DECLARE`d local variables must not share a name with a column it
+  selects from the same table.** `acr_guard_evidence_manifest()` (a188) declared
+  `period_start DATE;`/`period_end DATE;`, then did `SELECT status, period_start, period_end, ...
+  FROM acr_reporting_periods` — Postgres's default `plpgsql.variable_conflict = error` rejects
+  that as an `AmbiguousColumnError`, unconditionally, on every insert. SQLite has no PL/pgSQL, so
+  every unit test passed; only running the table's own `-m integration` test against real
+  Postgres for the first time (`rls-test-postgres` skill) caught it — and that had never actually
+  happened before this feature's first live production backfill run. Alias the source table and
+  qualify every column reference (`SELECT p.status, p.period_start, ... FROM
+  acr_reporting_periods p`) in any new or edited ACR trigger function, and prove it against real
+  Postgres before calling the task done — not just "the migration applied cleanly."
+- **Take an RDS snapshot before the first live production run of the backfill** (or any future
+  bulk/first-of-its-kind admin write path touching ACR data) — `aws rds create-db-snapshot
+  --db-instance-identifier yourapp-prod --db-snapshot-identifier <name>`. Cheap, non-destructive,
+  and this is exactly the class of write that has broken twice on its first real run so far
+  (issue-276, issue-277).
+- **Verify a backfill run's actual terminal status by reading `acr_backfill_runs` directly
+  (`readonly_diagnostic` bypass — see `rls-test-postgres`), not by trusting `/admin/acr`'s
+  on-page run block.** The UI's inline `QUEUED`/run-status block did not reliably reflect a
+  run's true terminal state (`SUCCEEDED`/`FAILED`) after a page refresh in practice — a DB
+  read-back is the actual source of truth until that's confirmed fixed on the frontend.
+
+## 5. Read-only locators
+
+Every allowlisted resolver is **read-only**. Locators diagnose membership; they do not create,
+repair, or backfill it.
+
+- SELECT / dereference only. No INSERT/UPDATE/DELETE of source, manifest, registry, snapshot, or
+  artifact rows from a locator.
+- Every manifest dereference verifies the source row belongs to the requested agency **and** still
+  meets the completing condition. Ownership mismatch fails closed for that reference, emits
+  `acr_locator_source_ownership_mismatch`, and is counted in reconciliation.
+- Diagnostic result is the **deduplicated union** of valid manifest references and qualifying
+  timestamp-window fallback rows anti-joined against them. A fallback-only hit is never hidden
+  because some other manifest row exists. After successful reconciliation it is included but
+  marks `PARTIAL/CAPTURE_GAP` and emits `acr_locator_capture_gap`.
+- OPEN profile/officer locators read live Agency and the latest effective program. CLOSED
+  locators read the agency snapshot and period-effective program membership.
+
+A locator test that does not prove the read-only invariant (including a non-vacuous Red where a
+mutating double is caught) does not satisfy A429.05.
+
+## 6. Tenant isolation — 00e Option B
+
+Platform reference tables (`acr_question_set_versions`, `acr_obligation_registry`,
+`acr_reporting_periods`, `acr_backfill_runs`) have no `agency_id` and no tenant RLS.
+
+Every **agency-scoped** ACR table and path (`acr_evidence_manifest_entries`,
+`acr_agency_period_snapshots`, `acr_export_artifacts`, plus source dereference) uses native
+Postgres RLS under **00e Option B**: `SET LOCAL app.current_agency_id` from the JWT-derived
+agency (admin routes use the existing platform-admin bypass, then re-enter tenant context for
+per-agency work).
+
+Required behaviour — same bar as any other 00e Option B path:
+
+- correct tenant context is set before agency-scoped work;
+- DB-level RLS blocks cross-agency rows independently of app-layer `WHERE`;
+- inserts still satisfy RLS `WITH CHECK`;
+- missing, malformed, or mismatched agency context **fails closed** and emits the required alert
+  metadata (`reason_code`, `route_or_job`, `jwt_agency_id` / `db_agency_id`, `operation`,
+  `table_or_entity`);
+- download and source dereference also verify the requested agency against the artifact, manifest,
+  and source row.
+
+Backfill enumerates agency IDs through the **named** platform-maintenance bypass only, then
+processes each agency in a **separate** transaction with `SET LOCAL app.current_agency_id`.
+Context is cleared between agencies. Do not hold a bypass session while inserting manifest rows.
+
+SQLite (default unit DB) has no RLS — 00e proofs belong on real Postgres (`-m integration` /
+`rls-test-postgres`). App-layer cross-agency tests remain required; they are not a substitute.
+
+## 7. Seven-year retention and audit trail — do not fork
+
+C429 data is a compliance record. **Existing seven-year retention applies; no C429 path may
+shorten it.** Soft-delete only, no TTL, no purge. Ambiguity resolves to RETAIN.
+
+Do **not** copy, summarise-as-authority, or weaken
+[data-retention-and-audit-trail-mandate.md](data-retention-and-audit-trail-mandate.md). That
+document remains the core rule of the system. This file only states that ACR evidence, manifests,
+snapshots, artifacts, backfill runs, and ACR lifecycle actions are in scope of it.
+
+Implications for ACR work, without replacing that mandate:
+
+- append-only enums; new `ACR_*` `AuditActionType` values ship together in the Python enum, a
+  dedicated Postgres enum migration, the C314 `audit_contracts.json` registry, and parity tests;
+- every C429 lifecycle action (period create/rebind/close, question-set create/update/publish,
+  backfill trigger/completion/failure, workbook/CSV/pack generate and access) writes the matching
+  `ACR_*` audit row with `platform_user_id` — actor identity is never only in free text;
+- success, failure, and logged-in ≥400 denials are audited; Sentry grouping never skips
+  `audit_entries`;
+- `actor_type` is real (`HUMAN` | `SYSTEM` | `AI` | `EXTERNAL` | `MAINTENANCE`); ARQ backfill is
+  a system actor, not an excuse to skip audit;
+- never store passwords, OTPs, Authorization values, source-document bytes, or other secrets in
+  audit notes or artifact input snapshots — presence/fingerprint and approved projections only.
+
+## 8. Notification coverage — cross-reference, do not merge
+
+This rule **cross-references** [notification-coverage-audit.md](notification-coverage-audit.md).
+It does **not** merge with it and does **not** create a second synonym list.
+
+C429 uses live `__tablename__` values for manifest `source_record_type`. Mapper membership is
+required **only when a notification writer exists** for that source (A429.11):
+
+- overlapping types already notified (`screening`, `training`, `ttr`, …) keep historical aliases
+  readable; **new** notification writes use canonical names (`screening_results`,
+  `training_certificates`, `ttr_records`);
+- evidence-only types (`employee_screening_records`, `cbm_records`, `amlctf_program_reviews`,
+  `acr_agency_period_snapshots`, …) do **not** need invented notification routes;
+- adding an ACR locator or manifest source does **not** by itself create a notification;
+- if you *do* add a notification writer, C428 still applies: a visible tray row must have a
+  non-null `deep_link`.
+
+C429 creates no new notifications.
+
+T429.53: [notification-coverage-audit.md](notification-coverage-audit.md) points here. Do not
+copy its mapper table into this file.
+
+## Related
+
+- C429 architecture: `openspec/changes/429-acr-annual-compliance-report-real-estate/design.md`
+  (§2 data model, §3 allowlist, §4 completing events, §5 backfill RLS, §6 locators, §9 auth/RLS)
+- C429 product decisions: `openspec/changes/429-acr-annual-compliance-report-real-estate/proposal.md`
+- Executable requirement: `openspec/changes/429-acr-annual-compliance-report-real-estate/specs/acr-reporting/spec.md`
+  A429.03, A429.05, A429.08, A429.11, A429.12
+- Retention / audit (wins on drift): [data-retention-and-audit-trail-mandate.md](data-retention-and-audit-trail-mandate.md)
+- Notification tray (sibling, not a synonym list): [notification-coverage-audit.md](notification-coverage-audit.md)
+- 00e Option B tenant isolation: `openspec/changes/00e-rls-enforcement-cutover/` (and
+  `docs/agent_rules/openspec-tdd-mandate.md` Rule 7)

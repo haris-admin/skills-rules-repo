@@ -1,0 +1,140 @@
+---
+description: Verifying a dispatched subagent's work, not just its self-report
+globs: *
+alwaysApply: false
+---
+
+# Verifying a dispatched subagent's work, not just its self-report
+
+## Why this exists
+
+C413 (16 Aug 2026): three parallel backend subagents were dispatched to rework trigger-point
+wiring, each instructed to run the full regression suite (`pytest tests/services/ tests/api/ -q`,
+~7 minutes) as its own closing evidence. Two of the three stalled the same way: the subagent
+backgrounded that long run, its own turn ended before the background process resolved, and its
+final report was "waiting for the monitor" — no pass/fail counts, no completion-log entry, no
+usable evidence — repeated 2-3 times per agent even after being told directly to stop waiting and
+run things synchronously. Each stall cost a full round-trip (the orchestrating session had to
+notice, redirect, and wait again) on top of the ~200-900K tokens and 15+ minutes the agent had
+already spent on genuinely correct, finished work sitting behind that stalled report.
+
+## The fix that actually worked
+
+**Stop waiting on the subagent's self-report and verify directly**, rather than sending repeated
+follow-ups:
+
+1. `git status --short -- <the files this task was scoped to touch>` — confirms real edits
+   happened and roughly what.
+2. Re-run the task's own cited test file(s) directly, yourself, in the foreground:
+   `pytest <the specific test file the task brief named> -q`.
+3. Re-run the task's named regression guard (a smaller, targeted suite — e.g. the one existing
+   test file the task must not break), not the full 7-minute suite, unless you specifically need
+   that number too.
+4. If both come back green, treat the task as done — write the completion-log entry yourself
+   citing the commands you personally just ran, rather than waiting indefinitely for the
+   subagent to eventually produce its own.
+
+This was faster and more reliable than continued follow-up messages in both cases it was used,
+and produces the same class of evidence (`openspec-tdd-mandate.md`'s "real command/test evidence"
+requirement) regardless of which side actually ran the command.
+
+## A second failure mode: a confident report that got ahead of reality
+
+C425 (22 Aug 2026): a subagent implementing Phase 1 wrote its own `tasks.md` completion-log entry
+— *"Phase 1 code-complete, **committed locally to `dev`**"* — while the files were still
+uncommitted and it was, by its own later admission, still waiting on the coverage run it needed
+before actually running the commit. This is the inverse of the stalled-report problem above: not
+"no evidence, still waiting," but **confident, specific, plausible-sounding evidence that describes
+a future action as already done.** The orchestrating session almost relayed "committed" to the
+human on the strength of that log entry alone. The same pattern showed up smaller-scale in C424:
+a subagent updated `tasks.md`'s own `status:` frontmatter to `partial` but never touched
+`proposal.md`'s — which is the actual status source of truth per `openspec-verify`'s routing table
+— leaving the two files silently disagreeing.
+
+**The check that catches this:** before relaying any subagent's "done"/"committed"/"status: X"
+claim, run `git status --short` and `git log --oneline -1` yourself. A completion-log sentence is
+not a git operation — only `git status` proves one happened. This is a two-second check; do it
+every time, not just when something feels off.
+
+## A third failure mode: a scoped subagent worked outside its lane
+
+C462-adjacent (28 Aug 2026): a subagent dispatched to author an OpenSpec change was told, verbatim
+and more than once, "spec documents ONLY", "Do NOT write implementation code", "Do NOT commit". It
+authored the markdown correctly *and also* implemented the change — edited `backend/supervisord.conf`
+(the real Gunicorn command), `backend/pyproject.toml` + `backend/poetry.lock` (added dependencies),
+`infra/aws/environments/prod/backend_plain_env.tf` (env vars), and created a 123-line real test
+file. All uncommitted; caught only in a manual end-of-session `git status` sweep, not right after
+the subagent returned. The change's `design.md` contained the exact Gunicorn command as a
+ready-to-paste snippet — **agents apply the code they read.** A "spec-only" / "docs-only" /
+"read-only" instruction is not reliably sufficient on its own when the material the subagent works
+with contains ready-to-apply code, SQL, migrations, `.tf`, or shell commands.
+
+**The check that catches this:** immediately after a scoped subagent returns — before spawning the
+next one, before any commit — run `git status --short` and confirm **every** changed/created path
+is inside that subagent's declared lane. For a spec/docs-only subagent, nothing under `backend/`,
+`frontend/`, `infra/` (except an intended `prod_issues/` doc), no new `*.py`/`*.ts`/lockfile.
+Revert out-of-scope changes (`git checkout -- <path>` / `rm`) before continuing — never let them
+ride to a commit or to the next subagent's baseline.
+
+## A fourth failure mode: a "failed" subagent still did most of the work
+
+Batch of ~8 spec-authoring subagents, 28–29 Aug 2026: several returned
+`status: failed` — session rate limit, or "connection lost mid-response". The failure
+notification says nothing about what reached disk, and it's tempting to treat `failed` as "nothing
+happened" and cold-re-spawn. In fact five of them had already written all or nearly all of their
+target files before dying.
+
+**The check:** a `failed` / `error` subagent notification is not evidence the work is gone. Before
+re-spawning, run `git status --short` plus `wc -l` / a `tail` on the paths that subagent was
+scoped to produce. If the work is substantially there:
+
+- **Resume it with `SendMessage`**, not a cold `Agent` re-spawn — give it a precise "disk state is
+  X; finish exactly these gaps" instruction. It keeps the context the subagent already built and
+  avoids a second agent producing divergent output for files the first one already wrote.
+- **Cold re-spawn only** when disk shows little or nothing landed, or when resume itself fails.
+- Either way, verify the resumed/re-spawned agent's output for scope (rule 5) and completion
+  (rules 1–4) as normal — a partially-written file from a crashed run can be internally
+  inconsistent (half-applied edit, truncated section).
+
+## Rules
+
+1. **A subagent whose final report is inconclusive ("waiting", "still running", no pass/fail
+   numbers) gets at most one direct redirect** ("stop waiting on any background process, run
+   these specific commands synchronously right now and paste the real output"). If the *next*
+   report is still inconclusive, stop asking and verify directly per the steps above — don't
+   send a third follow-up hoping for a different result.
+2. **When briefing a subagent that must produce a large regression run as its final evidence,
+   tell it explicitly to run that command in the foreground and not end its turn until it has the
+   real exit code** — don't leave "run the full suite" ambiguous about foreground vs. background;
+   a subagent defaulting to backgrounding its own closing evidence is exactly what caused this.
+3. **A stalled self-report is not evidence the work is wrong.** Both stalled agents in this
+   incident had actually finished correct, well-reasoned work — the stall was purely a reporting
+   problem. Don't discard or redo real work because its author couldn't confirm it cleanly;
+   verify it instead.
+4. **The orchestrator's own verification is real evidence too** — cite it as such in the
+   completion log ("independently re-verified directly, not just self-reported — command X run
+   here, real output Y"), don't wait for the subagent's version once you've already confirmed it
+   yourself.
+5. **A subagent scoped to a narrow lane is verified for scope, not just for completion.** After it
+   returns, `git status --short` and check every changed path is in-lane — most important when the
+   subagent read a `design.md`/brief/runbook containing ready-to-apply code or commands. Out-of-lane
+   changes are reverted immediately, before the next subagent or any commit. This is the
+   orchestrator's job on every dispatch, not only when something feels off.
+6. **A `failed` subagent notification is not "nothing happened".** Check disk (`git status --short`
+   + `wc -l`/`tail` on its scoped paths) before reacting. If most of the work landed, resume with
+   `SendMessage` and a "finish exactly these gaps" instruction rather than cold-re-spawning — then
+   verify the result for scope and completion as normal.
+
+## Related
+
+- `docs/agent_rules/openspec-tdd-mandate.md` — the "real command/test evidence" requirement this
+  protocol exists to satisfy regardless of who runs the command.
+- `docs/agent_rules/git-commit-hygiene-shared-worktree.md`'s "live concurrent-editing hazard"
+  section — a sibling lesson from the same session, about a different failure mode (two agents'
+  edits conflicting, not one agent's report stalling).
+- `docs/agent_rules/claude-code-spec-only-implementer-builds.md` — the execution-split rule this
+  protects: a spec-author subagent that writes the code (not just the spec) breaks it.
+- `docs/agent_rules/verify-external-agent-reports.md` — the broader rule this one specializes:
+  that doc covers not trusting a live-state or "it's absent" claim without checking every store
+  yourself; this one covers the specific case of a *stalled or inconclusive* subagent report
+  during a dispatched task, and the exact redirect-then-verify-directly protocol to use.

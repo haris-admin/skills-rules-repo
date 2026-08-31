@@ -1,0 +1,159 @@
+---
+description: Public discoverability and crawler access (all agents)
+globs: *
+alwaysApply: false
+---
+
+# Public discoverability and crawler access (all agents)
+
+Applies when adding or editing any public page, public route handler, public content file,
+structured data, sitemap route, robots policy, footer/nav link, or marketing copy that search
+engines or answer engines may crawl.
+
+Use together with `docs/agent_rules/public-page-seo-metadata.md`. That rule owns title,
+description, and canonical length gates; this rule owns crawlability, indexability, structured
+content, internal linking, and AI/search crawler readability.
+
+## Crawlability and indexing
+
+- Public pages must return HTTP 200 without auth, geo, cookie, modal, or JavaScript-only gates.
+- Do not add `noindex`, `nofollow`, `X-Robots-Tag`, auth redirects, middleware blocks, or
+  `robots.txt` disallows to a public route unless the human explicitly says the page must not
+  be indexed.
+- Keep private app routes disallowed: `/admin/`, `/auth/`, `/dashboard/`, `/screening/`,
+  `/settings/`, `/training/`, `/kyc/`, `/clients`, `/reports`, and equivalent authenticated
+  areas.
+- Keep `robots.txt` pointing to `https://yourapp.com.au/sitemap.xml`.
+- Explicitly allow search and AI **retrieval/citation** crawlers used by priority engines when the
+  intent is public discoverability: `bingbot`, `DuckDuckBot`, `DuckAssistBot`, `ChatGPT-User`,
+  `OAI-SearchBot`, `anthropic-ai`, `Claude-User`, `Claude-SearchBot`, `PerplexityBot`,
+  `Perplexity-User`, and `Google-Agent`. These fetch content to answer a user's question and cite
+  the source, so discovery and traffic flow back.
+  `DuckAssistBot` (DuckDuckGo's AI-answer crawler) is a distinct UA from `DuckDuckBot` (classic
+  search indexing) — added 17 Aug 2026 after a Cloudflare AI-crawler report showed it missing from
+  the explicit list (it wasn't actually blocked, since it fell through to the wildcard `allow: '/'`
+  rule, but the explicit list should name every welcomed engine per this rule's own intent).
+  `Perplexity-User` (Perplexity's real-time fetch agent, distinct from indexing-only
+  `PerplexityBot`) and `Google-Agent` (Gemini's real-time user-triggered fetcher for live
+  browsing) were added the same day for the same reason.
+- Explicitly **disallow** bulk training / data-harvesting crawlers, which ingest content for model
+  training or resale with no retrieval, citation, or traffic back: `GPTBot`, `CCBot`, `Bytespider`,
+  `Amazonbot`, `meta-externalagent`, `Applebot-Extended`, `cohere-ai`, `Diffbot`, `ClaudeBot`,
+  `Google-Extended`.
+  - **Human decision 2026-08-01:** `GPTBot` moved from the allow list to the disallow list. This
+    rule previously mandated allowing it, which contradicted the `Content-Signal:
+    search=yes, ai-train=no, use=reference` the site already publishes. `OAI-SearchBot` and
+    `ChatGPT-User` are what keep YourApp citable inside ChatGPT — `GPTBot` only feeds training.
+  - **Same mistake found and fixed for Anthropic, 17 Aug 2026:** `ClaudeBot` was wrongly in the
+    allow list. Anthropic's own support docs are explicit that `ClaudeBot` is the *training*
+    crawler ("collecting web content that could potentially contribute to their training"); the
+    actual citation crawlers are `Claude-User` (real-time fetch when a Claude user asks a
+    question) and `Claude-SearchBot` (search-quality indexing) — both now allowed instead.
+    Verify against Anthropic's own crawler docs before assuming this list is still accurate; these
+    UA names have moved before and will again.
+  - **`Google-Extended` is a different case — human decision, not a bug fix, 17 Aug 2026.** Unlike
+    OpenAI/Anthropic/Perplexity, Google gives no way to split Gemini training-use from
+    grounding/citation-use of indexed content — `Google-Extended` is one combined toggle for both.
+    Given the site's "no training, only answering" principle, it was moved to disallow; the real
+    cost is that YourApp's content also stops grounding Gemini/Vertex AI answers, since that
+    trade-off can't be avoided the way it can for the other three engines. `Google-Agent`
+    (Gemini's separate real-time fetcher for live mid-conversation browsing) is unaffected and
+    stays allowed — it's a different mechanism from the indexed-content toggle.
+  - `Google-Extended` governs Gemini grounding/training only and `Applebot-Extended` governs Apple
+    Intelligence training only. **Neither affects Google Search or Apple search ranking**, so the
+    allow/disallow split above costs nothing in classic SEO.
+  - `robots.txt` is advisory in both places — as of 2026-08-01 the `yourapp.com.au` zone has
+    **no Cloudflare bot enforcement enabled** (`ai_bots_protection`, `ai_training`, `ai_search`,
+    `ai_user`, `crawler_protection`, `content_bots_protection` all `disabled`). Do not assume the
+    edge is blocking anything; check before claiming it.
+  - Cloudflare's *managed* `robots.txt` (`is_robots_txt_managed`) injects its own block at the
+    edge **ahead of** `frontend/app/robots.ts`, and its per-agent groups win over ours. It
+    silently contradicted this repo's policy until it was disabled on 2026-08-01. If robots.txt
+    output ever disagrees with `app/robots.ts`, check this flag first:
+
+    ```bash
+    # read  (GET works with the account token in yourapp/prod/backend)
+    curl -s "https://api.cloudflare.com/client/v4/zones/$ZONE/bot_management" -H "Authorization: Bearer $T"
+    # write — must be PUT; PATCH returns 10405 "Method not allowed for this authentication scheme"
+    curl -s -X PUT ".../bot_management" -H ... --data '{"is_robots_txt_managed": false}'
+    ```
+
+    Disabling it also removes Cloudflare's `Content-Signal:` lines and their EU Copyright
+    Directive Article 4 reservation-of-rights text. Next's `MetadataRoute.Robots` cannot emit
+    arbitrary lines, so restoring those requires a custom route handler in place of
+    `app/robots.ts`.
+
+## Sitemap, canonicals, and URLs
+
+- Register every indexable **static** public route in `frontend/lib/site.ts::sitemapRoutes`.
+- **Exception — admin-published content (C33 marketing blog):** `/Compliance/compliance-blog/{slug}`
+  routes are NOT registered individually in `sitemapRoutes`. `frontend/app/sitemap.ts` fetches the
+  live published-posts index (`getPublishedBlogPosts()`) at sitemap-build time and generates one
+  entry per slug with `lastModified` from that post's real `updated_at` — this is what lets an
+  `AMLHIVE_ADMIN` publish a post with no engineer/deploy in the loop, per the C33 proposal. Only the
+  list page itself (`/Compliance/compliance-blog`) stays in the static array. If you add another
+  admin-published content type with the same "no deploy" model, follow this same pattern rather
+  than hand-maintaining slugs in `site.ts`.
+- Add a real, explicit `lastModified` entry in `frontend/app/sitemap.ts` for every **static**
+  sitemap route; do not rely on `DEFAULT_LASTMOD` for newly added or recently changed pages.
+- `lastModified` must match the content's real publish/update date, not today's date by habit.
+- Use one clean canonical URL per page: no tracking parameters, no fragments, no duplicate
+  slash variants, and no canonical-to-homepage for child pages.
+- Add or update `frontend/lib/public-seo-metadata-registry.ts` and run the SEO metadata audit
+  for every public HTML route.
+
+## Content readability
+
+- Put the primary answer in visible HTML: H1, intro paragraph, H2 sections, lists, tables,
+  FAQs, and clear links. Do not hide core facts inside client-only state, image-only text,
+  accordions without server-rendered content, or scripts only.
+- Use crawlable `<a href>` links for navigation and related content. JavaScript-only click
+  handlers are not enough for public discovery.
+- Every new high-intent page needs at least one internal link from a relevant indexed page
+  such as homepage, `/about`, `/austrac-compliance`, `/Compliance/compliance-blog`, or a
+  related guide.
+- Keep content current: no "coming soon" or countdown phrasing after obligations are in force;
+  no stale dates; no infrastructure vendor claims that will become false during migration.
+
+## Structured data
+
+- JSON-LD must match visible page content. Never add facts to schema that users cannot also
+  verify on the page.
+- Keep sitewide `Organization`, `WebSite`, and `SoftwareApplication` JSON-LD consistent with
+  `frontend/lib/site.ts`.
+- Use `Article` JSON-LD for guides/blog posts with accurate `datePublished` and
+  `dateModified`; update the sitemap `lastModified` when `dateModified` changes.
+- Use `FAQPage` only when the exact questions and answers are visibly rendered on the page.
+- Use public `sameAs` URLs only. Never include admin dashboards, private account URLs,
+  staging URLs, or competitor URLs in YourApp entity schema.
+
+## AI answer-engine files
+
+- Update `/llms.txt` and `/llms-full.txt` when product positioning, pricing, public URLs,
+  regulatory dates, or key boundaries change.
+- Keep the independence statement, ABN, "No per-check fees", not-legal-advice boundary, and
+  manual-lodgement boundary consistent across website copy and AI context files.
+- Do not name competitors in public denial copy or AI context files unless a separate
+  human-approved comparison-page OpenSpec exists.
+
+## Verification
+
+Run at least:
+
+```bash
+cd frontend && npx vitest run tests/unit/app/search-discovery.test.ts tests/unit/app/entity-identity.test.ts tests/unit/app/public-page-seo-metadata.test.ts tests/unit/lib/ai-discovery.test.ts tests/unit/app/llms-routes.test.ts
+cd frontend && npm run audit:seo-metadata
+```
+
+For production-visible changes, also run the live audit after deploy:
+
+```bash
+cd frontend && npm run audit:seo-metadata -- --live --base-url=https://yourapp.com.au --blog-api-url=https://api.yourapp.com.au
+```
+
+## Source basis
+
+This rule is grounded in Google Search Central guidance on crawlable, useful content, sitemaps,
+structured data, and AI features; OpenAI crawler documentation for GPTBot, ChatGPT-User, and
+OAI-SearchBot; Bing Webmaster/IndexNow guidance for faster URL discovery; and schema.org
+definitions for Organization, SoftwareApplication, Article, and FAQPage.

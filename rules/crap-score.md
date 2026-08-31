@@ -1,9 +1,3 @@
----
-description: CRAP score (Change Risk Anti-Patterns)
-globs: *
-alwaysApply: false
----
-
 # CRAP score (Change Risk Anti-Patterns)
 
 Applies when reviewing whether a function is safe to change — not when checking

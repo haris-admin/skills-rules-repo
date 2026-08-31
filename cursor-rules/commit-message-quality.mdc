@@ -1,0 +1,91 @@
+---
+description: Commit message quality — commits are evidence, not labels
+globs: *
+alwaysApply: false
+---
+
+# Commit message quality — commits are evidence, not labels
+
+**Scope:** every agent-authored commit. Promoted 12 Aug 2026 from a section inside
+`git-commit-hygiene-shared-worktree.md` to its own rule, because it kept being violated while
+buried in a document about *which files* to commit.
+
+## Why this matters
+
+`openspec/changes/README.md` makes `status: implemented` mean "shipped to `dev`", and the check for
+that is `git log --oneline -- <paths the change touches>`. **That check is only as good as the
+commit subjects it returns.** A history of:
+
+```
+On dev: codex-before-origin-dev-pull-2026-07-03
+index on dev: 7af508fd
+Checking in the code to the fixing of 1st july removal.
+Saving agency monthly report.
+Files to be added
+checking in the files with the buttons and fixes.
+checking in the files.
+```
+
+…returns hits without evidence. You cannot tell from any of them whether the change shipped, what
+it did, or which requirement it satisfied — so an `implemented` claim resting on them is
+unfalsifiable, which is the same thing as unsupported.
+
+This keeps happening. The C337 audit (4 Aug 2026) found seven such commits; `2e6465f4` and
+`cda89ba5` were added on 12 Aug 2026 while C405 was in flight. **None are rewritten** — `dev` is
+shared and a rebase would do more damage than the drift. The rule binds going forward.
+
+## The rules
+
+1. **Never commit an autostash or index-state message.** `On <branch>: …` and
+   `index on <branch>: …` are `git stash` artifacts. If one is about to become a commit, you have
+   stashed when you meant to commit, or resolved a stash conflict by committing the stash entry
+   itself. Stop and redo it.
+2. **Never use a progress-note subject.** "Checking in the code", "Saving …", "Files to be added",
+   "Other files", "more fixes", "checking in the files" describe *your session*, not *the change*.
+   Six months later they are indistinguishable from noise.
+3. **A commit satisfying an OpenSpec task must name it** — `C405`, `T405.09`, `issue-173` — in the
+   subject or body. That is what makes `git log --oneline -- <path>` an audit rather than a list of
+   timestamps.
+4. **The subject must survive losing its diff.** If someone reads only the subject and cannot say
+   what changed and why, rewrite it before committing — not after.
+5. **The body carries the evidence.** For anything non-trivial: what was wrong, what you changed,
+   and how you know it works (test counts, measured numbers). This is where a reviewer looks when
+   the subject is not enough.
+6. **Fix your own subject before committing.** You cannot rewrite shared history, so the only
+   opportunity is before the commit exists. There is no cleanup pass later.
+
+## Shape
+
+```
+<type>(<scope>): <what changed, imperative, survives losing the diff>
+
+<why it was wrong / what the change does>
+<evidence: test counts, measurements, commands run>
+<anything deliberately not done, and why>
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+```
+
+Good (C405): `perf(C405): a167 agency_id indexes + collapse clients-page N+1 (round 2 hygiene)`
+Bad (same day, another session): `checking in the files.`
+
+## Automated backstop — advisory by design
+
+`scripts/audit_openspec_drift.py` check **C07** warns on subjects matching
+`^(On|index on) \w+:|^(Checking|Saving|Files) `.
+
+It is **advisory and never fails the run**, deliberately: the existing history is immutable, and a
+permanently-red check is one people learn to skip. It exists to catch the next one at review time,
+not to relitigate the last nine. **Do not wire it into a deploy gate** — that would create pressure
+to weaken it.
+
+Note C07's pattern is case-sensitive and anchored, so a lowercase `checking in the files.` slips
+past it. Treat the rule, not the script, as the authority.
+
+## Related
+
+- `docs/agent_rules/git-commit-hygiene-shared-worktree.md` — what gets committed
+- `docs/agent_rules/incremental-local-commits.md` — when to commit (after each Green task)
+- `docs/agent_rules/shared-file-commit-resolution.md` — a file that is both yours and theirs
+- `docs/agent_rules/pre-checkin-definition-of-done.md` — the closeout gate; incremental commits
+  use the lighter gate in `incremental-local-commits.md`

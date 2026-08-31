@@ -1,0 +1,83 @@
+# New public-page registration checklist (all agents)
+
+Applies when adding a brand-new public (unauthenticated) route under `frontend/app/`, e.g. the
+`/product`, `/security`, `/austrac-compliance`, `/vs/<slug>` family. A new public page is not
+"done" when the route renders — it needs to be registered in **every** place below, or it either
+404s for crawlers, redirects logged-out visitors to login, or silently falls out of SEO/AI
+discovery. Compiled from C148/C149/C406, which each had to reconstruct this by reading the prior
+change; `frontend/tests/unit/proxy-public-paths.test.ts` documents a real production regression
+from missing one of these (the `/austrac-compliance` route falling out of `PUBLIC_PATHS`, 1 Jun
+2026, 100% bounce on a paid ad landing page).
+
+## The registration points
+
+1. **`frontend/proxy.ts` — `PUBLIC_PATHS`.** Miss this and the route redirects every logged-out
+   visitor to `/auth/login` instead of rendering. Guarded by
+   `frontend/tests/unit/proxy-public-paths.test.ts`.
+2. **`frontend/lib/site.ts` — `sitemapRoutes`.** Feeds both `app/sitemap.ts` and the SEO metadata
+   registry's `publicHtmlSitemapRoutes` filter — miss this and the page is invisible to crawlers
+   via `sitemap.xml` and untested by the SEO audit.
+3. **`frontend/app/sitemap.ts` — `routeLastMod`.** Optional but expected: a real `lastmod` date
+   gives Google a genuine recrawl signal; omitted routes silently fall back to `DEFAULT_LASTMOD`.
+4. **`frontend/lib/public-seo-metadata-registry.ts` — `publicSeoMetadataRegistry`.** Import the
+   route's `layout.tsx` metadata and add a `{ route, metadata }` entry. Required for
+   `npm run audit:seo-metadata` to check title/canonical/description — see
+   [public-page-seo-metadata.md](public-page-seo-metadata.md) for the length limits themselves.
+5. **`frontend/scripts/audit-public-seo-metadata.mjs` — `staticRoutes`.** A **separate** hardcoded
+   list from #2/#4, used by the live/static SEO audit script. `tests/unit/live-static-sitemap-seo-audit.test.ts`
+   asserts this list equals `sitemapRoutes` — miss it and that test fails, correctly, but it's easy
+   to not realize this file exists at all since it's not imported from `lib/site.ts`.
+6. **`frontend/lib/ai-discovery.ts` — `links` array.** Adds the page to `/llms.txt`/`/llms-full.txt`
+   so AI answer engines and agentic crawlers can find it via the curated index, not just a raw
+   sitemap crawl. If the page names a competitor, see
+   [public-claim-audit.md](public-claim-audit.md)'s "Comparison pages naming a competitor" section
+   first — naming a competitor here has its own guard (C90 Decision D6).
+7. **A content-guard test**, following the C89/C148/C149 pattern
+   (`frontend/tests/unit/public-trust-copy.test.ts`'s `COPY_FILES` array is the shared list most
+   public pages belong in — add the new page's path there rather than only self-checking it in a
+   page-specific test file, so the repo-wide scarcity/infra-vendor/certification-claim sweep
+   covers it too).
+8. **Footer/nav placement — a decision, not a default.** Every public page since `/security`
+   deliberately stays off the top nav (`SiteHeader.tsx`); footer placement (which column, which
+   label) is a real content decision, not automatic — check `SiteFooter.tsx`'s existing column
+   structure before picking one.
+
+## Private admin pages (not public)
+
+A new `frontend/app/admin/**` page is also not done when it renders. It is **not** added to
+`PUBLIC_PATHS`, sitemap, the SEO registry, `ai-discovery.ts`, or `COPY_FILES`. The public
+Lighthouse gate does not apply.
+
+Register the route in **`frontend/proxy.ts` `PRIVATE_ADMIN_ROUTE_TEMPLATES`** (literal path or
+`[id]` / `[eid]` template). Miss this and `classifyProtectedRoute` will not treat it as an admin
+route. Guard: `frontend/tests/unit/proxy-public-paths.test.ts` asserts that list **equals** the
+filesystem of `frontend/app/admin/**/page.tsx` in both directions.
+
+Origin: C429 T429.63 — `/admin/acr` shipped without the template until that FS guard failed.
+
+## A gotcha, not a registration point: stale Next.js typed-routes cache
+
+Adding a brand-new route **directory** can make `npx tsc --noEmit` fail with
+`Type '"/your/new/route"' is not assignable to type 'LayoutRoutes'` even though nothing is
+actually wrong. This is `.next/dev/types/routes.d.ts` and `.next/types/routes.d.ts` (two separate
+generated caches) being out of sync with the new route — not a real type error, and not
+"pre-existing" in the `immediate-error-investigation.md` sense. Fix: `npx next typegen`, then
+re-run `tsc`. **Do not commit the side effect**: `next typegen` (or `next dev`) can rewrite
+`frontend/next-env.d.ts`'s import between `./.next/types/routes.d.ts` and
+`./.next/dev/types/routes.d.ts` — that file is marked "should not be edited"; `git checkout --
+frontend/next-env.d.ts` before committing if it shows as modified and nothing else explains why.
+
+## Verification, once all of the above are done
+
+```bash
+cd frontend
+npx vitest run tests/unit/<your-content-guard-test>.test.ts tests/unit/proxy-public-paths.test.ts
+npm run audit:seo-metadata
+npx tsc --noEmit
+```
+
+Plus the public-claim-audit guard-test family (`.claude/skills/public-claim-audit/SKILL.md` Phase
+1) if the page carries any customer-facing claim — which a marketing/comparison page always does.
+The blocking Lighthouse gate (`frontend-lighthouse-performance-gate.md`) still applies once the
+page is reachable at a live/preview URL — a brand-new, not-yet-deployed page can't clear this
+locally in a Chrome-less sandbox; log it as a genuinely open task rather than skipping it.

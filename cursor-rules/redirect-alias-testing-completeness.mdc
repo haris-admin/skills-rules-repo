@@ -1,0 +1,59 @@
+---
+description: Redirect / alias testing completeness (all agents)
+globs: *
+alwaysApply: false
+---
+
+# Redirect / alias testing completeness (all agents)
+
+Applies when adding, editing, or testing any redirect, rewrite, alias, or proxy rule — Next.js
+`redirects()`/`rewrites()` in `next.config.ts`, `frontend/proxy.ts`, Cloudflare page rules, or any
+middleware that issues an HTTP redirect.
+
+## Why this rule exists
+
+**Incident (issue-211, CRITICAL, 1 Aug 2026):** C361 added a case-folding alias
+(`/compliance/:path*` → `/Compliance/:path*`) via `next.config.ts` `redirects()`. Next's `source`
+matcher is case-insensitive with no per-rule override, so the canonical `/Compliance/*` path itself
+matched the lowercase rule and redirected to itself — an infinite loop that made the entire
+Compliance Regulations compliance-guide section (and everything beneath it) unreachable for users and search
+crawlers, live in production, from v0.5.66 until fixed in v0.5.67.
+
+**The test that should have caught it didn't, for a specific, avoidable reason:** the Playwright
+guard used `maxRedirects: 0` on a mistaken assumption ("macOS filesystem case-insensitivity"
+doesn't apply here — this is an HTTP routing rule, not a filesystem lookup). That configuration
+asserts only that *a* redirect was issued — it never follows the redirect to see where it actually
+lands. A self-redirecting infinite loop and a correctly-terminating redirect both produce "a 3xx
+response" and both passed the same assertion.
+
+## Required behaviour
+
+- **Every redirect/alias/rewrite test must follow the redirect to its terminal response and assert
+  that terminal response is `200`** (or the specific intended terminal status) — never assert only
+  that a redirect status code was returned. `maxRedirects: 0` (or the equivalent "stop at first
+  hop") is only acceptable when the test's specific purpose is to inspect the immediate `Location`
+  header of a single hop, and even then a **separate** test in the same file must still follow the
+  chain to termination.
+- **Test the canonical/target path through the new rule, not just the alias path.** issue-211
+  specifically broke the canonical `/Compliance/*` path, not the lowercase alias it was meant to
+  redirect — a test suite that only exercises the alias source path (`/compliance/*` → expect
+  redirect) would still have passed while the canonical destination looped. Add a case that
+  requests the canonical/target path directly and asserts it is served, not redirected.
+- **Do not assume a matcher is case-sensitive (or case-insensitive) — verify it for the specific
+  routing layer in use.** Next.js `redirects()`/`rewrites()` `source` matching, Next.js filesystem
+  routing, Cloudflare page rules, and custom middleware each have their own case-sensitivity
+  behaviour; they are not interchangeable, and an assumption carried over from one (e.g. "the OS
+  filesystem is case-insensitive so this must be too") is exactly the failure mode that caused
+  issue-211. When a matcher's case behaviour isn't already documented for the routing layer being
+  used, verify it (read the framework source/docs, or add a throwaway diagnostic test) before
+  relying on it.
+- **A case-folding or path-normalising alias between two paths that differ only by case is a
+  red flag** — prefer implementing it in application code (e.g. a `startsWith` check in
+  middleware/proxy, as issue-211's fix moved to `frontend/proxy.ts`'s `complianceAliasTarget`)
+  rather than in a declarative redirect table whose matcher semantics you don't fully control.
+
+## Verify
+
+For any change touching `next.config.ts` `redirects()`/`rewrites()`, `frontend/proxy.ts`, or
+equivalent routing/alias logic, run the full redirect/alias Playwright/test suite and confirm every
+case follows to a terminal response, not just a redirect status.

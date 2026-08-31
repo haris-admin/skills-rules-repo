@@ -1,0 +1,146 @@
+# Git commit hygiene in a shared, concurrently-edited working tree (all agents)
+
+## Why this exists
+
+This repo is routinely worked by multiple concurrent agent sessions (Claude/Codex/Cursor/
+Antigravity) and a human, often in the **same local checkout at the same time**. `git status`
+mid-session will frequently show other sessions' staged and unstaged files that are not yours to
+touch, review, or commit without being asked.
+
+On 24 Jul 2026, a session ran a pathspec-restricted `git add` for its own two files, then a
+**bare** `git commit -m "..."` with no pathspec. The bare commit picked up *everything currently
+staged in the index* — including another session's stale, pre-rewrite copy of
+`docs/current_progress.md` that happened to already be staged. That commit silently overwrote the
+same day's actual rewrite of that file until the mistake was caught and fixed in a follow-up
+commit. Pathspec-limiting the `add` alone did not protect against this; the `commit` needed its
+own pathspec too.
+
+## Rules
+
+1. **Never run a bare `git commit` or `git commit -a`.** Both commit the entire current index, not
+   just what you staged this turn. Always list the exact files/paths on the commit command itself:
+   `git commit -m "..." -- <path> <path> ...`. Pathspec-limiting a commit works even when other,
+   unrelated paths are staged — it commits only the listed paths and leaves the rest of the index
+   untouched.
+2. **Never run `git add -A` or `git add .`.** Stage exact paths only, for the same reason — a
+   broad add can pick up another session's untracked files too.
+3. **Before committing, run `git status --short` and confirm every path you're about to commit is
+   one you actually created or edited this session.** Unfamiliar staged/modified files belong to
+   someone else's in-progress work — leave them alone unless the user explicitly asks you to
+   review or commit them (see `docs/agent_rules/openspec-tdd-mandate.md` for how to handle a batch
+   of unrelated pending changes when asked to review them).
+4. **After committing, re-run `git status --short`** and confirm other sessions' staged/modified
+   files are still exactly as they were before your commit — untouched, not consumed, not altered.
+5. **For a brand-new (untracked) file, `git add` it before a pathspec-restricted `git commit` that
+   names it** — pathspec-limiting on `commit` only works for paths already tracked or staged;
+   naming an untracked file on `git commit -- <path>` alone fails with "pathspec did not match any
+   files."
+6. This applies identically whether you're committing your own work or, when the user explicitly
+   authorizes it, committing a batch of files that turn out to belong to a different session's
+   OpenSpec change — always stage and commit by exact path, never by trusting whatever the index
+   already contains.
+
+## The live concurrent-editing hazard (before any commit exists to hygiene-check)
+
+Rules 1-6 above all assume the danger is at **commit time** — whose staged files end up in your
+commit. There's an earlier, distinct hazard: **two agents/tools actively editing the same
+in-progress feature's same files at the same time, with no commit yet to even reveal the
+conflict.** Confirmed live on 16 Aug 2026 (C413, `openspec/changes/413-cross-entity-ubo-identity-reuse/`):
+a Claude Code session handed an OpenSpec change off to Cursor mid-session via a written brief,
+then kept discussing/deciding scope with the human while Cursor (and possibly another peer
+session) kept building on the same files. Neither side deleted the other's work — the failure
+mode was subtler: two independently-added Pydantic response types
+(`InboxCandidateItem`/`CrossEntityTriggerCandidateItem`) that were never reconciled, so one
+function silently passed the wrong type into another's constructor. Nothing caught it until a
+full-suite run — `git status`/diff review alone would not have caught it, since both edits were
+individually valid Python, just mutually incompatible. The same session also found `proposal.md`
+had accumulated "decisions 12-18" the Claude Code session had no visibility into and never
+confirmed were genuinely human-stated (see `docs/agent_rules/no-fabricated-human-decisions.md` —
+this is exactly the failure mode that rule exists to prevent, arriving via a *different* agent's
+edits this time, not your own).
+
+**Rules:**
+
+1. **When handing a feature off to a second agent/tool while your own session might still touch
+   the same files, pick one explicitly — don't leave it ambiguous:** (a) stop editing those files
+   yourself entirely until the handoff is confirmed complete, or (b) split file ownership
+   explicitly in the handoff brief and hold to it, or (c) prefer `isolation: "worktree"` (or the
+   equivalent for a non-Claude tool) so conflicts surface at merge time, where a diff review can
+   actually catch them, not at live-edit time, where it can't.
+2. **Before treating a change as "done" or reporting a status to the human, re-run the full
+   regression suite even if you personally made no further edits** — another agent may have.
+   A stale "last I checked, it was green" is not evidence once you know a second agent has been
+   active on the same files.
+3. **A new type/schema/function with a name suspiciously similar to one that should already
+   exist is a signal, not a coincidence** — before adding e.g. `FooItemV2` or `FooCandidate`
+   alongside an existing `FooItem`, grep for the existing name first. Two agents solving the same
+   sub-problem independently is exactly how this incident happened.
+4. **Any proposal/design/tasks doc changes you didn't personally make (new "decisions," new
+   findings, renamed concepts) need the same scrutiny as your own would** — don't assume another
+   agent's `git diff` already satisfies `no-fabricated-human-decisions.md`; verify with the human
+   whether they actually stated whatever's now recorded as their decision.
+
+## The shared-file case → its own rule
+
+Rule 3 above covers a file that is *entirely* another session's. For the harder case — **a file you
+must edit that already holds another session's uncommitted changes** (C405 hit this on `CLAUDE.md`,
+12 Aug 2026) — see **`docs/agent_rules/shared-file-commit-resolution.md`**. Short version: make the
+edit, commit everything else, leave that file uncommitted, report it in the commit body and to the
+user. Never stash, restore, or hand-reconstruct their hunks; `git add -p` is unavailable to agents.
+
+## The shared git-index hazard — plain `git add`/`git rm`/`git commit` can silently no-op
+
+Distinct from the file-content hazard above: this is about the `.git/index` file itself being a
+single shared resource. Confirmed live on 20 Aug 2026 (the `.worktrees/hotfix-v0.5.95` gitlink
+cleanup): a concurrent session landed an unrelated commit (`5991f306`) mid-task. Plain
+`git rm --cached <path>` followed by `git commit -- <path>` silently no-op'ed three times in a
+row — no error, just nothing committed — because each attempt raced the shared index against the
+other session's writes.
+
+**Fix: build the commit against a private temporary index instead of the shared one**, so it can
+never be raced or clobbered:
+
+```bash
+# Private index, seeded from the current HEAD's tree
+TMP_INDEX=$(mktemp)
+GIT_INDEX_FILE="$TMP_INDEX" git read-tree HEAD
+GIT_INDEX_FILE="$TMP_INDEX" git rm --cached <path-to-remove>
+NEW_TREE=$(GIT_INDEX_FILE="$TMP_INDEX" git write-tree)
+NEW_COMMIT=$(git commit-tree "$NEW_TREE" -p HEAD -m "fix: <message>")
+# Compare-and-swap: only updates HEAD if it hasn't moved since you started
+git update-ref -m "<message>" refs/heads/dev "$NEW_COMMIT" "$(git rev-parse HEAD)"
+rm -f "$TMP_INDEX"
+```
+
+This never touches the shared `.git/index`, so a concurrent session's own `git add`/`git commit`
+can't clobber it and can't be clobbered by it. The `update-ref` compare-and-swap (`old-value` as
+the third argument) is what turns a silent no-op into a hard failure if `HEAD` moved between your
+`read-tree` and your `update-ref` — re-run from `read-tree` if that happens, don't force it
+through. Reach for this whenever a plain `git rm`/`git mv`/`git commit` on a single path
+mysteriously reports success but `git log`/`git status` shows nothing changed in a shared
+worktree — that symptom is the tell, not a fluke.
+
+## Quick check before any commit
+
+```bash
+git status --short              # confirm what's staged/modified and by whom (mentally)
+git add <exact paths>           # never -A, never .
+git commit -m "..." -- <exact paths>   # never bare, even after a pathspec-restricted add
+git status --short              # confirm nothing else moved
+```
+
+## Related
+
+- `docs/agent_rules/incremental-local-commits.md` — **when** to commit (after each Green task;
+  do not wait to be asked). This file is **which files** and **how**.
+- The 24 Jul 2026 incident is recorded in this session's conversation history; no dedicated
+  `prod_issues/` doc was filed since it caused no production impact — the mistake and its fix are
+  both fully described in the git log (`bfbd3c61` onward vs. the follow-up correction commit).
+
+## Commit messages → its own rule
+
+The "commit messages are evidence, not labels" section that lived here (added 4 Aug 2026,
+C337 T337.07 / D337.07) was **promoted to `docs/agent_rules/commit-message-quality.md`** on
+12 Aug 2026 — it kept being violated while buried in a document about *which files* to commit, and
+two more offending subjects (`2e6465f4`, `cda89ba5`) landed the same day. Read that rule for the
+full text, the C07 backstop and its known blind spot.

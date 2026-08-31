@@ -1,0 +1,118 @@
+# Credential rotation safety (all agents)
+
+Applies whenever an agent generates, rotates, or reads back a production credential (DB password,
+API token, auth token, etc.) via CLI/scripting rather than through a human typing it into a form —
+**and, per the 23 Jul recurrence below, whenever running ANY command against a system that holds
+a secret internally, including plain read-only diagnostics.** The full workflow (including a
+ready-to-use rotation script) is packaged as the `handling-sensitive-data` Claude Code skill
+(`.claude/skills/handling-sensitive-data/`) — invoke that skill directly rather than re-deriving
+the steps below from scratch each time.
+
+## Why this exists
+
+During the 22 Jul 2026 C317 role-split cutover, an attempt to run `alembic upgrade head` in-process
+inside a production container failed because the percent-encoded `yourapp_migrator` password
+contained a literal `%`, which Python's `ConfigParser` interpolation choked on — the resulting
+`ValueError` embedded the full plaintext connection string, including the password, in a traceback
+that reached the operator's terminal. Separately, reconciling a follow-up rotation required a
+temporary RDS master-password reset, which had to pass through an SSM command parameter (visible in
+that account's command history) because there was no other channel available. Neither exposure was
+published anywhere external, but both were avoidable with a stricter pattern.
+
+**Recurrence, 23 Jul 2026 ([issue-186](../../backend/prod_issues/issue-186-alembic-configparser-password-exposure-recurrence.md)):**
+the identical `ConfigParser` bug fired again — same code path, different role (`yourapp_app`) —
+triggered by an ordinary `alembic current` diagnostic run to check migration state, not a
+deliberate rotation. **This is the operative lesson: the exposure risk lives in any command that
+touches a secret-holding system, not only in commands explicitly framed as "handling a secret."**
+A rule that only gets consulted when someone is *about to rotate something* will keep missing the
+routine troubleshooting command that crashes and leaks instead. Remediated by rotating
+`yourapp_app` live (see issue-186 for the full record); the underlying `alembic/env.py` defect
+itself remains unfixed in code as a separate follow-up.
+
+## Rules
+
+1. **Never build a printable URL/DSN string containing a secret.** Prefer connecting with discrete
+   keyword arguments (`host=`, `user=`, `password=`, ...) over a composed
+   `scheme://user:pass@host` string wherever the client library supports it — this sidesteps
+   percent-encoding entirely, and with it the class of bug where a special character in the
+   encoded form (e.g. `%3D` for `=`) breaks something downstream that treats `%` specially
+   (`ConfigParser` interpolation is one; there are others).
+2. **Generate new secret values into a local file, never into a variable you might print or log.**
+   Write directly with `open(path, 'w').write(...)` inside a script that emits no output, not
+   `echo`/`print` of the value itself.
+3. **Wrap any operation that might raise with the secret in scope in a narrow `try/except` that
+   prints only `type(exception).__name__`,** not `str(exception)` — many libraries (like
+   `ConfigParser` above) embed the actual value in their error message.
+4. **Verify a rotation by outcome, not by re-reading the value:** connect with the new value and
+   confirm success; connect with the old value and confirm it's now rejected. Compare by hash
+   (`sha256`) when you need to confirm two values are equal without printing either one.
+5. **Prefer a read-scoped credential path over a write-scoped one for automation.** If the identity
+   available to a script only has `GetSecretValue` and not `PutSecretValue` on a given secret, that
+   is very likely a deliberate boundary (an instance shouldn't be able to rewrite its own
+   credential secret) — don't paper over it by requesting broader IAM permissions; do the write
+   from a more-privileged operator identity instead.
+6. **Shred, don't just `rm`, local scratch files that briefly held plaintext secret material**
+   (`shred -u file || rm -f file` as a fallback on filesystems without `shred` support).
+7. **If a secret does end up printed to a session/log despite the above, say so immediately and
+   rotate it** — don't let "it was only visible in this session" become a reason to leave it as
+   is. Rotating is cheap; assuming exposure didn't matter is not a safe default.
+8. **Before running ANY command against a system that constructs or holds a secret internally —
+   including a plain read-only diagnostic (`alembic current`, `psql`, a connection health check) —
+   ask whether that command's own error output could embed the value it's operating on.** Many
+   things do (`ConfigParser`, connection-string parsers, ORM connect-failure logs). Prefer an
+   app-level status endpoint (`/health`, `/ready`) over a raw client invocation where one exists.
+   If you must run the raw command, redirect its output to a file and grep it for
+   `password|secret|token` before reading it directly, rather than letting raw stdout/stderr hit
+   your terminal unfiltered.
+9. **`psql`'s `:'var'` substitution only works in file mode (`-f script.sql -v var=...`), not
+   `-c`** — `-c "... :'var' ..."` fails with `syntax error at or near ":"`, which reads like an
+   unrelated bug if you don't already know this.
+10. **`aws rds modify-db-instance --master-user-password ... --apply-immediately` can report the
+    instance `available` up to ~30s before the new password actually takes effect.** Retry-loop
+    the actual connection attempt, not the `DescribeDBInstances` status field.
+11. **Table ownership is not `CREATEROLE`.** `yourapp_migrator` (`317`) owns every table post-cutover
+    and can `GRANT`/`ALTER DEFAULT PRIVILEGES` on what it owns, but has `NOCREATEROLE` by design —
+    it cannot run `CREATE ROLE`. Discovered live during C372 (creating `yourapp_admin`): a schema
+    owner and a role-creation identity are different privileges, don't assume one implies the
+    other. Creating a genuinely new role still needs the one-off master break-glass reset (rule 4
+    of the `handling-sensitive-data` skill), even on a repo that has already done a role split.
+
+## Dedicated per-purpose DB roles beyond `yourapp_app`/`yourapp_migrator`
+
+`317` established the app-runtime/schema-owner split. `372` (`yourapp_admin`) added a third
+pattern for **standing, purpose-scoped human-access roles** — worth reusing rather than
+re-deriving next time one is needed:
+
+- `NOSUPERUSER NOCREATEDB NOCREATEROLE` always, regardless of what the role's one special
+  privilege is (here: `BYPASSRLS`) — least privilege beyond just the one property being granted.
+- Grant scope explicitly (`GRANT SELECT ...` + `ALTER DEFAULT PRIVILEGES FOR ROLE yourapp_migrator
+  ...`, not `ALL PRIVILEGES`) — a future migration-created table shouldn't silently become
+  writable by a role that was only ever supposed to read.
+- `ALTER ROLE <name> SET log_statement = 'all';` closes the "this role bypasses the app so it
+  also bypasses `audit_entries`" gap for free, with **no parameter-group change and no reboot** —
+  check `EnabledCloudwatchLogsExports` first; if `postgresql` is already exported (it is, on
+  `yourapp-prod`, with unlimited retention), this is the whole observability story, no
+  `pgAudit`/`shared_preload_libraries` needed.
+- Give it its own dedicated secret (`yourapp/prod/rds-admin`, not a shared multi-key secret) and
+  its own informational-severity SNS topic/alarm (`yourapp_admin_access_alarm.tf` pattern) —
+  separate from the incident-alerting topic, so routine authorized use doesn't either desensitize
+  real alerts or read as an outage.
+- **A scoped IAM policy on the secret only restricts access if the target principal doesn't
+  already have broader access elsewhere.** Check `list-attached-user-policies` before assuming a
+  new scoped policy achieves least privilege — an `AdministratorAccess`-holding principal (found
+  live to be the case for `I_AM_CLI_ACCOUNT` during C372) makes a narrow secret-read policy
+  documentation, not enforcement.
+
+## Related
+
+- [issue-176](../../backend/prod_issues/issue-176-a081-rls-policy-gap-blocks-yourapp-app-after-role-split.md) —
+  first occurrence: the exposure, and the rotation that followed
+- [issue-186](../../backend/prod_issues/issue-186-alembic-configparser-password-exposure-recurrence.md) —
+  second occurrence (23 Jul 2026), triggered by a diagnostic rather than a deliberate rotation;
+  motivated rule 8 above and the `handling-sensitive-data` skill
+- [issue-239](../../prod_issues/issue-239-terraform-oidc-redis-auth-drift-fixed-durably.md) — the
+  dedicated-secret pattern used afterward, which also reduces blast radius (a script or Terraform
+  data source reading a single-purpose secret exposes far less than one reading a whole
+  multi-key application secret)
+- `.claude/skills/handling-sensitive-data/` — the executable skill packaging this entire workflow,
+  including `scripts/rotate_postgres_role_password.sh`

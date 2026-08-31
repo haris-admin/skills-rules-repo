@@ -1,0 +1,63 @@
+# Admin binary-download endpoints need `adminFetchBlob`, not `adminFetch` (all agents)
+
+Applies whenever adding, calling, or debugging an `/admin/v1/*` endpoint that returns a file
+(CSV, PDF, any `StreamingResponse`/non-JSON body) — or reviewing why a "Download" button silently
+does nothing.
+
+## Why this exists
+
+**26 Aug 2026 (issue-279):** the admin ACR evidence-artifact "Download" button
+(`AgencyAcrSection.tsx`) had never saved a file, for any artifact, for any agency, since it
+shipped. `downloadArtifact()` called `adminFetch()`, which (`lib/adminApi.ts`) unconditionally
+calls `res.json()` on every successful response. The download endpoint returns raw CSV/PDF bytes
+via `StreamingResponse` — parsing the CSV's own header row as JSON threw a `SyntaxError`, and that
+error got misrouted into the page's *page-load* error state (`error`, the same variable used for
+"readiness data failed to load"), blanking the whole obligation table with a cryptic
+`Unexpected token 'o', "obligation"... is not valid JSON` instead of surfacing a download-specific
+message. The fetched bytes, having been consumed by the failed `res.json()` call, were discarded.
+
+The existing component test for this button was vacuous: it mocked `adminFetch` at the module
+boundary and only asserted it was *called* with the right path — a mock returning `{}` for the
+download call could never have triggered the real parse failure, so the test passed for months
+while the feature was completely broken in production.
+
+**The pattern already existed correctly elsewhere in this codebase** — `frontend/lib/api.ts`'s
+`fetchWithAuthBlob()` (the agency-facing API layer) has always called `response.blob()`, not
+`response.json()`, for exactly this reason. The admin layer (`lib/adminApi.ts`) simply never got
+its own equivalent when it was built. This is a "the fix already existed, it just wasn't mirrored"
+gap, not a novel problem — check for the agency-facing equivalent before designing a new pattern
+from scratch.
+
+## Rules
+
+1. **Any admin endpoint whose response is not JSON — a file download, an export, a
+   `StreamingResponse` — must be called via `adminFetchBlob()`, never `adminFetch()`.** If
+   `adminFetchBlob` doesn't exist yet in the codebase you're working in, mirror `lib/api.ts`'s
+   `fetchWithAuthBlob()` pattern (`res.blob()` on success, same auth/401/error handling as the
+   JSON variant) rather than inventing a new shape.
+2. **A "Download" button's click handler must actually drive a browser save** —
+   `URL.createObjectURL(blob)` → a temporary `<a download>` element → `.click()` →
+   `URL.revokeObjectURL(url)` — not just `await` the fetch and discard the result. Fetching bytes
+   and doing nothing with them is the exact failure mode this rule exists to prevent.
+3. **Never share one error/state variable between "the page failed to load" and "this one action
+   (download/reveal/export) failed."** A failed download must not blank content the user was
+   already looking at successfully.
+4. **Never write a test that mocks the fetch helper at the module boundary for a binary-download
+   code path.** That hides exactly the bug class this incident produced — assert on the real
+   consequence instead: `createObjectURL` was called with the blob, the anchor's `click()` fired,
+   `revokeObjectURL` was called. See `frontend/__tests__/admin/agencyAcrSection.test.tsx`'s
+   `issue-279` tests for the pattern.
+5. **Filename:** if the backend's `Content-Disposition` header isn't in
+   `CORSMiddleware`'s `expose_headers` (check `backend/app/main.py`), it will not be readable from
+   JS across origins — build the filename client-side from data you already have (artifact
+   type/version/content-type) rather than assuming the header is readable.
+
+## Related
+
+- `frontend/prod_issues/issue-279-admin-acr-artifact-download-button-never-saves-file.md` — the
+  incident this rule exists to prevent recurring, including the full TDD evidence.
+- `docs/agent_rules/red-for-the-right-reason.md` — the vacuous-mock trap this incident's original
+  test fell into.
+- `docs/agent_rules/observability-and-error-management.md` — the "exceptions never swallowed"
+  rule this bug also violated (the `res.json()` `SyntaxError` was caught but misrouted, not
+  actioned correctly).

@@ -1,0 +1,37 @@
+# No email delivery to A2 Square / AnotherCompany accounts (all agents)
+
+Applies whenever sending, drafting, or configuring any YourApp email — SES after-action reports,
+operational alerts, test emails, error reports, or transactional/customer messages — and whenever
+touching Postmark suppression logic or email-recipient validation.
+
+## Why this exists
+
+This machine and AWS setup are shared with a **completely different company, A2 Square / AnotherCompany**
+(see `docs/agent_rules/aws-profile-and-secret-recovery.md` — this machine's `default` AWS CLI
+profile resolves to AnotherCompany's account, `707843605914`, not YourApp's). The cross-account confusion
+risk that rule guards against on the infra side has an email-delivery equivalent: nothing stops an
+agent from constructing or reusing an `@a2square.*` address while working across both codebases in
+the same session.
+
+## Rules
+
+1. **Never send any email — alerts, operational notifications, test emails, error reports, or
+   transactional messages — to any A2 Square account or `@a2square.*` address for YourApp.** All
+   internal alert emails, operational notifications, and administrative communications go to
+   official YourApp addresses only (`@yourapp.com.au` / the project lead) — see
+   `docs/agent_rules/ses-after-action-email-encoding.md` for the mandatory after-action email
+   recipients.
+2. **This is already enforced in code, not just documentation** — `backend/app/services/postmark_service.py`'s synthetic/prohibited-recipient suppression list includes `@a2square.` and `a2square` substrings deliberately (referenced in `docs/context.md`'s Postmark suppression callout, issue-193/194). Do not remove or weaken this suppression when touching that file.
+3. When adding a new email-sending path (SES or Postmark), check the recipient against this
+   boundary the same way — don't assume the existing suppression list is the only place this
+   matters.
+
+## Related
+
+- `docs/agent_rules/aws-profile-and-secret-recovery.md` — the equivalent cross-account trap on the
+  AWS CLI/Terraform side.
+- `docs/agent_rules/ses-after-action-email-encoding.md` — the mandatory after-action email this
+  boundary also applies to.
+- `backend/prod_issues/issue-193-postmark-bounce-synthetic-test-domains.md`,
+  `backend/prod_issues/issue-194-postmark-suppression-substring-match-drops-real-recipients.md` —
+  the incidents that shaped the current substring-matching rules in the suppression list.

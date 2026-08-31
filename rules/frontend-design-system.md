@@ -1,9 +1,3 @@
----
-description: Agent rule — YourApp frontend design system
-globs: *
-alwaysApply: false
----
-
 # Agent rule — YourApp frontend design system
 
 **Status:** Canonical · **Created:** 4 August 2026 (C381) · **Applies to:** every agent surface

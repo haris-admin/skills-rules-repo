@@ -1,0 +1,56 @@
+---
+description: Privilege-change blast-radius audit (all agents)
+globs: *
+alwaysApply: false
+---
+
+# Privilege-change blast-radius audit (all agents)
+
+Applies whenever a change alters *which role/identity* an application, worker, or job connects
+with — not just what that role can do for the one code path the original bug report named.
+
+## Why this exists
+
+C317 (22 Jul 2026) fixed issue-153 by moving the backend from the RDS master user (`yourapp`,
+which implicitly bypasses RLS) to `yourapp_app` (deliberately non-owner, `NOBYPASSRLS`). That fix
+was correct and necessary — but it also silently broke two things nobody had scoped in the
+original change:
+
+- **issue-176**: `a081_enable_rls_public_tables.py` had enabled RLS with *zero policies* on 17
+  tables, explicitly reasoning that "the backend connects as the table owner and therefore
+  bypasses RLS." That assumption held for every day this project existed — until C317 made it
+  false, and every one of those 17 tables (including `stripe_webhook_events`, `feature_tiers`,
+  `entity_documents`) went from readable to fully blocked, for every customer, at once.
+- **issue-178**: the scheduled backup Lambda's `pg_dump` call needed the exact same RLS-bypass
+  accommodation C317's own design (D317.05) had already written and tested — but the *deployed*
+  Lambda code predated that fix, so backups started failing the moment the role split cutover
+  went live.
+
+Both were entirely foreseeable from "we are removing this role's implicit RLS bypass" — but the
+original change's scope was written around the one symptom (issue-153's bogus-agency probe), not
+around every code path that depended on the old role's privileges.
+
+## Rules
+
+1. **Before cutting over which role an app/worker/job connects as, enumerate every table with
+   `relrowsecurity = true`** (`SELECT relname, relrowsecurity, relforcerowsecurity FROM pg_class
+   WHERE relkind = 'r' AND relrowsecurity`) and cross-reference against `pg_policies` — any table
+   with RLS enabled and **zero** policies is invisible to any non-owner, non-bypass role the
+   moment the cutover lands. This is not limited to the tables the original bug mentioned.
+2. **Enumerate every process that connects to the database directly** — not just the running web
+   app. Scheduled Lambdas, background workers, one-off scripts, and CI/migration jobs all need the
+   same audit. `grep` for the connection-string env var name across `infra/`, not just `backend/`.
+3. **"Local code has the fix" is not the same as "the deployed artifact has the fix."** If a
+   Lambda/worker's *code* already anticipates the privilege change (as issue-178's did, correctly,
+   per D317.05), that is not evidence the *deployed* version matches — see
+   `deployed-vs-local-code-parity.md`.
+4. **Write the audit into the change's own `design.md`/`tasks.md`**, not just into the
+   post-incident prod-issue doc. The goal is catching this before cutover, not writing a good
+   retrospective after.
+
+## Related
+
+- [issue-176](../../backend/prod_issues/issue-176-a081-rls-policy-gap-blocks-yourapp-app-after-role-split.md)
+- [issue-178](../../backend/prod_issues/issue-178-rds-backup-lambda-stale-deploy-missing-rls-bypass.md)
+- [C317](../../openspec/changes/317-issue-153-rls-role-split/) — the change whose scope should have
+  included this audit from the start

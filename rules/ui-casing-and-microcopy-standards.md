@@ -1,0 +1,37 @@
+# UI Casing & Microcopy Standards (all agents)
+
+Canonical: `docs/agent_rules/ui-casing-and-microcopy-standards.md` · Antigravity: `.agents/rules/ui-casing-and-microcopy-standards.md` · Cursor: `.cursor/rules/ui-casing-and-microcopy-standards.mdc`
+
+Applies whenever building or editing frontend components (`frontend/app/`, `frontend/components/`, `frontend/lib/`), reviewing copy, or formatting backend enums for user-facing display.
+
+---
+
+## 1. Single Source of Truth for Labels & Actions
+- **Never duplicate enum dictionaries in page sub-files** (e.g. `page-helpers.ts`). All audit actions, record types, and platform actions must resolve through canonical helpers in `frontend/lib/` (`auditTrailDisplay.ts`, `platformAuditDisplay.ts`).
+- **Defensive Normalization**: Any string fallback formatting function MUST apply `.toLowerCase()` before title-casing (e.g., `raw.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())`), ensuring unrecognized backend uppercase snake_case strings never scream in all-caps in the UI.
+
+---
+
+## 2. Typography & Casing Hierarchy
+- **Page Titles & Card Headers**: Use clean **Title Case** (`Regulatory Readiness Score`, `Priority Action Items`, `Recent Activity`).
+- **Never apply CSS `textTransform: 'uppercase'` to sentences, questions, or conversational headlines**:
+  - ❌ `REACH 80% — WHAT'S NEEDED?`
+  - ❌ `AUDITOR VERIFICATION COMMENTARY & DETAILS`
+  - ✅ `Priority Action Items`
+  - ✅ `Auditor Verification Commentary & Details`
+- **Uppercase is restricted strictly to**:
+  1. Small table header cells (`<th>STATUS</th>`, `<th>DATE</th>`) with tracked letter spacing (`letterSpacing: '0.05em'`).
+  2. Short 2–4 letter acronym status tags/badges (`AML`, `CTF`, `SMR`, `TTR`, `KYC`, `KYB`, `UBO`, `PEP`).
+
+---
+
+## 3. Professional Microcopy & Tone
+- **"Your Virtual Compliance Officer"**: Copy must be authoritative, professional, executive, and actionable.
+- **No Gamification or Arbitrary Thresholds**: Do not instruct users to target partial "passing grades" (e.g. *"Reach 80%"*). Use outcome-oriented compliance language (*"Priority Action Items"*, *"Required Compliance Actions"*, *"Next Steps for Full Readiness"*).
+- **Dynamic State Awareness**: When all compliance criteria or gates pass, display clear affirmation (*"All 5 compliance gates passing — agency posture is in good standing."*).
+
+---
+
+## 4. Stage-Gate Enforcement
+- Run `npm run audit:ui-casing` before submitting any frontend change.
+- Automated guardrails in `frontend/tests/unit/app/ui-casing-and-copy.test.ts` must pass 100%.

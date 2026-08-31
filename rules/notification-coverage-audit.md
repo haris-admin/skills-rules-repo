@@ -1,9 +1,3 @@
----
-description: Notification / reminder coverage audit (all agents)
-globs: *
-alwaysApply: false
----
-
 # Notification / reminder coverage audit (all agents)
 
 Applies when adding a new `event_type` to `ComplianceCalendarEvent`, a new

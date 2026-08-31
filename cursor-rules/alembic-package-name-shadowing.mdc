@@ -1,0 +1,64 @@
+---
+description: `backend/alembic/` shadows the real installed `alembic` PyPI package (all agents)
+globs: *
+alwaysApply: false
+---
+
+# `backend/alembic/` shadows the real installed `alembic` PyPI package (all agents)
+
+## Why this exists
+
+This repo's own Alembic migrations directory is named `alembic` (`backend/alembic/`, with its own
+`__init__.py` — required for `alembic/versions/*.py` to be discoverable). Whenever `backend/` is
+on `sys.path` ahead of site-packages — which is exactly the case both under `pytest` (run from
+`backend/`) and `python -m app.core.schema_contract` (also run from `backend/`) — a plain
+`import alembic` or `import alembic.config` resolves to **this repo's own migrations directory**,
+not the real installed `alembic` library. `alembic.config`, `alembic.script`, etc. don't exist
+under the local package, so the import raises `ModuleNotFoundError: No module named
+'alembic.config'` — a confusing error that looks like a missing dependency, not a naming collision.
+
+Confirmed the hard way (24 Jul 2026, issue-187): `backend/app/core/schema_contract.py`'s fix for a
+hardcoded stale `EXPECTED_REVISION` literal first tried `from alembic.config import Config;
+from alembic.script import ScriptDirectory` to resolve the real Alembic head dynamically. This
+failed under both `pytest` and the module's own `python -m` invocation with exactly this error.
+Verify the collision yourself:
+
+```bash
+cd backend
+poetry run python -c "import alembic; print(alembic.__file__)"
+# -> .../backend/alembic/__init__.py  (the LOCAL migrations dir, not site-packages)
+poetry run python -c "import alembic.config"
+# -> ModuleNotFoundError: No module named 'alembic.config'
+```
+
+## Rules
+
+1. **Never write `import alembic.config`, `import alembic.script`, or any other
+   `alembic.<submodule>` import inside application code that might run from the `backend/`
+   directory** (tests, scripts invoked via `python -m`, etc.). It will intermittently fail
+   depending on `sys.path` ordering, and when it fails the error message gives no hint that the
+   real cause is a same-name local package.
+2. **If you need Alembic's own API** (e.g. to resolve the real migration head, inspect the
+   migration graph, or call `command.upgrade()` programmatically), either:
+   - Run the real `alembic` CLI as a subprocess (`subprocess.run(["poetry", "run", "alembic",
+     "heads"], cwd=backend_root, ...)`) — this is what actually invokes the installed package
+     correctly, since the CLI entry point's own import context differs from an in-process import
+     from `backend/`; or
+   - Parse `alembic/versions/*.py`'s `revision`/`down_revision` module-level assignments directly
+     via `ast` (no import at all) — this is what `backend/app/core/schema_contract.py`'s
+     `_resolve_expected_revision()` does, and is the pattern to copy for anything needing "what is
+     the real head" without executing migration code.
+3. **If you hit `ModuleNotFoundError: No module named 'alembic.<x>'` anywhere in this backend**,
+   check `python -c "import alembic; print(alembic.__file__)"` first before assuming the
+   dependency is missing or needs reinstalling — it is very likely this collision, not a missing
+   package.
+4. **Do not rename `backend/alembic/`** as a "fix" — that's Alembic's own required convention
+   (`script_location = alembic` in `alembic.ini`) and changing it would be a much larger, riskier
+   change than avoiding the collision in application code.
+
+## Related
+
+- [issue-187](../../backend/prod_issues/issue-187-schema-contract-expected-revision-hardcoded-stale-literal.md) —
+  where this was found and fixed
+- `backend/app/core/schema_contract.py::_resolve_expected_revision()` — the reference pattern for
+  reading migration state without importing `alembic.*`

@@ -1,0 +1,84 @@
+---
+description: Valid Red, and guard tests that are not vacuous
+globs: *
+alwaysApply: false
+---
+
+# Valid Red, and guard tests that are not vacuous
+
+**Scope:** every TDD cycle, every agent. Detail for
+`docs/agent_rules/openspec-tdd-mandate.md` §4, which owns the Red → Green → Refactor mandate
+itself.
+
+## Why this exists
+
+Added 12 Aug 2026 (C405). The TDD mandate said to confirm Red for the right reason —
+"the expected assertion failure, **not an import error** or crash". That wording is wrong for a
+case that is completely normal in this repo, and an agent following it literally would either
+reject a correct Red or contort a test to produce a cosmetic assertion failure.
+
+## Rule 1 — Valid Red is "the failure names the thing you are about to build"
+
+Not "the failure is an `AssertionError`". The exception class is not the test.
+
+**These are correct Red:**
+
+| Failure | Why it is valid |
+|---|---|
+| `FileNotFoundError: …a167_db_index_query_hygiene_round_2.py` | The migration under test does not exist yet — C405 T405.01 |
+| `ImportError: cannot import name 'MatterPartyCompact'` (at collection) | The schema the change introduces does not exist yet — C405 T405.06 |
+| `AssertionError: 4 != 2` | Behaviour exists but is wrong — the classic case |
+| `AttributeError: module has no attribute 'list_parties_for_matters'` | The function under test is not written yet |
+
+C330's `tests/migrations/test_a146_indexes.py` behaves identically and has since July. This is the
+established pattern here, not an exception.
+
+**These are NOT valid Red — fix the test, then re-run:**
+
+- A typo in the test, or a wrong import path to something that *does* exist.
+- A broken or missing fixture (`fixture 'seed_matter_c11' not found`) — C405 hit this and fixed the
+  fixture rather than accepting the failure.
+- A collection error in an unrelated module.
+- A crash from bad test data that would fail identically after the change ships.
+
+**The question to ask:** *will this exact failure disappear because of the thing I am about to
+build, and for no other reason?* If yes, it is Red. If you cannot say, it is not.
+
+## Rule 2 — A guard test must be proven non-vacuous before you trust it
+
+A test asserting "nothing is broken" passes identically when it is checking nothing at all. Its
+Green is not evidence until you have watched it go Red.
+
+**Make it fail on purpose, then restore.** C405's drift guard
+(`test_every_agency_scoped_table_has_a_leading_agency_id_index`) enumerates every `agency_id`
+table and asserts each has a leading-`agency_id` index. To prove it worked:
+
+```bash
+# drop one index on the disposable migrated Postgres
+psql -c "DROP INDEX ix_training_modules_agency_id;"
+pytest …::test_every_agency_scoped_table_has_a_leading_agency_id_index -m integration
+# → 1 failed, and the message names ['training_modules']
+psql -c "CREATE INDEX ix_training_modules_agency_id ON training_modules (agency_id);"
+```
+
+Two things must hold, not one:
+
+1. It **fails** when the invariant is broken.
+2. It **names the offender** in the assertion message. A guard that fails with a bare
+   `assert [] == [...]` sends the next person hunting; C405's prints the offending table names and
+   why they matter.
+
+Record the deliberate-failure check in the change's `tasks.md` completion log. A guard nobody has
+watched fail is not known to work.
+
+## Applies especially to
+
+Invariant/contract/coverage-style tests: "every table has X", "every endpoint enforces Y", "no file
+contains Z", static `fs.readFileSync` guardrails, and any test whose happy path is an empty list.
+These are the highest-value tests in the repo and the easiest to write vacuously.
+
+## Related
+
+- `docs/agent_rules/openspec-tdd-mandate.md` — the Red → Green → Refactor mandate
+- `docs/agent_rules/test-doubles-vs-assertions.md` — when a test may legitimately be touched
+- `.claude/skills/prod-db-perf-audit/SKILL.md` Step 5e — leave a drift guard behind, not just a fix

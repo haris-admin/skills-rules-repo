@@ -1,0 +1,53 @@
+---
+description: SES after-action email encoding (agent rule)
+globs: *
+alwaysApply: false
+---
+
+# SES after-action email encoding (agent rule)
+
+Canonical helper: `scripts/send_after_action_email.py`
+
+## Problem (recurring)
+
+Production after-action emails arrived in Gmail with literal `\n` and `\u2014` instead of
+line breaks and em dashes (v0.5.67, v0.5.68, v0.5.70, v0.5.71). Recipients saw escaped
+garbage, not HTML.
+
+## Root cause
+
+Agents ran `json.dumps(html)` (or equivalent) and then passed the result into AWS CLI
+shorthand:
+
+```bash
+# BROKEN — double-escapes newlines/Unicode into the SES Data field
+aws ses send-email --message "Body={Html={Data=$(python3 -c 'import json; print(json.dumps(html))'),Charset=utf-8}}"
+```
+
+SES then delivered those escape sequences as plain characters.
+
+## Required fix
+
+1. Write **real UTF-8 HTML** to a file (heredoc with real newlines is fine).
+2. Send only via:
+
+```bash
+python3 scripts/send_after_action_email.py \
+  --subject "YourApp Production After-Action — vX.Y.Z (ALL SYSTEMS GREEN)" \
+  --html-file /tmp/after-action.html
+```
+
+The helper builds the SES JSON payload **once** with `json.dump` and calls
+`aws ses send-email --cli-input-json file://… --profile yourapp --region ap-southeast-2`.
+
+## Forbidden
+
+- `json.dumps(html)` into `--message "Body={Html={Data=…}}"`
+- Any shell packing of HTML into the SES shorthand `--message` string
+- Skipping the helper “just this once”
+
+## Skills / docs that reference this
+
+- `.claude/skills/post-deploy-checklist/SKILL.md`
+- `.claude/skills/release-frontend/SKILL.md` Step 7
+- `CLAUDE.md` § Deployment after-action email

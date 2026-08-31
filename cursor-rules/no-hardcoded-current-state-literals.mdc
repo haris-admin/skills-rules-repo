@@ -1,0 +1,69 @@
+---
+description: No hardcoded "current state" literals in checks (all agents)
+globs: *
+alwaysApply: false
+---
+
+# No hardcoded "current state" literals in checks (all agents)
+
+## Why this exists
+
+The same bug shape hit this repo twice in one session (24 Jul 2026):
+
+1. **`backend/audit_contracts.json` / `test_audit_service.py`'s enum-count assertions** —
+   `test_audit_action_type_enum_has_60_migration_003_values` hardcoded `assert len(...) == 158`.
+   The moment a later change (C333) added 7 new `AuditActionType` values, this assertion went
+   stale and failed — not because anything was wrong, but because nobody updates a hardcoded count
+   when they add an enum value in a completely different file.
+2. **`backend/app/core/schema_contract.py`'s `EXPECTED_REVISION = "a146"`** — hardcoded at the time
+   C331 shipped, when `a146` was genuinely the Alembic head. Migrations `a147`-`a150` landed in
+   later, unrelated sessions with no reason to know this file needed updating. The literal going
+   stale **blocked a real production deploy** with a false failure (see
+   [issue-187](../../backend/prod_issues/issue-187-schema-contract-expected-revision-hardcoded-stale-literal.md)).
+
+Both are instances of the same anti-pattern: a check that means "does X match the current state of
+Y" was implemented by writing down today's value of Y as a literal, instead of computing it from Y
+itself. The check then silently diverges from reality every time Y changes somewhere else, and the
+person changing Y usually has no reason to know this check exists.
+
+## Rule
+
+When writing a test, verifier, or deploy-time gate that means "the current head/count/set of X":
+
+1. **Prefer deriving the value from the actual source of truth**, not hardcoding it. Concretely:
+   - "The current Alembic head" → parse `alembic/versions/*.py`'s revision chain (see
+     `docs/agent_rules/alembic-package-name-shadowing.md` for how to do this without an import
+     collision), or shell out to the real `alembic heads` command — not a literal revision ID.
+   - "The current count of enum values" → `len(SomeEnum)` compared against a computed baseline
+     (e.g. a previous count plus an itemised list of the specific additions since, so the
+     diff is reviewable), not a bare hardcoded integer with no way to tell why it's that number.
+   - "The current set of registered X" → enumerate X programmatically (AST-parse route decorators,
+     walk a directory, introspect a registry) and diff against what's declared, rather than listing
+     every X by hand somewhere that has to be kept in sync manually.
+2. **If deriving the value truly isn't practical**, pair the hardcoded literal with a test that
+   cross-checks it against an independent computation of the real value (not the same logic under
+   test — an actual independent source, like running the real CLI as a subprocess). This is a
+   fallback, not the first choice — `test_expected_revision_matches_real_alembic_head_not_a_stale_literal`
+   in `backend/tests/test_c331_schema_contract.py` is the reference pattern if this is genuinely
+   the only option.
+3. **Before adding a new enum value, migration, route, or registered entity anywhere in this repo,
+   check whether an existing hardcoded count/list elsewhere needs updating.** `grep` for the
+   plural/count-shaped assertion pattern (`len(...) ==`, `EXPECTED_*`, a bare integer next to
+   "count"/"total"/"head") in the area you're touching before assuming your change is isolated.
+4. **A failing test that says "expected N, got N+k" where k matches exactly what you just added
+   elsewhere is a strong signal you've hit this pattern** — the fix is almost always to update the
+   hardcoded expectation to match the new, legitimate reality (with a comment explaining the
+   addition), not to silently work around the test.
+
+## Related
+
+- [issue-187](../../backend/prod_issues/issue-187-schema-contract-expected-revision-hardcoded-stale-literal.md) —
+  the `schema_contract.py` instance
+- `backend/tests/services/test_audit_service.py` — the enum-count instance (see the itemised
+  comment list above `assert len(migration_003_types) == ...` for the pattern of keeping a
+  hardcoded count reviewable even when full derivation isn't done)
+- `docs/agent_rules/alembic-package-name-shadowing.md` — the specific technique used to derive the
+  Alembic head without a hardcoded literal
+- `docs/agent_rules/openspec-tdd-mandate.md` — this rule is a specialisation of "tests come from
+  requirements, not from code": a hardcoded literal here is a proxy for the requirement, not the
+  requirement itself

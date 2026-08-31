@@ -1,0 +1,69 @@
+---
+description: Terraform prod-apply safety (all agents)
+globs: *
+alwaysApply: false
+---
+
+# Terraform prod-apply safety (all agents)
+
+Applies to any `terraform plan` or `terraform apply` run against `infra/aws/environments/prod`
+(or any other live environment directory).
+
+## Why this exists
+
+issue-238 (22 Jul 2026): a plain, untargeted `terraform apply` would have destroyed the GitHub
+Actions OIDC provider/role and stripped the live Redis AUTH token — both delivered the same night
+by C318 — because `manage_github_oidc` and `redis_enable_auth_token` default `false` in the
+tracked `.tf` files, but were applied as `true` via one-off `-var` command-line flags that were
+never persisted. Nobody would have seen this coming from reading the code; it only showed up in a
+full, untargeted `terraform plan`.
+
+## Rules
+
+1. **Before any `apply` — including a scoped/targeted one — run a full, untargeted `terraform
+   plan` first** and read the `Plan:` summary line. Never trust a targeted plan's summary as
+   proof the wider environment is safe; targeted plans only tell you about the resources you
+   named.
+2. **Any `will be destroyed` on a resource tagged for a live environment is a hard stop.** Do not
+   apply until you understand exactly why, and confirm with the human before proceeding. This
+   includes provider/role/replication-group resources gated by a `count = var.x ? 1 : 0` pattern —
+   these are the most common source of silent destroys, because the boolean's *default* usually
+   describes the pre-change world, and someone applied the *true* case once via `-var` without
+   persisting it.
+3. **When a change is applied via `-var`/`TF_VAR_*` instead of a committed `.tfvars` value, that
+   is not "done" until the flag is persisted** (a new `*.auto.tfvars` file is a safe way to do
+   this without touching an existing, possibly-sensitive `terraform.tfvars`) or the value is
+   sourced from somewhere Terraform can read on every future run (e.g. a Secrets Manager data
+   source), so a routine future apply — by anyone, or an automated drift-detection job — can't
+   revert it.
+4. **A secret-valued variable with no safe default is itself a landmine.** If a variable like an
+   auth token has `default = null` and no other mechanism supplies it, *every* future plan/apply
+   that doesn't explicitly pass it will try to null it out. Prefer sourcing the current value from
+   Secrets Manager over relying on someone remembering `-var` forever (see
+   `credential-rotation-safety.md` for the read-vs-write-scope pattern used for this).
+5. **Splitting a monolithic `.tf` file into topic files is always safe** (Terraform doesn't care
+   about file boundaries) as long as no resource/module block is renamed — verify with
+   `terraform plan` before and after and confirm the `Plan:` line is identical. Converting inline
+   resources into new *modules* is a different, much riskier operation (changes resource
+   addresses, needs `terraform state mv` per resource) — treat that as a proper OpenSpec change
+   with a written plan, not something to do live during an incident.
+
+## Quick check before any prod apply
+
+```bash
+cd infra/aws/environments/<env>
+terraform plan -input=false -compact-warnings -no-color | grep -E "^Plan:|will be destroyed"
+```
+
+If this shows anything other than the destroys you already expect and have explicitly signed off
+on, stop.
+
+## Related
+
+- [issue-238](../../prod_issues/issue-238-terraform-tfvars-oidc-redis-auth-drift-would-destroy-on-apply.md)
+- [issue-239](../../prod_issues/issue-239-terraform-oidc-redis-auth-drift-fixed-durably.md)
+- [issue-237](../../prod_issues/issue-237-synthetics-canaries-state-drift-never-started.md) — the
+  same review that surfaced issue-238, via the same "run the full plan, not just a targeted one" habit
+- [issue-173](../../prod_issues/issue-173-terraform-drift-cron-never-runs-default-branch-mismatch.md) —
+  the still-open gap (no automated drift detection) that let all of the above go unnoticed until a
+  human manually ran a full plan

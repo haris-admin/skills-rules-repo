@@ -1,9 +1,3 @@
----
-description: Backend startup / config diagnostics (all agents)
-globs: *
-alwaysApply: false
----
-
 # Backend startup / config diagnostics (all agents)
 
 Applies when the backend won't start, a preflight/settings check fails, auth
