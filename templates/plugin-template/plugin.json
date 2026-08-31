@@ -1,0 +1,6 @@
+{
+  "name": "plugin-template",
+  "description": "Template structure for creating reusable Antigravity plugins bundling skills, rules, hooks, and MCP servers.",
+  "version": "1.0.0",
+  "author": "Haris Habib"
+}

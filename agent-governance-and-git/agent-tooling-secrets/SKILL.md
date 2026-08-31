@@ -1,0 +1,14 @@
+---
+name: agent-tooling-secrets
+description: Set up and maintain multi-agent ignore files (.cursorignore, .geminiignore, permissions.deny) to protect credentials.
+---
+
+# Agent Tooling Secrets Protection
+
+## Implementation
+Ensure every repository contains:
+- `.gitignore`: Standard git exclusions.
+- `.cursorignore`: Cursor indexing exclusions.
+- `.geminiignore` / `.antigravityignore`: Gemini/Antigravity file viewing exclusions.
+- Block all `*.env*`, `*.pem`, `*credentials*`, and `*.tfstate` files across all agents.
+

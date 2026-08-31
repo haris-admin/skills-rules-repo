@@ -1,0 +1,5 @@
+# Workspace Rules
+
+- Follow the coding guidelines defined in the project's `.agents/rules/` directory.
+- Use skills registered in `.agents/skills.json` for specialized workflows.
+- Always run local tests and linting before committing code.

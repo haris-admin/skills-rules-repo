@@ -1,0 +1,16 @@
+---
+description: Generate high-quality, text-free editorial hero images and campaign visuals using Gemini Image Generation.
+globs: *
+alwaysApply: false
+---
+
+# Gemini Image Generation
+
+## Style Guidelines
+1. **Editorial Heroes**: Photorealistic, natural lighting, high dynamic range, text-free.
+2. **Aspect Ratios**:
+   - Blog / Website Hero: `16:9`
+   - Social Feed (LinkedIn, X, Facebook): `1:1` or `4:5`
+   - Vertical Stories / Reels: `9:16`
+3. **Prompting Rules**: Focus on tangible scene geometry, subtle atmospheric tone, and avoid synthetic AI cliches.
+

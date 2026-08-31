@@ -1,0 +1,8 @@
+# Agent Instructions
+
+## Project Overview
+Describe your project and core architecture here.
+
+## Guidelines
+- Follow standardized patterns for frontend, backend, and testing.
+- Refer to skills in `.agents/skills/` or inherited from `skills-rules-repo`.

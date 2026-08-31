@@ -1,0 +1,15 @@
+---
+name: aws-toolkit-efficiency
+description: Manage AWS cloud infrastructure, IAM profiles, CloudWatch telemetry, and EC2/ECS deployments with safety and cost-efficiency.
+---
+
+# AWS Toolkit Efficiency
+
+## Profile Discipline
+- Always use explicit named profiles (e.g. `--profile <app-name>`). Never rely on default system profiles which may target personal or unrelated accounts.
+
+## Infrastructure Management
+1. **IaC First**: Manage all AWS infrastructure via Terraform or CloudFormation.
+2. **CloudWatch Logs Insights**: Use structured log queries for multi-day incident investigations.
+3. **Least Privilege**: Grant IAM permissions scoped to specific ARNs and services.
+

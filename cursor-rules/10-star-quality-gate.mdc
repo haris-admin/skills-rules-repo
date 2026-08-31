@@ -1,0 +1,18 @@
+---
+description: Review user experience and software workflows against an 8-dimension, 1-10 quality rubric inspired by Airbnb's product design framework.
+globs: *
+alwaysApply: false
+---
+
+# 10-Star Experience Quality Gate
+
+## The 8 Dimensions
+1. **First-Glance Clarity**: Can a new user understand the status/purpose in under 3 seconds?
+2. **Speed & Latency**: Sub-second interactions; instant optimistic UI updates where safe.
+3. **Error Resilience**: User-friendly, actionable error messages rather than raw stack traces.
+4. **Information Density**: Clean typography, consistent hierarchy, and zero cluttered noise.
+5. **Microcopy Precision**: Professional, executive tone; no colloquialisms or informal phrasing.
+6. **Accessibility & Contrast**: Strict compliance with 4.5:1 text and 3:1 non-text contrast ratios.
+7. **Deep-Link Completeness**: Every alert, notification, or audit item links directly to its source.
+8. **Operational Transparency**: Clear audit trails and visibility for all automated actions.
+

@@ -1,0 +1,14 @@
+---
+description: Produce high-converting short video assets, product walkthroughs, and narrated social reels.
+globs: *
+alwaysApply: false
+---
+
+# Video & Voiceover Asset Pipeline
+
+## Workflow
+1. **Script Drafting**: Write clear, punchy narration with timestamp markers.
+2. **Voiceover Generation**: Generate natural, professional audio narration with speech synthesis.
+3. **Visual Composition**: Combine video background plates with branding overlays and synchronized subtitles.
+4. **Quality Gates**: Measure audio loudness (-14 LUFS standard) and aspect ratio conformance with `ffprobe`.
+

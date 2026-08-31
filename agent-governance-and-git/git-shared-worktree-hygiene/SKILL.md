@@ -1,0 +1,13 @@
+---
+name: git-shared-worktree-hygiene
+description: Safe git workflows for multi-agent environments: pathspec-only staging, milestone commits, and push protection.
+---
+
+# Git Shared Worktree Hygiene
+
+## Mandates
+1. **Pathspec Staging**: Never run bare `git add .` or `git commit -a`. Always explicitly specify the exact files you modified (`git add <file1> <file2>`).
+2. **Milestone Local Commits**: Commit locally after completing logical milestones (phases/components) to maintain clean restore points.
+3. **No Unprompted Pushes**: Never push to remote (`git push origin <branch>`) without an explicit user instruction.
+4. **Commit Message Quality**: Use structured conventional commits (`feat:`, `fix:`, `chore:`, `test:`, `docs:`).
+

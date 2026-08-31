@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/haris-admin/skills-rules-repo/main/schemas/skills.schema.json",
+  "inherits": [
+    {
+      "path": "/Users/harishabib/code/github/haris-admin/skills-rules-repo/.agents/skills.json",
+      "description": "Inherit all centralized skills and rules from skills-rules-repo"
+    }
+  ],
+  "entries": [
+    {
+      "path": ".agents/skills"
+    }
+  ]
+}

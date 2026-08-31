@@ -1,0 +1,13 @@
+---
+name: external-api-integration
+description: Mandatory contract validation and error handling for third-party API providers (Stripe, Dilisense, Veriff, SendGrid, etc.).
+---
+
+# External API Integration Contract
+
+## Rules
+1. **Pre-Flight Input Validation**: Validate all required parameters (IDs, formats, non-empty strings) locally BEFORE initiating network requests. Never call an external provider with missing or invalid parameters.
+2. **Operational Error Visibility**: Expected client validation errors (400, 404, 422) must be handled gracefully in UI layers and excluded from Sentry P1 alerts.
+3. **Resilience & Timeouts**: Always specify explicit connection and read timeouts on HTTP clients.
+4. **Audit Trail Logging**: Record all outbound integration requests and responses (with PII redacted) in an audit log.
+

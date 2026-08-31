@@ -1,0 +1,13 @@
+---
+name: backend-diagnostics
+description: Systematic protocol for isolating 500 errors, database connection failures, migration locks, and auth token exchange issues.
+---
+
+# Backend Diagnostics
+
+## Triage Protocol
+1. **Health Check**: Verify `/healthz` and database connectivity.
+2. **Config Verification**: Assert environment variable presence and type conformance at startup.
+3. **Auth Exchange**: Inspect JWT claims, expiration, issuer matching, and tenant context propagation.
+4. **Log Inspection**: Correlate request IDs across API gateway, FastAPI handlers, and background worker queues.
+

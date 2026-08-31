@@ -1,0 +1,15 @@
+---
+description: Conduct a structured, probing question-and-answer session with the user to eliminate ambiguity before implementation.
+globs: *
+alwaysApply: false
+---
+
+# Grill-Me
+
+## Workflow
+When a task involves open-ended architecture, data migrations, or UI tradeoffs:
+1. Identify all underspecified assumptions.
+2. Ask targeted, multiple-choice or direct questions one decision at a time.
+3. Record approved decisions directly in the implementation plan.
+4. Never assume user intent on breaking changes or data contracts.
+

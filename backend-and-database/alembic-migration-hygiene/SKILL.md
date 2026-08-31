@@ -1,0 +1,13 @@
+---
+name: alembic-migration-hygiene
+description: Best practices for writing zero-downtime, reversible database migrations with SQLAlchemy and Alembic.
+---
+
+# Alembic Migration Hygiene
+
+## Standards
+1. **Reversibility**: Every `upgrade()` must have a fully implemented, working `downgrade()`.
+2. **Online Schema Changes**: Add columns as nullable first; backfill in chunks; add constraints subsequently.
+3. **Package Isolation**: Prevent module namespace shadowing between local migration folders and third-party packages.
+4. **Native Enums**: Create and register database-native enum types explicitly in migration scripts.
+
