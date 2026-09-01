@@ -82,21 +82,25 @@ skills-rules-repo/
 | **[](./skills/1password/SKILL.md)** | Set up and use 1Password CLI (op). Use when installing the CLI, enabling desktop app integration, signing in (single ... | [Cli Examples](./skills/1password/references/cli-examples.md) |
 | **[](./skills/accessibility/SKILL.md)** | Design, implement, and audit inclusive digital products using WCAG 2.2 Level AA | - |
 | **[](./skills/ai-regression-testing/SKILL.md)** | Regression testing strategies for AI-assisted development. Sandbox-mode API testing without database dependencies, au... | - |
+| **[](./skills/alt-funding-sparktoro-model/SKILL.md)** | Evaluate and draft SparkToro-style alternative funding — a non-VC angel raise (profit-share LLC/unit structure, ... | [Sparktoro Model Mechanics](./skills/alt-funding-sparktoro-model/references/sparktoro-model-mechanics.md) |
 | **[](./skills/api-design/SKILL.md)** | >- | [Rest Guidelines](./skills/api-design/references/rest-guidelines.md) |
 | **[](./skills/api-endpoints/SKILL.md)** | > | - |
 | **[](./skills/apple-notes/SKILL.md)** | Manage Apple Notes via the `memo` CLI on macOS (create, view, edit, delete, search, move, and export notes). Use when... | - |
 | **[](./skills/apple-reminders/SKILL.md)** | Manage Apple Reminders via the `remindctl` CLI on macOS (list, add, edit, complete, delete). Supports lists, date fil... | - |
+| **[](./backend-and-database/backend-doctor/SKILL.md)** | Diagnose a Python backend (FastAPI, Django, Flask, or similar) that won't start, fails auth/JWT verification, can't ... | - |
 | **[](./skills/bear-notes/SKILL.md)** | Create, search, and manage Bear notes via grizzly CLI. | - |
 | **[](./skills/bird/SKILL.md)** | X/Twitter CLI for reading, searching, posting, and engagement via cookies. | - |
 | **[](./research/blogwatcher/SKILL.md)** | Monitor blogs and RSS/Atom feeds for updates using the blogwatcher CLI. | - |
 | **[](./skills/blucli/SKILL.md)** | BluOS CLI (blu) for discovery, playback, grouping, and volume. | - |
 | **[](./skills/bluebubbles/SKILL.md)** | Build or update the BlueBubbles external channel plugin for OpenClaw (extension package, REST send/probe, webhook inb... | - |
+| **[](./skills/building-an-exo/SKILL.md)** | Apply ExO 3.0, the Intelligence Stack, and the REWRITE Playbook (OS Outline v25) to redesign a firm around AI. Use ... | [V25 Deltas](./skills/building-an-exo/references/v25-deltas.md) |
 | **[](./skills/camsnap/SKILL.md)** | Capture frames or clips from RTSP/ONVIF cameras. | - |
 | **[](./skills/canvas/SKILL.md)** | Display HTML content, games, interactive visualizations, and dashboards on connected OpenClaw nodes (Mac app, iOS, An... | - |
 | **[](./skills/clawhub/SKILL.md)** | Use the ClawHub CLI to search, install, update, and publish agent skills from clawhub.com. Use when you need to fetch... | - |
 | **[](./skills/code-review/SKILL.md)** | >- | [Checklist](./skills/code-review/references/checklist.md) |
 | **[](./skills/codebase-memory/SKILL.md)** | Build and query a persistent mental model of the codebase — architecture, patterns, dependencies, and conventions — s... | - |
 | **[](./skills/coding-agent/SKILL.md)** | Run Codex CLI, Claude Code, OpenCode, or Pi Coding Agent via background process for programmatic control. | - |
+| **[](./content-growth-and-media/copywriting/SKILL.md)** | Write marketing copy for any page type: landing pages, product pages, about pages, sales pages, ads, and more. ... | - |
 | **[](./skills/deep-research/SKILL.md)** | Conduct thorough multi-source research on a topic using web search, academic sources, and codebase exploration to pro... | - |
 | **[](./skills/deploy-frontend/SKILL.md)** | > | - |
 | **[](./skills/discord/SKILL.md)** | Use when you need to control Discord from OpenClaw via the discord tool: send messages, react, post or upload sticker... | - |
@@ -104,6 +108,7 @@ skills-rules-repo/
 | **[](./productivity/docx/SKILL.md)** | Read, parse, and work with DOCX/Word documents — extract content, convert to Markdown, and integrate into project wor... | - |
 | **[](./skills/e2e-testing/SKILL.md)** | Playwright E2E testing patterns, Page Object Model, configuration, CI/CD integration, artifact management, and flaky ... | - |
 | **[](./skills/eightctl/SKILL.md)** | Control Eight Sleep pods (status, temperature, alarms, schedules). | - |
+| **[](./content-growth-and-media/facebook-ads/SKILL.md)** | Create Facebook and Meta ad campaigns, write ad copy, define audiences, and plan budgets. Use when the user asks ... | - |
 | **[](./skills/food-order/SKILL.md)** | Reorder Foodora orders + track ETA/status with ordercli. Never confirm without explicit user approval. Triggers: orde... | - |
 | **[](./skills/frontend-design/SKILL.md)** | Design and implement React UI components with Tailwind CSS, following the Sovereign OS design system and ADHD-friendl... | - |
 | **[](./skills/frontend-jack/SKILL.md)** | Senior frontend developer specializing in React, Next.js, Vue, TypeScript, Tailwind CSS, and modern web development. ... | - |
@@ -150,6 +155,7 @@ skills-rules-repo/
 | **[](./skills/sherpa-onnx-tts/SKILL.md)** | Local text-to-speech via sherpa-onnx (offline, no cloud) | - |
 | **[](./skills/skill-creator/SKILL.md)** | Create or update AgentSkills. Use when designing, structuring, or packaging skills with scripts, references, and assets. | - |
 | **[](./skills/slack/SKILL.md)** | Use when you need to control Slack from OpenClaw via the slack tool, including reacting to messages or pinning/unpinn... | - |
+| **[](./content-growth-and-media/social-content/SKILL.md)** | Create and publish social media posts for Reddit, Twitter/X, LinkedIn, Instagram, Facebook, and TikTok. ... | - |
 | **[](./skills/socratic-concept-bridge/SKILL.md)** | Teases out understanding when the user is stuck rather than providing answers. | - |
 | **[](./media/songsee/SKILL.md)** | Generate spectrograms and feature-panel visualizations from audio with the songsee CLI. | - |
 | **[](./skills/sonoscli/SKILL.md)** | Control Sonos speakers (discover/status/play/volume/group). | - |
