@@ -132,6 +132,13 @@ Uses **SSM send-command** (not tunnel) — psql is installed on the backend EC2 
 
 ## ⚠️ Known Bugs & Fixes
 
+### Ref-DB Sync Worker overnight check (Sep 2026)
+Section 5b (REF-DB SYNC WORKER) scans `/amlhive/backend` CloudWatch logs over the most recent complete overnight window (23:00→05:00 AEST) for `apply_ref_dataset_sync` failures / `ref_db is not initialized` / RuntimeError. Added after the C464 false-PASS incident (worker died nightly with `ref_db is not initialized` while the ASIC cron reported ✅ — the failure line contains neither "Traceback" nor "arq_job_failed", so the generic pattern scan missed it).
+
+**Two CloudWatch pitfalls fixed (Sep 2026):**
+1. **Timezone double-shift:** `NOW` is AEST-aware (`datetime.now(AEST)`); calling `.timestamp()` on an aware datetime already yields the correct UTC epoch. Do NOT subtract the 10h offset again before `.timestamp()` — it silently shifts the query window 10h early (misses 03:15 failures).
+2. **Scan cap on filter-log-events:** a wide (6h) window with a busy log group can silently return 0 even when matches exist later in the window (~10k-event scan cap). The check re-scans in 20-minute slices when the wide query returns nothing. Failure lines appear in the 03:00–03:20 slice.
+
 ### Literal `\n` in Reports (Jul 2026)
 **Root cause:** `build_report()` at line 1839 used `"\\n".join(lines)` — the double backslash produces literal `\n` characters instead of real newlines.
 
