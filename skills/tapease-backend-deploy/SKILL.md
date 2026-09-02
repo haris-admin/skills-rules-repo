@@ -88,6 +88,25 @@ commit + the 7-file bump, no tag.
    `"status":"degraded"` on its own is fine on dev — it only means the OTEL
    collector / Grafana Cloud isn't wired up.
 
+   **If the release changed an endpoint contract** (new query param, field, path,
+   status code), also confirm it is live in the *served* schema — introspect
+   `/openapi.json` with a base64'd Python script piped to `base64 -d | python3`
+   (inline `char()` tricks to dodge SSM `--parameters` quoting are fragile):
+   ```bash
+   SCRIPT='import urllib.request, json
+   d = json.load(urllib.request.urlopen("http://127.0.0.1:8000/openapi.json"))
+   for p, ops in d["paths"].items():
+       if "refunds" in p and "get" in ops:
+           print(p, [q["name"] for q in ops["get"].get("parameters", [])])'
+   B64=$(printf '%s' "$SCRIPT" | base64)
+   PARAMS=$(python3 -c "import json,sys;print(json.dumps({'commands':['docker exec tapease-backend sh -c \"echo $B64 | base64 -d | python3\"']}))")
+   aws ssm send-command --instance-ids i-0f9a6ec659e6aab83 --region ap-southeast-2 \
+     --document-name AWS-RunShellScript --parameters "$PARAMS" --query Command.CommandId --output text
+   ```
+
+5. **If the release changed seed data / fixtures** (dev only): re-run the relevant
+   seeder against the box — see `tapease-db-access`. The deploy script never seeds.
+
 ## SSM gotchas (learned the hard way)
 
 - **`docker logs tapease-backend` over SSM times out** — the container log is huge
@@ -100,6 +119,12 @@ commit + the 7-file bump, no tag.
 - Mutating `psql` / deploy commands over SSM may prompt or be denied — if so, hand
   the user the exact `aws ssm send-command` to run themselves.
 - Always pass `--comment` so the command is identifiable in `aws ssm list-commands`.
+- **Build `--parameters` with `python3 -c 'import json; print(json.dumps({"commands": [...]}))'`**
+  and pass the result as one quoted arg. Raw `'commands=[...]'` with embedded
+  quotes/`$` mangles (same failure class as the 2026-08-29 nginx outage).
+- Connecting a `psql` to the DB from your workstation (not via SSM) — the port map
+  (`5433` docker vs `5433` tunnel vs `5434` prod) and the `.pgpass` classifier
+  workaround are in `tapease-db-access`.
 
 ## The prod boundary
 

@@ -58,6 +58,32 @@ null `clover_shift_id` with `is_clover_synced: true` was the classic symptom.
    Clover shift's `inTime` or Clover returns `400 {"message":"In time cannot be
    after out time"}` and status becomes `pending` (partner sent a bad `shift_end`).
 
+## Inbound datetime handling (v4.2.26)
+
+Every datetime the POS partner sends (`start_time`, `shift_start`, `shift_end`,
+`from_date`, `to_date`) is normalised to **UTC** before it touches a `TIMESTAMP
+WITHOUT TIME ZONE` column or is mirrored to Clover. `app/utils.py` →
+`to_naive_utc(dt, *, assume_tz)` + `resolve_iana_tz(name)`.
+
+| Input form | Handling |
+|---|---|
+| UTC (`Z` / `+00:00`) — what the partner sends today | as-is |
+| Any offset (`+10:00`, `+09:30`, `+08:00`) | offset respected → UTC |
+| Naive / offset-less | interpreted via the request's `timezone` field → then `Australia/Sydney`; for the refund endpoints: `timezone` **query param** → device's latest shift timezone → `Australia/Sydney` |
+
+- `ShiftStartRequest` / `ShiftCloseRequest` have a `model_validator(mode="after")`
+  that localises a naive datetime field using the request's own `timezone` field.
+  A tz-aware value is never overridden.
+- `GET /v1/pos/devices/{serial_no}/refunds/summary` and `/refunds` gained an
+  optional `timezone` query param; `pos_service._resolve_query_tz` picks the zone.
+- **Gotcha**: a refund fixture stored in Sydney wall-clock (`13:15`) is outside a
+  UTC shift window (`03:15`) and `refunds/summary` returns `0`. Store fixtures in
+  UTC — see `tapease-db-access` and the `pos-datetime-utc-normalization` rule.
+- If the partner ever sends a naive timestamp **without** a `timezone` field, it
+  now defaults to `Australia/Sydney`, not UTC.
+
+OpenSpec: `openspec/changes/pos-partner-datetime-normalization/`.
+
 ## Debugging "clover_shift_id is null"
 
 On `i-0f9a6ec659e6aab83` (`tapease-postgres`, db `tapease`):
