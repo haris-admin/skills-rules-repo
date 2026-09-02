@@ -123,6 +123,19 @@ driven by the exit code + stdout, not by in-script SMTP.
 - `524` → verify path (above)
 - Other HTTP errors → alert
 
+## C464 false-PASS incident (Sep 2026) — CRITICAL
+
+**Symptom:** cron prints `✅ Synced 4,002,081 rows (Δ+0)` in ~1.3s every night — but NO real sync has run since Aug 28 (companies) / Aug 26 (business-names).
+
+**Root cause (3 stacked bugs):**
+1. `sync.py` L474-509 (C464 async path): when `detect_reference_dataset_change()` says changed, the API only ENQUEUES an ARQ job `apply_ref_dataset_sync` and returns 200 in ~1s with `skipped=False, enqueued=True, rows_synced=stored_rows` (stale sidecar fingerprint). `reason` unset → cron rendered any `skipped=False` as ✅.
+2. The ARQ worker then fails instantly: `RuntimeError: ref_db is not initialized` — worker startup (`workers/__init__.py` `worker_startup`) never calls `ref_db.init_ref_db()` (API lifespan does, in `main.py`), AND prod `sync_state` table is EMPTY (0 rows) since ref.db rebuild ~Aug 29. 36 failures Aug 29→Sep 2.
+3. `ref_detection.py` `compare_dataset_metadata` (:131-136) compares stored dedup'd `incoming_count` (~4,002,081) vs CKAN datastore raw `total` (4,440,726) → never equal → `changed=True` fires EVERY DAY even when hash/size/last_modified are static (ASIC files are MONTHLY: `company_202609.csv`).
+
+**Evidence (Sep 3):** CloudWatch POST 200 in 743-1588ms (real sync = 10-15 min); worker fail log `apply_ref_dataset_sync(...) failed, RuntimeError: ref_db is not initialized (0.00s)`; ref.db mtime frozen Aug 30 01:22 AEST; `sync_state` empty; both remote CSVs changed upstream (companies Aug 31, business-names Sep 1) but fingerprint `synced_at` never advanced. ACNC unaffected (etag HEAD path, not CKAN).
+
+**Fixes:** backend (main-agent scope): (a) worker startup must init ref_db OR seed `sync_state`; (b) drop `source_record_count` from detection (or store raw count) so unchanged months skip; (c) enqueue response should set `rows_synced=0` + `enqueued=True` and cron keys off `enqueued`. Cron script patched (Sep 3): renders enqueue as `⏳ ENQUEUED (async) — unverified` + `❌` + OVERALL ALERT, exit 1 — never ✅ on an unconfirmed sync.
+
 ## Pitfalls
 
 - **`asic-registered-schemes` skip is CORRECT — do not flag it.** It shows
