@@ -11,6 +11,7 @@ A centralized, standardized catalog of AI agent skills, workspace rules, plugins
 
 - [Overview](#-overview)
 - [Repository Structure](#-repository-structure)
+- [Early-Stage Startup Collection](#-early-stage-startup-collection)
 - [Skills Catalog](#-skills-catalog)
 - [Rules Catalog](#-rules-catalog)
 - [Quick Start & Installation](#-quick-start--installation)
@@ -72,6 +73,18 @@ skills-rules-repo/
 ├── LICENSE                  # MIT License
 └── README.md                # Repository documentation
 ```
+
+---
+
+## 🌱 Early-Stage Startup Collection
+
+For idea validation, market sizing, customer discovery, competitor research,
+pricing, pitch refinement, pilot planning, and founder/partner follow-up, use
+the [Early-Stage Startup Collection](./collections/early-stage-startup.md).
+It maps each startup question to the existing reusable skills without moving or
+duplicating them. The index is plain Markdown with repository-relative links,
+so it remains a shared discovery surface for Claude, Cursor, Codex, and
+Hermes/Pluto.
 
 ---
 
