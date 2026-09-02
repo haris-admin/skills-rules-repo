@@ -1,6 +1,6 @@
 ---
 name: caduceus-compliance-watch
-description: Caduceus's compliance & payments watch — Tranche 2 intel, PSP reform, product opportunity mapping, guardrails. Use for any regulatory or AML/payments task.
+description: "Use for compliance watch: PSP reform, guardrails, mapping."
 ---
 
 # Caduceus Compliance Watch
@@ -49,3 +49,43 @@ Any compliance task: regulatory intel, Tranche 2 analysis, PSP licensing watch, 
 ## Delivery
 - Dated + sourced + "what this means for us" line.
 - 🔴ACTION/🟡DECISION/🟢FYI framing.
+
+---
+
+# PSP Reform Watch — Tapease (weekly cron, Tue 9AM AEST)
+
+Monitors Treasury's PSP licensing reform and its impact on Tapease's plan: funds flow Tapease→drivers = facilitation risk (s766DC). Fix: acquiring→Fiserv (Clover ISV), driver payouts→Oxygen Global (AFSL 452 187 prepaid Visa) so no funds sit in Tapease-controlled accounts → no new AFSL needed. NOTE: "PSP Tranche 2" (common access, standard-setting body, ePayments Code) ≠ AML/CTF Tranche 2 — don't conflate.
+
+## Sources (check every run)
+1. Treasury page: https://treasury.gov.au/policy-topics/banking-and-finance/payments-licensing-reforms (check dcterms.date / "Last updated")
+2. Consultation hub — beta server-rendered mirror (consult.treasury.gov.au is JS-only, returns "Loading"):
+   - https://beta.treasury.gov.au/key-activities/consultations/c2026-746108 (Tranche 1 full package)
+   - https://beta.treasury.gov.au/key-activities/consultations/c2025-700532 (Tranche 1a)
+   - https://beta.treasury.gov.au/key-activities/consultations (listing — scan for NEW PSP/ePayments consultations)
+3. web_search: `"payment service provider" reform Australia 2026 Treasury update`, `PSP licensing Tranche 2 ePayments Code`, exact-title search `"Treasury Laws Amendment (Payments System Modernisation) Bill 2026"` to detect Parliament introduction.
+
+## PSP reform verified timeline (Mercury, 1 Sep 2026 — first observation)
+- Page last updated **12 Mar 2026** (Tranche 1 full exposure draft release). No change since.
+- c2026-746108 (Tranche 1: Treasury Laws Amendment Bill 2026 + Payment Entities (Prudential Regulation) Bill 2026 + draft regs): OPEN 12 Mar → CLOSED 9 Apr 2026 (extensions to 13–14 Apr). Submissions: FinTech Australia, DECA, Law Council, etc.
+- c2025-700532 (Tranche 1a): closed 6 Nov 2025 (51 submissions).
+- Tranche 1 Bill **NOT yet introduced to Parliament** as of 1 Sep 2026. Govt signalled winter sitting (Jun–Aug 2026); missed → expected Q4 2026. Commencement = 12 months after Royal Assent ≈ mid-late 2027. Transition: 1 month for existing AFSL holders to vary; 6 months for other PSPs to apply.
+- PSP Tranche 2 (common access requirements, industry standard-setting body, ePayments Code review/update): NO consultation opened yet ("later in 2026").
+- Adjacent: Scams Prevention Framework (SPF) draft codes/rules consultation closed 25 Jun 2026; regulated entities prep by 31 Mar 2027; SPF takes priority over ePayments Code for scams.
+
+## Tapease impact lens (answer these each run)
+1. **Payment facilitation services limb** = receiving funds + transferring per instructions (acquiring, remittance, flow-of-funds). Tapease avoids it if Fiserv acquires + Oxygen issues — money never touches Tapease accounts.
+2. **Payment technology & enablement services limb** (gateways; transmits info needed to produce transfer instruction, not payer/payee/issuer) is BROAD — "any entity that touches a payment". Main residual exposure: Tapease as tech connector could need own AFSL. DECA submission (9 Apr 2026) asks to exclude non-custodial tech infrastructure — aligned with Tapease; watch final Bill.
+3. **Safeguarding** (payment-related money) falls on Fiserv/Oxygen as money holders — structure validated. Keep evidence in contracts: no funds control, not payer/payee/issuer, tech-only role.
+4. **Mandatory ePayments Code**: Ministerial rule-making power in Tranche 1; can reach ADIs, licensed PSPs, PSRA-regulated entities and entities *acting on their behalf*. Keep Tapease out of consumer-facing dispute/IDR roles; note intermediary PSP obligations (cooperate with AFCA/IDR).
+5. Exemptions to track in final regs: low-value payment services (~$8M/month cap), single-payee exemption, transitional/grandfathering.
+
+## PSP watch output format (Telegram-ready, 2-min digest)
+1. WHAT changed (dates/documents/consultation openings-closings)
+2. IMPACT on Tapease (Fiserv/Oxygen strategy, facilitation risk, tech-enablement limb, safeguarding, ePayments Code)
+3. ACTION needed (new consultation to respond to, timeline shifts, contract items)
+4. Next check date. Frame: 🟢 FYI / 🟡 DECISION / 🔴 ACTION. If nothing material: one line + stop (or [SILENT] per cron rules).
+
+## History
+- 2026-09-03 (Tranche 2 digest): No new AUSTRAC enforcement/lodgement deadlines (register unchanged: Mounties/Entain/Star current, bet365 EU ongoing, Cryptolink suspended). ASIC final-call MR 2 Sep: >45 digital-asset licence apps (up from ~30 in Jun); INFO 225 no-action ends 30 Sep (27 days from 3 Sep); from 1 Oct unlicensed = breach, fines to 10% turnover. AUSTRAC guidance update 31 Aug: real estate + professional designated services pages — licence-to-occupy/leasehold treatment. FATF 5th-round ME still 2026-27, no on-site date. No AUSTRAC news 29 Aug–3 Sep.
+- 2026-09-02 (Tranche 2 digest): s167 notices to non-enrolled businesses (28 Aug — RE/legal/accounting/jewellers). Cryptolink VASP reg suspended 3 months (10 Aug, 96 CATMs offline, $56,340 IN paid). Sportsbet EU finalised. INFO 225 no-action expires 30 Sep 2026 (28 days; ~30 licence apps; AML/CS: notify+pre-meeting by 30 Sep, lodge in 12mo). Digital Asset Framework commences 9 Apr 2027 (DAP/TCP auths). AML/CTF Amendment Bill 2026 still before Reps. FATF 5th-round ME 2026-27, no on-site date published; 4th FUR (Mar 2024): 18C/12LC/6PC/4NC, Rec 15 C→PC.
+- 2026-09-01: Baseline. No new change. Bill not introduced; PSP Tranche 2 not open. Strategy validated; watch tech-enablement definition in final Bill + ePayments Code scope.
