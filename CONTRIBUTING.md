@@ -17,6 +17,10 @@ Thank you for contributing to the repository! We welcome new skills, rules, temp
    ```bash
    python3 scripts/validate.py
    ```
+5. Regenerate the README catalog and commit it:
+   ```bash
+   python3 scripts/generate_catalog.py
+   ```
 
 ## Adding a New Rule
 
@@ -29,6 +33,10 @@ Thank you for contributing to the repository! We welcome new skills, rules, temp
 4. Validate your rule:
    ```bash
    python3 scripts/validate.py
+   ```
+5. Regenerate the README catalog and commit it:
+   ```bash
+   python3 scripts/generate_catalog.py
    ```
 
 ## Validation & CI
