@@ -33,3 +33,8 @@ Every OpenSpec proposal (`openspec/changes/*/`), architectural RFC, security rev
 5. **Two Canonical Outputs**:
    - **Slide Presentations** (`docs/*_PRESENTATION.html`): High-level, card-driven, keyboard-navigable (`←`, `→`, `Space`, `F`).
    - **Master Baseline Reports** (`docs/*_BASELINE_REPORT.html`): Trimodal switcher (Spatial Visual Map, Sequential Step-by-Step, Plain-English Executive Mode).
+
+6. **Automated Collision & Overflow Gate (MANDATORY)**:
+   - Before completing work, agents MUST run automated layout validation:
+     `node scripts/verify_presentation_layout.js <file.html>`
+   - Asserts zero container overflows (`scrollHeight <= clientHeight + 4`), zero element bounding-box collisions, and word budgets (≤40 words per single card) across both 1.0x and 1.25x font scales.

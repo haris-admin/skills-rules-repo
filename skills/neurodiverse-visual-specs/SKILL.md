@@ -102,5 +102,15 @@ Used for formal engineering documentation and audit baselines.
    - Can a non-technical stakeholder understand each card in 5 seconds?
    - Does the font size scale properly with `A-` / `A+`?
    - Is text left-aligned and free of italics?
-5. **Git Checkpoint**:
-   - Check in reports and presentation decks together with the active branch.
+5. **Run Automated Layout & Collision Validation (MANDATORY)**:
+   - Execute the automated Playwright layout validator:
+     ```bash
+     node scripts/verify_presentation_layout.js path/to/presentation.html
+     ```
+   - Validates across viewports and font scales (1.0x and 1.25x):
+     - `scrollHeight <= clientHeight + 4` (no container vertical overflow).
+     - No bounding-box collisions between header, body, card children, or footer.
+     - Enforces cognitive word count budget (≤40 words for single cards, ≤65 for list cards).
+   - If collisions or overflows are detected, streamline text or adjust flex gaps before proceeding.
+6. **Git Checkpoint**:
+   - Check in reports, presentation decks, and test scripts together with the active branch.
