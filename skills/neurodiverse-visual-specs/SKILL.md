@@ -23,6 +23,7 @@ Activate this skill whenever:
 - Preparing a new OpenSpec change proposal (`openspec/changes/*/`).
 - Performing a security audit, CRAP score review, or technical architectural review.
 - Communicating system-wide changes, database schema updates, or refactoring plans.
+- Generating executive briefing and meeting reports for mixed stakeholder and engineering teams.
 - Presenting progress to a mixed team of neurotypical and neurodivergent collaborators.
 
 ---
