@@ -253,7 +253,7 @@ Hermes/Pluto.
 | **[nano-banana-pro](./skills/nano-banana-pro/SKILL.md)** | Generate or edit images via Gemini 3 Pro Image (Nano Banana Pro). | - |
 | **[nano-pdf](./skills/nano-pdf/SKILL.md)** | Edit PDFs with natural-language instructions using the nano-pdf CLI. | - |
 | **[native-mcp](./mcp/native-mcp/SKILL.md)** | "MCP client: connect servers, register tools (stdio/HTTP)." | - |
-| **[neurodiverse-visual-specs](./skills/neurodiverse-visual-specs/SKILL.md)** | Author multi-modal, visual-first change companions (interactive HTML dashboards, impact cards, flow diagrams, and step-by-step trackers) for every… | - |
+| **[neurodiverse-visual-specs](./skills/neurodiverse-visual-specs/SKILL.md)** | Author multi-modal, visual-first change companions, simple slide presentations, and executive visual reports for technical proposals, security… | - |
 | **[nginx-change](./skills/nginx-change/SKILL.md)** | How to safely change the production edge nginx config for tapease.com.au — add a location/route, change an upstream, adjust headers/SSL/redirects… | - |
 | **[node-inspect-debugger](./software-development/node-inspect-debugger/SKILL.md)** | "Debug Node.js via --inspect + Chrome DevTools Protocol CLI." | - |
 | **[notification-coverage-audit](./observability-and-sentry/notification-coverage-audit/SKILL.md)** | Audit event notifications, email alerts, and in-app trays to ensure 100% deep-link completeness and trigger coverage. | - |
@@ -419,7 +419,7 @@ Hermes/Pluto.
 | **[Investigate every error immediately — including pre-existing/old ones (all agents)](./rules/immediate-error-investigation.md)** | Human decision, 7 Aug 2026, from this session's `npx tsc --noEmit` run: a real type error in `frontend/lib/auditTrailDisplay.ts:272`… |
 | **[Lighthouse performance gate (all agents) — blocking, not guidance](./rules/frontend-lighthouse-performance-gate.md)** | Human decision, 7 Aug 2026, prompted by `frontend/prod_issues/issue-246-turnstile-csp-block-and-lighthouse-perf-regression.md`: two live Lighthouse… |
 | **[Moved](./rules/claude-code-spec-only-cursor-implements.md)** | This rule has been renamed to… |
-| **[Neurodiverse Visual-First Rule (Mandatory Visual Companions)](./rules/neurodiverse-visual-first.md)** | **Authority**: Required for all engineering proposals, OpenSpec change sets, technical debt reviews, and security/performance audits. |
+| **[Neurodiverse Visual-First Rule (Mandatory Visual Companions & Simple Presentations)](./rules/neurodiverse-visual-first.md)** | **Authority**: Required for all engineering proposals, OpenSpec change sets, technical debt reviews, and stakeholder presentations. |
 | **[New public-page registration checklist (all agents)](./rules/new-public-page-registration-checklist.md)** | Applies when adding a brand-new public (unauthenticated) route under `frontend/app/`, e.g. the `/product`, `/security`, `/austrac-compliance`… |
 | **[New vendor / AI model data-sovereignty check (all agents)](./rules/new-vendor-and-model-data-sovereignty-check.md)** | Applies whenever evaluating, integrating, or requesting access to **any new external vendor or AI model YourApp doesn't already use** — a… |
 | **[No email delivery to A2 Square / AnotherCompany accounts (all agents)](./rules/no-a2square-emails.md)** | Applies whenever sending, drafting, or configuring any YourApp email — SES after-action reports, operational alerts, test emails, error reports, or… |
