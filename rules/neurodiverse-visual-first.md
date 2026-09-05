@@ -1,25 +1,35 @@
-# Neurodiverse Visual-First Rule (Mandatory Visual Companions)
+# Neurodiverse Visual-First Rule (Mandatory Visual Companions & Simple Presentations)
 
-**Authority**: Required for all engineering proposals, OpenSpec change sets, technical debt reviews, and security/performance audits.
+**Authority**: Required for all engineering proposals, OpenSpec change sets, technical debt reviews, and stakeholder presentations.
 
 ## Mandate
 
-Every OpenSpec proposal (`openspec/changes/*/`), architectural RFC, or security review MUST be accompanied by an interactive **HTML Visual Companion** (`visual-companion.html` or `docs/visual-*.html`).
+Every OpenSpec proposal (`openspec/changes/*/`), architectural RFC, security review, or team presentation MUST be accompanied by an interactive **HTML Visual Companion** or **Slide Deck** designed for neurodivergent (ADHD, Autism, Dyslexia) and non-technical team members.
 
-## Principles
+## Core Rules of Neuroinclusive Simplicity
 
-1. **Trimodal Communication**:
-   - Every proposal must accommodate both visual/spatial thinkers and sequential/step-by-step thinkers.
-   - Provide an interactive switcher between:
-     - **Visual Mode**: Color-coded impact cards, visual system maps, and status badges.
-     - **Sequential Mode**: Chronological step-by-step tracks, before-and-after state comparisons, and test verification gates.
-     - **Plain-English Executive Mode**: Low cognitive load, zero unexplained acronyms, and practical student-impact explanations.
+1. **The "One Idea" Rule & Chunking**:
+   - Limit cognitive load to 1 primary idea per slide or card.
+   - Group information into visual chunks (maximum 3-4 cards per view).
+   - Use plain-English human summaries first; explain *why it matters for students and teachers* before mentioning code.
 
-2. **Aesthetic Standard**:
-   - Zero-dependency, self-contained HTML (works offline or via local HTTP).
-   - Non-vibrating, high-contrast dark theme matching Simplifii-OS design tokens (`#09090b` background, `#161618` cards, `#8b7cf6` accent).
-   - Generous whitespace, scannable visual chunks, and no sensory-overloading animations.
+2. **Dyslexia & ADHD Typography (BDA Standards)**:
+   - Clean sans-serif fonts (`system-ui`, `-apple-system`, `Inter`, `Arial`).
+   - Line height: minimum 1.5 to 1.6; generous word and letter spacing.
+   - Strictly left-aligned; NEVER justified text (eliminates whitespace "rivers").
+   - Bold for key terms; NEVER italics (prevents letter crowding) and NEVER all-caps sentences.
+   - Include an interactive font scaler (`A-` / `A+`) in HTML presentations.
 
-3. **Traceability**:
-   - The markdown spec must link directly to the local HTML visual companion.
-   - The visual companion must accurately reflect the tasks, risk scores, and implementation states in `tasks.md`.
+3. **Calm Palette (Zero Ocular Glare)**:
+   - Avoid stark black on white or stark white on pitch black.
+   - Use soft dark matte surfaces (`#0f1117` base, `#171a23` cards, `#f1f3f9` text).
+   - Calming accents: `#9d8efb` (purple), `#38bdf8` (sky), `#34d399` (emerald).
+   - Always pair color indicators with recognizable icons (✅, 🛑, 🔍, 🛡️, 📦).
+
+4. **Code on Demand (Progressive Disclosure)**:
+   - Do NOT overwhelm presentations with raw code dumps on the main slide.
+   - Display a clean summary card with an optional `"🔍 View Code"` drawer/modal for technical drill-down.
+
+5. **Two Canonical Outputs**:
+   - **Slide Presentations** (`docs/*_PRESENTATION.html`): High-level, card-driven, keyboard-navigable (`←`, `→`, `Space`, `F`).
+   - **Master Baseline Reports** (`docs/*_BASELINE_REPORT.html`): Trimodal switcher (Spatial Visual Map, Sequential Step-by-Step, Plain-English Executive Mode).
