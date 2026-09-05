@@ -1,0 +1,30 @@
+name: Validate Skills and Rules
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Validate structure and catalog
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Run structure/frontmatter validation
+        run: python3 scripts/validate.py
+
+      - name: Check README catalog is up to date
+        run: |
+          python3 scripts/generate_catalog.py --check || {
+            echo "::error::README catalog is out of date — run \`python3 scripts/generate_catalog.py\` and commit the result.";
+            exit 1;
+          }
