@@ -65,6 +65,27 @@ Two things must hold, not one:
 Record the deliberate-failure check in the change's `tasks.md` completion log. A guard nobody has
 watched fail is not known to work.
 
+## Rule 3 — Source-text inspection is not a behaviour test
+
+Added 7 Sep 2026 (C476, C473 — found in the C472–C489 validation batch). A test that greps a
+`.sql` / `.tf` / `.py` / `Dockerfile` for a string, a substring order, or a regex — instead of
+*executing* the code — passes whether or not the behaviour works, and has no valid Red because
+there is nothing under test.
+
+- C476's AC-04 auth-hook carve-out "test" string-greps `custom_claims_hook.sql`
+  (`"is_active = true" in sql`, `platform_idx < users_idx`). The design **explicitly** said SQLite
+  cannot run the PL/pgSQL and the test must execute the hook on real Postgres against a seeded
+  colliding row. A grep is not that test — and the task was marked `[x]`.
+- C473's veriff-webhook audit test asserts `write_entry.assert_called_with(...)` on a mock. That
+  proves the code *called* the logger, not that a durable `audit_entries` row exists. "Writes a
+  row" / "persists" / "records" needs a real `select(...)` against the committed row — see
+  `test-doubles-vs-assertions.md`.
+
+**If the design or acceptance criterion says "on real Postgres", "invoke the function", "assert the
+persisted row", or "confirm live" — a source-text match or a mock-call-args assertion does not
+close it.** A task marked `[x]` on that basis is a false completion-log entry, and `openspec-verify`
+Mode B step 11 exists to catch it.
+
 ## Applies especially to
 
 Invariant/contract/coverage-style tests: "every table has X", "every endpoint enforces Y", "no file

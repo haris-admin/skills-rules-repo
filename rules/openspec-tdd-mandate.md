@@ -4,11 +4,11 @@
 `.agents/rules/openspec-tdd-mandate.md` (Antigravity). Summarised in `AGENTS.md` (Codex),
 `CLAUDE.md` (Claude Code), `GEMINI.md` (Gemini). If mirrors drift, this file wins.
 
-**Human decisions recorded 2026-07-16 (the project lead, in-session):** hotfix carve-out is the only
+**Human decisions recorded 2026-07-16 (Harish, in-session):** hotfix carve-out is the only
 exception to spec-first; the approval gate applies to the plan, not to every step; ambiguity is
 resolved by structured one-question-at-a-time Q&A. These were explicit answers, not inferences.
 
-**Human decision recorded 22 Aug 2026 (the project lead, in-session):** who authors this process's three
+**Human decision recorded 22 Aug 2026 (Haris, in-session):** who authors this process's three
 documents and who executes step 4 (TDD implementation) are now different agents — Claude Code
 authors `proposal.md`/`design.md`/`tasks.md` and runs the plan-approval gate; **Cursor** executes
 the implementation once a plan is approved. See
@@ -16,7 +16,7 @@ the implementation once a plan is approved. See
 (hotfix path unaffected; non-OpenSpec-governed work unaffected). Rule 2's "execute end-to-end
 autonomously" below now refers to Cursor's execution, not the spec-authoring agent's.
 
-**Human decision recorded 22 Aug 2026 (the project lead, in-session):** local commits after each Green
+**Human decision recorded 22 Aug 2026 (Haris, in-session):** local commits after each Green
 task or small chunk, so there is a restore point — do not wait to be asked. Push still needs an
 explicit ask. Canonical: `docs/agent_rules/incremental-local-commits.md`.
 
@@ -30,6 +30,31 @@ explicit ask. Canonical: `docs/agent_rules/incremental-local-commits.md`.
   is still mandatory — only its timing may trail the emergency.
 - Chain of authority, one direction only:
   `Requirement (OpenSpec / human instruction) → Test cases → Implementation`.
+
+### 1a. What counts as an OpenSpec-governed change — the carve-out is narrow
+
+Added 7 Sep 2026, from three loose release commits in the C487–C489 batch (`02b13049`,
+`c3776165`, `6f6921bc`) that made substantive changes with no `openspec/changes/` record. The
+"non-OpenSpec-governed work" carve-out (content/marketing, doc-only edits, prod-issue triage,
+`/release-*` deploy skills, read-only diagnostics, verification/audit skills) does **not** stretch
+to any of the following — each needs its own `proposal.md`/`design.md`/`tasks.md` (a thin one is
+fine; `429a` is the worked example of a 15-line change that still got the full trio):
+
+- **A new or amended `openspec/specs/*/spec.md` file.** A spec is the *output* of a change, never
+  hand-authored on its own. `c3776165` created `openspec/specs/automated-dependency-management/
+  spec.md` directly, with no originating proposal, no TDD, and citing workflow files that don't
+  exist in the repo.
+- **A CI/workflow change that alters what the test suite does or gates** — the test DB engine or
+  major version (`02b13049` bumped the scheduled-audit Postgres 15→17), a coverage floor, which
+  jobs block a merge, a new scan that can fail the build. Editing a workflow's Node version or
+  pinning an action SHA is maintenance; changing the *meaning* of a green run is a change.
+- **A new production-deploy behaviour** — a new step in `deploy-*-aws.yml`'s SSM payload that runs
+  against prod (`6f6921bc` added `docker image prune -af` to both deploy workflows). `/release-*`
+  covers *running* the existing deploy; it does not cover *adding* to what deploys do.
+- **A new AWS resource, IAM policy, secret, env var, or Terraform module.**
+
+If you are the implementer and a task hands you one of these without a change folder behind it,
+that is a `STOP and ask` (rule 6), not a licence to proceed because "it's just CI".
 
 ## 2. Plan with options — the human picks before implementation starts
 

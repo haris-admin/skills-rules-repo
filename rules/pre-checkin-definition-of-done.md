@@ -8,7 +8,7 @@ requested. See `docs/agent_rules/incremental-local-commits.md` (human decisions 
 
 **This closeout gate is the implementing agent's own production-readiness self-check** — not a
 reviewer's job, not a later pass, and it applies whichever agent you are (Claude Code, Gemini
-Antigravity, Cursor, or any other). Human instruction, the project lead, 28 Aug 2026: after every logical
+Antigravity, Cursor, or any other). Human instruction, Haris, 28 Aug 2026: after every logical
 change, when closing it out, every agent checks production readiness *from its own point of view*
 against the rules we already have — audit trail correctly updated, UI in order, design tokens/CSS
 used, reusable code reused, no new one-off fonts or artifact types introduced — and applies these
@@ -46,6 +46,13 @@ and why.
 - [ ] Any guard/invariant test was proven non-vacuous by making it fail on purpose.
 - [ ] **Failures are reported honestly with their output.** "Pre-existing" is a fact about timing,
       never a reason to skip investigating — see `immediate-error-investigation.md`.
+- [ ] **Requirement-change test sweep** (added 7 Sep 2026, C472/C473/C474). If this change alters
+      or removes an existing contract — a signature, a return shape, a removed field/fallback, a
+      role-guard swap, a removed header read — you grepped the **whole** suite for tests encoding
+      the *old* contract and updated them here. `git stash && poetry run pytest && git stash pop`
+      on a clean checkout must be green before the completion log may say "all tests pass". C472/
+      C473/C474 each shipped 5–6 tests still asserting the old behaviour; all three logs claimed a
+      clean suite; the regressions sat red on `dev` across three version bumps until `26e89d0b`.
 
 ### 2. Lint and schema
 - [ ] `poetry run ruff check <your changed files>` clean. Scope it to your files; the repo-wide run
@@ -69,6 +76,14 @@ and why.
 - [ ] `status: implemented` is set **only after** confirming the commit exists —
       `git log --oneline -- <paths the change touches>`. Zero commits means `status: partial`.
       (Got wrong once already, 76a, 10 Jul 2026.)
+- [ ] **Every acceptance criterion re-checked against the actual committed diff** (added 7 Sep
+      2026, C482/C487/C489) — against `git show <commit>`, not against the `[x]` you set. An AC
+      naming a Terraform alarm / metric filter, an Alembic migration, a Docker digest pin, a
+      `bootstrap.sh.tpl` pattern is met **only if that artifact is in the diff**. A checked box
+      with nothing in the diff is `NOT-READY`, not a minor gap, and blocks `status: implemented`.
+      Genuinely deferred work (a post-deploy drill, a live `terraform apply`) → `status: partial`
+      with the remainder enumerated, and **no version bump / release yet**. C482 was committed,
+      marked `implemented`, and version-bumped with three CloudWatch-alarm ACs unbuilt.
 
 ### 5. The working tree
 - [ ] `git status --short` reviewed; every path you are about to commit is one you actually edited
@@ -99,7 +114,7 @@ and why.
 
 ### 7. Frontend design system & UI (only if the change touches any FE code or rendered surface)
 
-Drawn from `frontend-design-system.md` and the `yourapp-ui-consistency-audit` skill. If the change
+Drawn from `frontend-design-system.md` and the `amlhive-ui-consistency-audit` skill. If the change
 touches no frontend code and renders nothing, mark this whole section **"N/A — no frontend surface
 touched"** and move on.
 
@@ -123,7 +138,7 @@ touched"** and move on.
       present and correct.
 - [ ] The change was checked **rendered**, not only in source — the actual page/component was
       viewed (or a cited screenshot / Storybook / running-app check is recorded), per
-      `yourapp-ui-consistency-audit`.
+      `amlhive-ui-consistency-audit`.
 - [ ] Public route → the Lighthouse gate in §6 applies (cross-reference, not a second run here).
 
 ## Do not
@@ -150,5 +165,5 @@ touched"** and move on.
   `immediate-error-investigation.md`
 - `docs/agent_rules/frontend-design-system.md` ·
   `docs/agent_rules/data-retention-and-audit-trail-mandate.md` ·
-  `.claude/skills/yourapp-ui-consistency-audit/` (canonical
-  `.agents/skills/yourapp-ui-consistency-audit/SKILL.md`)
+  `.claude/skills/amlhive-ui-consistency-audit/` (canonical
+  `.agents/skills/amlhive-ui-consistency-audit/SKILL.md`)

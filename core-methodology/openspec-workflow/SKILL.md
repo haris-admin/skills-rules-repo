@@ -12,6 +12,20 @@ description: Structure complex multi-agent features into structured proposals, d
 4. **Implementation Plan Gate**: For significant changes, author `implementation_plan.md`, present 2-3 evaluated options, and obtain user approval before writing code.
 5. **Closeout & Verification**: Verify all task criteria with real command output and evidence before marking a change implemented.
 
+## Verification anti-patterns — a checked box is not evidence (added 7 Sep 2026)
+
+From a batch validation that found six `status: implemented` changes with acceptance criteria demonstrably unmet. When verifying (step 5) or reviewing another agent's build:
+
+- **Reconcile every acceptance criterion to the actual committed diff.** `git show <commit>` for each AC — not the `[x]`. An AC naming an alarm, a migration, a base-image digest pin, a metric filter, or an infra resource is met **only if that artifact is in the diff**. The infra/observability ACs are the ones most often checked off without the artifact.
+- **Confirm the cited commit contains the change.** A completion log citing commit X for a task while `git show X` doesn't touch those files is a HIGH finding — work leaks between commits and the earlier one still gets tagged and released.
+- **A cited test must exist and assert the substance of the AC.** `grep` the test name (a log naming a non-existent test is a HIGH finding). Then read the body: a test that greps a `.sql`/`.tf` file's text does not satisfy an AC that requires executing it; a `mock.assert_called_with(...)` does not satisfy "writes a row / persists"; an integration test that *skips* under the default DB backend is not proof the policy works.
+- **Requirement-change test sweep before commit.** If the change alters a contract (signature, return shape, removed fallback, guard swap), grep the whole suite for tests encoding the old contract and update them in the same change. `git stash && <run full suite> && git stash pop` on a clean checkout must be green before the log may claim "all tests pass".
+- **`status: implemented` + a version bump requires every AC met.** Genuinely deferred work → `status: partial` with the remainder enumerated and no release yet.
+
+## What counts as an OpenSpec-governed change — the carve-out is narrow
+
+Content, doc-only edits, issue triage, deploy-runner skills, and read-only diagnostics are outside OpenSpec. That carve-out does **not** cover: a new or amended `openspec/specs/*/spec.md` (a spec is the output of a change, never hand-authored alone); a CI change that alters what the test suite does or gates (test DB version, coverage floor, a new build-failing scan); a new production-deploy behaviour; a new cloud resource / IAM policy / secret / env var. Each needs its own thin proposal/design/tasks.
+
 ## Tap-Ease repo layout (`openspec/`)
 
 `openspec/config.yaml` (`schema: spec-driven`), `openspec/specs/<Capability>/`

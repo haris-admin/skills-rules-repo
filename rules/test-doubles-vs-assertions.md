@@ -51,6 +51,19 @@ Whatever it is called, these are the forbidden act:
 - Changing the *expected* value to whatever the code now produces. This is the most common
   self-deception: it always makes the test pass and never means anything.
 
+## A mock-call-args assertion does not satisfy a "writes a row" / "persists" requirement
+
+Added 7 Sep 2026 (C473, C476 — from the C472–C489 validation batch). A double is for isolating the
+code under test from a *collaborator you are not testing*. When the acceptance criterion **is**
+about the collaborator's effect — "writes an `audit_entries` row", "persists the record", "the
+audit trail entry exists" — asserting `write_entry.assert_called_with(...)` on a mock proves the
+call was made, not that the durable row exists. That AC needs a real `select(...)` against the
+committed row (the pattern `tests/services/test_deed_parties_audit_attribution.py` uses).
+Similarly, a test that greps a `.sql`/`.tf` file's text instead of executing it does not satisfy an
+AC whose point is runtime behaviour (`red-for-the-right-reason.md` Rule 3). A task marked `[x]` on
+a mock-args or source-grep assertion, where the AC calls for persistence or execution, is a false
+completion-log entry — and this is exactly what `openspec-verify` Mode B step 11 re-checks.
+
 ## The check to run on yourself
 
 > If the implementation had a genuine bug, would this test still catch it?
