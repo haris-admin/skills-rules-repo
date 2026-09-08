@@ -90,6 +90,17 @@ scoped to produce. If the work is substantially there:
   (rules 1–4) as normal — a partially-written file from a crashed run can be internally
   inconsistent (half-applied edit, truncated section).
 
+**The crashed run's own completion note can overclaim.** C492 spec-fix subagent, 8 Sep 2026:
+hit a session rate limit, but before dying it had (a) written ~95% of its target spec edits and
+(b) appended a `CLAUDE_FEEDBACK.md` summary stating *"F8 — proposal Disposition and tasks/brief
+now say T492.01–T492.48"*. Two of those three files still said `T492.01–T492.45` — the agent
+described the edit it intended as one it had made. This is failure mode 2 (confident report ahead
+of reality) landing inside a failure-mode-4 crash: the self-written summary survives on disk and
+reads as authoritative. **Don't take a crashed agent's completion note as a map of what it
+finished — diff each claimed change against the actual file** (`grep` the claimed new string;
+`git diff` the file) before relaying "done" or building on top. The note tells you what it was
+trying to do, not what it did.
+
 ## Rules
 
 1. **A subagent whose final report is inconclusive ("waiting", "still running", no pass/fail
