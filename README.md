@@ -138,6 +138,7 @@ Hermes/Pluto.
 | **[briefing-improver](./research/briefing-improver/SKILL.md)** | Pluto's self-improving morning briefing engine — action-first format, portfolio heatmaps, regulatory pulse, checklist generation, and feedback-driven… | - |
 | **[building-an-exo](./skills/building-an-exo/SKILL.md)** | Apply ExO 3.0, the Intelligence Stack, and the REWRITE Playbook (OS Outline v25) to redesign a firm around AI. Use when a founder or CEO rebuilds as… | [Cold Start Learning Feeds](./skills/building-an-exo/references/cold-start-learning-feeds.md) |
 | **[business-value-gems](./research/business-value-gems/SKILL.md)** | "Use when mining business/IT-value thinkers for stack ideas." | - |
+| **[buy-australian-ai-partnership-watch](./research/buy-australian-ai-partnership-watch/SKILL.md)** | Standing intelligence watch on the Stone & Chalk / National AI Centre "Buy Australian AI Partnership" — its founding enterprise partners (ANZ, CBA… | [Roster](./research/buy-australian-ai-partnership-watch/references/roster.md) |
 | **[caduceus-compliance-watch](./compliance/caduceus-compliance-watch/SKILL.md)** | "Use for compliance watch: PSP reform, guardrails, mapping." | - |
 | **[camsnap](./skills/camsnap/SKILL.md)** | Capture frames or clips from RTSP/ONVIF cameras. | - |
 | **[canvas](./skills/canvas/SKILL.md)** | Display HTML content, games, interactive visualizations, and dashboards on connected OpenClaw nodes (Mac app, iOS, Android). Use when presenting web… | - |

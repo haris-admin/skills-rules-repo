@@ -29,12 +29,23 @@ Any compliance task: regulatory intel, Tranche 2 analysis, PSP licensing watch, 
    - Flag unsafe copy ("Tranche 2 Compliant in 14 Days" pattern)
 
 ## Key dates (tracked)
-- Tranche 2 in force: 1 Jul 2026
+- Tranche 2 in force: 1 Jul 2026 (general commencement 31 Mar 2026)
 - Card surcharge ban: 1 Oct 2026
+- Buy Australian AI Partnership (Stone & Chalk + NAIC): EOI closes 24 Sep 2026; Accelerator ~5 Oct–27 Nov 2026 — see `buy-australian-ai-partnership-watch`
 - AGDIS private sector: 30 Nov 2026
 - EU AI Act Art 50 transparency: live 2 Aug 2026 (extraterritorial; high-risk deferred to Dec 2027/Aug 2028)
 - ADM transparency obligation (APP 1.7/1.8): 10 Dec 2026
 - PSP reform Tranche 1 to Parliament: Q4 2026 (12-18mo transition after Royal Assent)
+
+## AML/CTF third-party reliance mechanics (reformed Act, in force 1 Jul 2026)
+Get this exactly right — a bank's financial-crime counsel checks it in the first meeting.
+- **Statutory basis:** Act **s 37A** (standing written CDD arrangement + safe harbour), **s 37B** (regular assessment — at least every 2 years and on significant change; written record within 10 business days), **s 38** (case-by-case, stricter, no safe harbour), **s 37** (agency — a different route). AML/CTF Rules 2025 **ss 6-29 to 6-33** (6-32/6-33 = a property/conveyancing-specific model).
+- **Who can be relied on:** only another **reporting entity** (or a foreign entity under FATF-equivalent regulation and supervision). AUSTRAC states verbatim that reliance "doesn't include a KYC or outsourced service provider." **A software/evidence provider cannot be a relied-upon party.**
+- **Reliance ≠ outsourcing ≠ agency.** In all three, regulatory responsibility for each entity's own program stays with that entity. The s 37A safe harbour forgives only *isolated* counterparty failures; outsourcing/agency give no safe harbour and the RE stays fully liable.
+- **The relying entity** must have reasonable grounds (at entry) to believe the third party's CDD meets the Rules, that reliance suits its ML/TF risk, plus a written arrangement with prescribed content (responsibilities incl. record-keeping; right to obtain KYC info before the service and verification data within ~1 business day).
+- **Transition:** pre-1 Jul 2026 reliance agreements are **not grandfathered** — review them.
+- **Weak link (needs a lawyer):** the *direction* of reliance. "A big bank relies on a small newly regulated agency" is hard — s 37A puts the reasonable-grounds / appropriateness test on the *relying* entity. Don't assume a bank accepts agency-side CDD in production; the near-term buyer is the Tranche 2 business (and mutual ADIs via Cuscal), not Tier-1 production reliance.
+- **AMLHive's place:** evidence pipe + provenance + consent/permission control + audit trail. **Never a party to the reliance. Carries no CDD liability.** "AMLHive transfers evidence, never responsibility."
 
 ## AI regulation reality (AU 2026)
 - NO standalone AU AI Act — National AI Plan (2 Dec 2025) chose standards-led, sectoral-regulator path; AI Safety Institute is advisory-only ($29.9M, no enforcement).

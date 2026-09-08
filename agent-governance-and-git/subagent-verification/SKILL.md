@@ -19,4 +19,15 @@ description: Verification protocol for orchestrator agents when managing paralle
    incomplete (it checked one enforcement location — e.g. a function's default parameter — and
    missed a second one — e.g. the same guard applied via a decorator/wrapper instead). Confirm
    against live source, not the subagent's confidence.
+6. **A rate-limited / `failed` subagent has usually already written most of its files — resume it,
+   don't cold re-dispatch.** Check disk first (`git status --short` + `wc -l` on its scoped paths),
+   then `SendMessage` to its id with a "finish exactly these gaps" instruction. Full detail:
+   `rules/subagent-verification-protocol.md` rule 6.
+7. **A parallel session may have committed the same work while your subagents ran** (multi-device,
+   Remote Control, teammates). Before you write or commit a rollup/index doc (README, CHANGELOG,
+   a master index), run `git log --oneline -5` and `git show HEAD:<path>` for anything you're
+   about to overwrite. Converged per-target subagent outputs are usually byte-identical and safe;
+   the hand-authored rollups are where a thinner write clobbers a richer committed one — if that
+   happens, `git checkout HEAD -- <path>` and re-apply only your genuine additions. See also
+   `rules/shared-file-commit-resolution.md`.
 
