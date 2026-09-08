@@ -22,7 +22,8 @@ AMLHive content governance lives in the repo, not the Hermes skill library. Read
 - C146 implementation services (Go-Live & Adoption, Secure Data Migration & Configuration, Integration Discovery and Delivery, Enterprise Rollout): **"Contact for pricing"**, remote delivery OK where suitable, NO delivery dates / SLAs / open-ended commitments.
 - **One CTA max** + a general-information (not legal advice) disclaimer at the end.
 - No AUSTRAC-approval claims; no automatic report-lodgement claims (SMRs/TTRs are lodged by the reporting entity via AUSTRAC Online).
-- Language: Australian spelling; **SMR** not SAR, **TTR** not CTR; "Tranche 2" not "the changes"; PEP match = Enhanced Due Diligence, not automatic block; sanctions match = refuse + report; tipping-off (s123) treated seriously; business-day deadlines need the state-public-holiday caveat.
+- Language: Australian spelling; **SMR** not SAR, **TTR** not CTR; "Tranche 2" not "the changes"; business-day deadlines need the state-public-holiday caveat.
+- Regulatory precision (full table + fetch playbook: `../../growth/amlhive-content-writing/references/austrac-source-verification.md`): **foreign** PEP = enhanced CDD **mandatory**, **domestic / international-organisation** PEP = **risk-based**, never an automatic block; sanctions match = prohibition + freeze + report to the Australian Sanctions Office and AFP; tipping-off (**s.123**, reformed offence in force **31 March 2025**) = disclosure that "would or could reasonably be expected to prejudice an investigation"; SMR obligation (**s.41**) needs a designated-service-to-a-customer nexus, so fraud on the agency's own office funds is not an SMR; source of funds ≠ source of wealth.
 - Banned words: seamless, robust, leverage, synergies, AI-powered, enterprise-grade (SMB context).
 
 ## Medium-confidence intel convention

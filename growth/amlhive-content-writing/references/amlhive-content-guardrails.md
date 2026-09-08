@@ -16,10 +16,14 @@
 - Tranche 2: reforms in force 31 March 2026; hard compliance deadline 1 July 2026 (passed).
 - Scale: ~35,000 new reporting entities overall; ~15,000 real estate agencies; 18,000 legal practices.
 - AUSTRAC Program Starter Kits: a global first; aimed at small businesses with 15 or fewer personnel.
-- SMR: due within 24 hours of a terrorism-financing suspicion, within 3 business days for other suspicions; lodged via AUSTRAC Online; business-day counts vary with state public holidays.
-- CDD records: generally kept 7 years from end of business relationship or completion of an occasional transaction.
+- SMR: obligation under **s.41** — both limbs (designated service to a customer AND a suspicion on reasonable grounds). Due within 24 hours of a terrorism-financing suspicion, within 3 business days for other suspicions; clock runs from suspicion-formed; lodged via AUSTRAC Online; business-day counts vary with state public holidays.
+- CDD records: generally kept at least 7 years from end of business relationship or completion of an occasional transaction.
+- Source of funds ≠ source of wealth: SoF = origin of the particular funds in a transaction; SoW = origin of the person's entire wealth.
+- PEP: foreign PEP = enhanced CDD **mandatory**; domestic / international-organisation PEP = **risk-based**; never an automatic refusal.
+- Sanctions match = prohibition on dealing + obligation to freeze + mandatory report to the Australian Sanctions Office and the AFP (DFAT real-estate guidance note, published 23 March 2026).
 - Enrolment: AUSTRAC transition enrolment date 29 July 2026 for businesses starting designated services 1 July 2026; general rule is within 28 days of starting a designated service.
-- Tipping off: section 123 of the AML/CTF Act, a criminal offence.
+- Tipping off: **s.123** of the AML/CTF Act — reformed offence in force from **31 March 2025**; test is whether a disclosure "would or could reasonably be expected to prejudice an investigation" of a Commonwealth/State/Territory offence.
+- AML/CTF Act cited by compilation number (as of Sept 2026: C2026C00274, current as at 1 July 2026). See `references/austrac-source-verification.md` for the full playbook.
 - Status quo intel: most newly captured practices run AML/CTF on Word templates and spreadsheets.
 - Profession response: compliance guides published by Dentons, Gilbert + Tobin, Norton Rose Fulbright, and Crowe.
 

@@ -22,10 +22,14 @@ Repo map and exact paths: `references/amlhive-content-guardrails.md`. Key files:
 Direct, practical, urgent-but-calm, credible — a knowledgeable no-nonsense compliance expert, not a regulator or lawyer. Australian English (organise, enrolment, lodgement, program). Spell out first use: Customer Due Diligence (CDD), Suspicious Matter Report (SMR — never "SAR"), Threshold Transaction Report (TTR — never "CTR"), and define "designated service" (AUSTRAC's term) the first time.
 
 ## AUSTRAC accuracy rules (non-negotiable)
-- SMR timing: within 24 hours of a terrorism-financing suspicion; within 3 business days for other suspicions. Business-day counts vary with state public holidays — say so.
-- CDD records generally kept 7 years from the end of the business relationship or completion of an occasional transaction.
-- Tipping off (section 123 of the Act) is a criminal offence — treat seriously, never casually.
-- Sanctions match = legal obligation to refuse/report. PEP match = enhanced due diligence, NOT automatic refusal. Never conflate.
+Full statutory-wording table, fetch playbook and citation conventions: `references/austrac-source-verification.md`. Read it before the citation pass.
+- SMR obligation (s.41): triggered only where a reporting entity provides / proposes to provide / has provided a **designated service to a customer** AND holds a **suspicion on reasonable grounds** — both limbs. Fraud on the agency's own office funds (invoice redirection, BEC) has no such nexus and is a fraud-response matter (bank, ReportCyber, police), not an SMR.
+- SMR timing (s.41(2)): within 24 hours of a terrorism-financing suspicion; within 3 business days for other suspicions; the clock runs from when the suspicion is formed. Business-day counts vary with state public holidays — say so. Lodged by the reporting entity via AUSTRAC Online; never auto-submitted.
+- CDD records generally kept at least 7 years from the end of the business relationship or completion of an occasional transaction.
+- Tipping off (s.123): the **reformed offence, in force from 31 March 2025**, applies where a disclosure **"would or could reasonably be expected to prejudice an investigation"** of a Commonwealth, State or Territory offence. Use that wording; do not describe s.123 only as "a criminal offence, treat seriously".
+- Source of funds ≠ source of wealth. SoF = origin of the particular funds in a transaction; SoW = origin of the person's entire wealth (how much, and how acquired). A large/higher-risk deposit can need both — keep them labelled separately.
+- Sanctions match = legal obligation: prohibition on dealing with the asset, obligation to freeze, mandatory report to the Australian Sanctions Office and the AFP. Not a risk-based judgement.
+- PEP: a **foreign** PEP match makes enhanced CDD **mandatory** (senior-management approval, SoF + SoW, enhanced monitoring). A **domestic or international-organisation** PEP is **risk-based**. Never merge them, and a PEP match is never an automatic refusal.
 - Do NOT reference "Part A / Part B" of AML/CTF programs — that structure was abolished (repo issue-023).
 - Enrolment: general rule within 28 days of starting a designated service; AUSTRAC's transition enrolment date was 29 July 2026. Check current AUSTRAC guidance for the reader's circumstances.
 
