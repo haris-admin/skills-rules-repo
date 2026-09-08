@@ -13,6 +13,18 @@ mempalace ChromaDB at `/mnt/c/Users/habib/.mempalace/palace` and similar).
 Use when asked to "clean up / optimize / restructure" the knowledge base, remove
 stale or duplicate entries, or check whether it is being updated regularly.
 
+## Scope — two fleet knowledge bases
+
+| KB | What | Skill |
+|---|---|---|
+| **mempalace ChromaDB** (`/mnt/c/Users/habib/.mempalace/palace`) | vector store, per-agent retrieval | **this skill** |
+| **Alexandria markdown vault** (`github.com/haris-admin/alexandria`) | shared, versioned, Obsidian-compatible; agents push 4+×/day | **`alexandria-refinery`** |
+
+The **safe-dedup rule** and the **freshness-sampling pitfall** below apply to both. The Alexandria
+side adds a 4-tier lifecycle, a frontmatter contract, and eviction of cron exhaust to
+`alexandria-ops` — see the `alexandria-refinery` skill and the `knowledge-vault-write-contract`
+rule. When asked to "clean up the knowledge base", check which one is meant.
+
 ## Safe dedup rule (verified Aug 2026)
 
 Only delete where **(chamber, title, content-hash) is EXACTLY identical** and
