@@ -7,8 +7,9 @@ description: >-
   Institute), the coalition partners, and the NAMED individuals each organisation has put on
   the Partnership. Use when preparing or updating the AMLHive Accelerator EOI, briefing before
   an accelerator session with a partner, running the recurring participant sweep, or when a
-  cron tick fires for this watch. Keeps the profiles under a portfolio repo's docs/market-intel/
-  current with a rolling 30–60 day window. Not for generic regulatory intel (caduceus-compliance-watch)
+  cron tick fires for this watch. Keeps the canonical market-intel pack in the Alexandria vault
+  (alexandria/vault/refined/stone-chalk-market-intel/ + stone-chalk-partner-onepagers/) current
+  with a rolling 30–60 day window. Not for generic regulatory intel (caduceus-compliance-watch)
   or venture scoring (pluto-portfolio-ideation).
 version: 0.1.0
 author: Hermes Agent
@@ -61,23 +62,24 @@ venture scoring (`pluto-portfolio-ideation`), or one-off company research (`web_
 | Founding Enterprise Partners | **ANZ, CBA, Cuscal (ASX: CCL), NAB, Westpac** |
 | Responsible-AI assessment | Gradient Institute (co-authored the AISI Aug 2026 report on AI agents crossing org boundaries) |
 | First intake | Financial services (banking, insurance, superannuation) |
-| Tracks | Digital (open) · **Accelerator (10 companies, 8 weeks)** — both free |
+| Tracks | Digital (open) · **Accelerator (10 companies, 8 weeks)** — both free. Cohort cap = 10 confirmed on the S&C program page 9 Sep 2026. |
 | EOI opened | 27 Aug 2026 |
-| **EOI closes** | **24 Sep 2026 (hard deadline)** |
-| Accelerator runs | ~5 Oct – 27 Nov 2026 |
+| **EOI closes** | **24 Sep 2026 (hard deadline)** · cohort notified 30 Sep |
+| Accelerator runs | **Oct–Dec 2026 (~8 wks)** per the S&C program page — not "Oct–Nov"; showcase late in the program |
 | **IAG is NOT a partner** | Insurance is represented by the Insurance Council of Australia (a body, not a carrier). Do not add carrier profiles unless the roster changes. |
+| Problem statements | Not published as at 9 Sep; S&C FAQ says released "during the EOI period" |
 
 ## Targets
 
-### Organisations (one profile file each, under `docs/market-intel/`)
+### Organisations (one profile file each, in `alexandria/vault/refined/stone-chalk-market-intel/profiles/`)
 
 | Priority | Organisation | Profile file | The opening for AMLHive |
 |:--:|---|---|---|
-| P1 | ANZ | `anz.md` | SME referral (CEU-safe); reliance co-design **weakest of the majors** while mid-APRA-CEU ($1bn add-on) |
-| P1 | Commonwealth Bank (CBA) | `cba.md` | Biggest newly-regulated SME book; most AI-mature co-designer; never first production adopter; partner-and-acquire pattern |
-| P1 | Cuscal (ASX: CCL) | `cuscal.md` | **Best conversion bet** — reselling capability to 60–80 ADIs *is* its business; Financial Crimes fastest-growing segment (+42% FY26) |
-| P1 | NAB | `nab.md` | Largest business bank; already publishes Tranche 2 obligation guides — referral is the next rung; approach Q1 2027 after the 30 Sep 2026 ELT departures |
-| P1 | Westpac | `westpac.md` | SME land-grab = referral fit; position as Phase 3 **validator** of the standard, never first adopter ($1.3bn AUSTRAC scar) |
+| **P2** | ANZ | `03-anz.md` | **Standard-input design + SME referral only. DO NOT pitch CDD outsourcing (APRA CEU).** The Suncorp Bank merchant acquiring hard stop (facilities close 11 Dec 2026) forces a compressed Oct–Dec merchant re-onboarding wave onto ANZ Worldline — a real KYB/UBO spike, in-window — but **ANZ is the dated proof-point, not the buyer**: Group Financial Crime governance sits inside the PACT remediation perimeter; ANZ Worldline onboarding is already mature; least receptive now–end 2026. Pilot the migration-cohort KYB capability with **CBA** (Cuscal member ADIs fast-follow). See ADR `alexandria/vault/decisions/anz-worldline-suncorp-merchant-migration-2026-09-09.md`. |
+| P1 | Commonwealth Bank (CBA) | `02-cba.md` | Biggest newly-regulated SME book; most AI-mature co-designer; never first production adopter; partner-and-acquire pattern. **Best first pilot** for the Suncorp merchant migration-cohort KYB use case (active competitor for the churn, no CEU drag). |
+| P1 | Cuscal (ASX: CCL) | `01-cuscal.md` | **Best conversion bet** — reselling capability to 60–80 ADIs *is* its business; Financial Crimes is the fastest-growing segment: **+19% to $9.5M (1H26), ~6% of FY26 NOI** (corrected from a "+42%" figure that did not verify) |
+| P1 | NAB | `04-nab.md` | Largest business bank; already publishes Tranche 2 obligation guides — referral is the next rung; approach Q1 2027 after the 30 Sep 2026 ELT departures |
+| P1 | Westpac | `05-westpac.md` | SME land-grab = referral fit; position as Phase 3 **validator** of the standard, never first adopter ($1.3bn AUSTRAC scar) |
 | P1 | National AI Centre | `program-delivery.md` | Demand-side mandate — prove AU AI clears enterprise procurement, reduce overseas reliance |
 | P1 | Stone & Chalk | `program-delivery.md` | Brokers access, no equity; wants signed pilots + a clean run for a second tranche |
 | P2 | Gradient Institute | `program-delivery.md` | Map the AMLHive/AgentGate pitch to its "federated governance" tier; probes AI hard on oversight, testing, transparency, records |
@@ -104,8 +106,8 @@ board moves. Full table lives in `docs/market-intel/PARTNERS.md`. `[verify]` = t
 | Andrew McMullan | Westpac | Chief Data, Digital and AI Officer `[verify]` |
 | Peter Herbert | Westpac | Chief Transformation Officer (UNITE) — One Commercial Bank migration `[verify]` |
 | Don Patra | ANZ | Group CIO — ANZ's named Buy Australian AI sponsor |
-| Tammy Medard | ANZ | Group Exec Business & Private Banking — growth mandate (SME referral entry) |
-| Les Vance | ANZ | Financial-crime lead / Program PACT (ex-Westpac) |
+| Tammy Medard | ANZ | Group Exec Business & Private Banking `[verify]` — growth mandate (SME referral entry) |
+| Les Vance | ANZ | Financial-crime lead / Program PACT (ex-Westpac) `[verify]` |
 | Pete Steel | NAB | Group Executive Technology and AI (ex-CBA) |
 | *[identify]* | NAB | CRO — being recruited as at Sep 2026 |
 | Bronwyn Yam | Cuscal | Chief Product Officer (ex-Tyro CPO) — Financial Crimes managed services + Basiq |
@@ -119,8 +121,11 @@ board moves. Full table lives in `docs/market-intel/PARTNERS.md`. `[verify]` = t
 ## Procedure — Setup (foreground, once)
 
 1. **Freeze the target list and profiles.** Confirm the roster against the Stone & Chalk media
-   centre (re-fetch — the roster may have grown since 27 Aug 2026). Ensure a profile file exists
-   for each organisation and `PARTNERS.md` + `CHANGELOG.md` exist under `docs/market-intel/`.
+   centre (re-fetch — the roster may have grown since 27 Aug 2026). The canonical pack lives in
+   `alexandria/vault/refined/stone-chalk-market-intel/` — `PARTNERS.md` (master roster, replaces
+   any earlier draft), `WATCH.md` (the standing watch contract — folded into existing S&C
+   ecosystem crons `b642374bd49d` + `3a818ea08059`, no new crons), `CHANGELOG.md`, and
+   `profiles/NN-<org>.md`. Deep dossiers are in `alexandria/vault/refined/stone-chalk-partner-onepagers/`.
 2. **Build source coverage** (see Sources below) and write the watch contract to
    `~/.hermes/watches/buy-australian-ai-partnership.json` (targets, reps, source list, last
    cutoff, repo path).
@@ -175,13 +180,16 @@ board moves. Full table lives in `docs/market-intel/PARTNERS.md`. `[verify]` = t
   "Last 30–60 days" section; compress anything older than 60 days into an "Earlier 2026" note.
 - Keep each profile's structure: Target · Posture · Recent moves · Pain points · The opening ·
   Who to talk to · Sources.
-- `docs/market-intel/CHANGELOG.md` — reverse-chronological: date · target · what changed ·
+- `stone-chalk-market-intel/CHANGELOG.md` — reverse-chronological: date · target · what changed ·
   🔴 ACTION / 🟡 DECISION / 🟢 FYI · source. This is the diff the human reads. Log every run,
   including null results.
-- `docs/market-intel/PARTNERS.md` — master index: org roster, representatives table, key dates,
-  links. Update reps and titles here.
+- `stone-chalk-market-intel/PARTNERS.md` — master index: org roster, representatives table, key
+  dates, links. Update reps and titles here.
+- A material new decision → a dated ADR in `alexandria/vault/decisions/` (e.g. the ANZ/Suncorp one).
 - Material findings → mempalace + the next `pluto-morning-briefing`.
-- **The parent session commits.** The watch writes and reports; it does not commit unless told.
+- **The single writer commits** (`alexandria_sync.py` on the WSL host, owner Mercury). The watch
+  writes and reports; a read-only clone does not push. Follow `PLUTO-OPERATING-RULES.md` /
+  `knowledge-vault-write-contract` for the tier + frontmatter + append rules.
 
 ## Guardrails (from caduceus-compliance-watch)
 
@@ -195,14 +203,26 @@ board moves. Full table lives in `docs/market-intel/PARTNERS.md`. `[verify]` = t
 
 ## Baseline findings (from the 8–9 Sep 2026 build — starting state for the first sweep)
 
-- 🔴 EOI closes **24 Sep 2026**. Accelerator ~5 Oct – 27 Nov 2026.
+- 🔴 EOI closes **24 Sep 2026**; cohort notified 30 Sep. Accelerator **Oct–Dec 2026** (~8 wks); cohort cap 10 confirmed.
 - 🟡 **Cuscal is the best conversion bet**, not a big-four bank — reselling third-party capability
-  to 60–80 ADIs is its core business; Financial Crimes +42% FY26. Named contacts: Bronwyn Yam
-  (CPO), Anya FitzGibbon (Head of AI & Data), Angela Powell (CRO).
-- 🟡 **ANZ** is mid-APRA Court Enforceable Undertaking (3 Apr 2025, $1bn capital add-on) — SME
-  referral is CEU-safe, reliance co-design is not; ask only for design input + the
-  measurement-only pilot, revisit Phase 3 post-2027. "Most winnable of the majors" holds for
-  merchant/payments GTM and the SME wedge, **not** for financial-crime co-design.
+  to 60–80 ADIs is its core business; Financial Crimes is the fastest-growing segment at
+  **+19% to $9.5M (1H26), ~6% of FY26 NOI** (a widely-circulated "+42%" figure did not verify).
+  Named contacts: Bronwyn Yam (CPO), Anya FitzGibbon (Head of AI & Data), Angela Powell (CRO).
+- 🟡 **ANZ** is mid-APRA Court Enforceable Undertaking (3 Apr 2025, $1bn capital add-on). The CEU
+  itself is a **Global Markets trader-conduct / non-financial-risk** action — not AML; ANZ has no
+  AUSTRAC enforcement history and no public AML remediation program. BUT Group Financial Crime
+  governance sits inside the PACT remediation perimeter, and APRA's thesis is that ANZ cannot
+  bolt on discrete point solutions — so an AML/CDD vendor pitch is off-message by design and ANZ
+  is least receptive now–end 2026. SME referral is CEU-safe; anything AML/CDD is not, and ANZ
+  must never be named in an accelerator-public artefact as a design partner / pilot for it.
+- 🟢 **ANZ / Suncorp merchant migration (dated proof-point).** Suncorp Bank stops offering merchant
+  facilities from 11 Dec 2026 (usable until 10:00pm AEST 10 Dec); merchants forced onto ANZ
+  Worldline or another acquirer, no published managed migration. Suncorp POS surcharge ban from
+  1 Oct 2026; full Suncorp→ANZ platform migration by Jun 2027. This is a compressed forced
+  merchant re-onboarding wave landing inside the accelerator window — the "migration-cohort KYB"
+  use case. Pitch it to **CBA** (catching the churn), not ANZ. Suncorp merchant book size is not
+  published (AMLHive estimate ~8–20k, LOW confidence). Full analysis: ADR
+  `alexandria/vault/decisions/anz-worldline-suncorp-merchant-migration-2026-09-09.md`.
 - 🟡 **NAB** already publishes Tranche 2 obligation guides for real estate / conveyancers /
   lawyers / accountants — the referral is the next rung; time the approach for Q1 2027 after the
   30 Sep 2026 COO + Group Exec Tech departures and the new CRO landing.

@@ -28,6 +28,11 @@ The fix is a **4-tier refinery** with an enforced frontmatter contract, TTL + ro
 and a hand-curated Map-of-Content layer. Authority: `alexandria/vault/decisions/knowledge-architecture-2026-09-08.md`.
 The live task list is `alexandria/vault/_refinery/QUEUE.md`.
 
+**Binding operating contract:** `alexandria/vault/_refinery/PLUTO-OPERATING-RULES.md` sits above the
+QUEUE — the revised loop, multi-writer coordination, the per-batch pre-commit checklist, and the
+rule that prevents each mistake made so far. Read it before working the QUEUE. The whole-vault
+audit that motivated it: `alexandria/vault/_refinery/rationalisation-2026-09-09/`.
+
 ## When to Use
 
 - Running / resuming the refinery queue (`alexandria/vault/_refinery/QUEUE.md`)
@@ -51,9 +56,14 @@ Full folder layout + the frontmatter JSON-Schema: [references/tier-and-frontmatt
 ## Step-by-Step Procedure
 
 ### 1. Preparation
-1. `cd ~/.hermes/alexandria` (or your clone), `git pull`.
-2. Read `vault/_refinery/QUEUE.md` top-to-bottom. Pick the highest-priority unchecked task whose
-   preconditions are met. `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked.
+1. `cd ~/.hermes/alexandria` (or your clone), **`git pull --rebase`** — the sync cron writes 4×/day
+   (00:15 / 06:15 / 12:15 / 18:15 AEST) and interactive sessions push too. If you were on a stale
+   checkout, re-pull. Never start a batch with uncommitted work in the tree from a previous batch.
+2. Read `vault/_refinery/PLUTO-OPERATING-RULES.md`, then `vault/_refinery/QUEUE.md` top-to-bottom.
+   Pick the highest-priority unchecked task whose preconditions are met. `[ ]` todo · `[~]` in
+   progress · `[x]` done · `[!]` blocked. **If a task's premise has drifted** (file counts wrong,
+   a named file is gone, a dependency isn't done), fix the QUEUE entry and flag it under NEEDS
+   HARIS before working it.
 3. Read `vault/_refinery/progress-log.md` tail for where the last batch stopped.
 
 ### 2. Core execution — work in bounded batches
@@ -74,14 +84,26 @@ pass — cost must scale with new-work, not vault size.
 - **Chamber consolidation / canonical facts:** a fact appearing in ≥3 chambers gets **one**
   canonical entry in `canonical/reference/` and `↗` links from the chambers (keep only the
   chamber-specific implication inline).
+- **Merging or retiring a chamber/domain is not done until its feed can no longer regenerate it.**
+  A file merge (`git mv` → `_archive/`) must land in the *same commit* as removing that name from
+  `vault/_refinery/routing-table.md` and from the chamber-refresh cron's domain list on the WSL
+  host. This is the T5.2 mistake — the file was merged, the vocab wasn't, so the stub regenerates.
+- **`expires:` sweep is mandatory every weekly pass.** Past-due entry → compress to a one-line
+  durable claim or move the block to `_archive/`. As of 2026-09-09 it had never once run and
+  69% of tagged chamber entries were past due.
 
 ### 3. Verification & close-out (per batch)
 1. Secrets scan (PAT / AWS / key / JWT patterns) over the diff. Key *names* fine, values never.
 2. `python3 vault/_refinery/` schema check if present; confirm no file lost knowledge (archived, not deleted).
-3. Commit: `chore(alexandria): refinery — <task> (<n> files)`. Tick the `QUEUE.md` box. Append a
+3. Every new/moved file has contract frontmatter; every merge/retire also changed its feed (above).
+4. **Commit + push this batch immediately** — one batch = one commit = one push. Do not accumulate
+   uncommitted work across batches; that is how collisions and clobbered hand-edits happen.
+   `chore(alexandria): refinery — <task> (<n> files)`. Tick the `QUEUE.md` box. Append a
    `progress-log.md` block: `ran / counts (before→after) / decisions / follow-ups`.
-4. `git pull --rebase && git push`.
-5. Stop when the queue is drained or a task needs a human decision — record it under **NEEDS HARIS**.
+5. `git pull --rebase` (union-merge logs/chambers/appends; take newer for structural files, never
+   `--force`) `&& git push`.
+6. Stop when the queue is drained or a task needs a human decision — record it under **NEEDS HARIS**.
+   Never push past a blocker "to keep moving."
 
 ## Best Practices & Guidelines
 
@@ -93,15 +115,21 @@ pass — cost must scale with new-work, not vault size.
 - **Windows-safe filenames only** — no colons, emoji, parens, trailing spaces, variation selectors.
   This is why `slugify_job()` exists; skipping it caused 37 duplicate report-folder pairs and
   Windows checkout failures.
-- **The single writer pushes.** `alexandria` and `alexandria-ops` are both written by the WSL sync
-  host. Read-only clones everywhere else — make knowledge changes in the local MemPalace store; the
-  next sync brings them here.
+- **Multi-writer reality.** The design intent is single-writer (the WSL sync host), and read-only
+  clones elsewhere should make knowledge changes in the local MemPalace store. But in practice the
+  sync cron, Pluto, and interactive sessions all commit to `main` — so: `git pull --rebase` before
+  every batch; append never overwrite in chambers/logs/`progress-log.md`; check `git log -1 -- <file>`
+  before editing a file another writer touched recently; one batch = one push; never `--force`.
+  If Pluto does not yet have confirmed push access to `main`, work on a branch `refinery/<task>`
+  and open a PR. Full protocol: `PLUTO-OPERATING-RULES.md` §3.
 - **Don't point RAG at `alexandria-ops` or `_archive/`.** Retrieval uses Tier 2/3 only.
 - Freshness-sampling pitfall from `knowledge-base-maintenance` applies: histogram *all* dates, don't
   sample the head — an actively-fed chamber looks stale if you only read its oldest entries.
 
 ## Reference
 
+- `alexandria/vault/_refinery/PLUTO-OPERATING-RULES.md` — **binding operating contract** (loop, multi-writer, checklist)
+- `alexandria/vault/_refinery/rationalisation-2026-09-09/` — whole-vault audit + consolidated plan
 - `alexandria/vault/decisions/knowledge-architecture-2026-09-08.md` — the ADR (why + full design)
 - `alexandria/vault/_refinery/QUEUE.md` — live task list (P1–P8)
 - `alexandria/vault/_refinery/alexandria-ops-integration.md` — the ops-repo operating instructions

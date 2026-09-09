@@ -5,6 +5,14 @@ description: Pluto-Mempalace dual-agent knowledge bridge — ChromaDB feeder, Gu
 
 # Pluto-Mempalace Bridge Architecture
 
+> **⚠️ Alexandria mirror check (2026-09-09):** the whole-vault audit
+> (`alexandria/vault/_refinery/rationalisation-2026-09-09/`) found the
+> `alexandria/vault/mempalace/` mirror **frozen** — weekly-captures stop ~early June 2026, many
+> files are "*No signals yet*" shells. The ChromaDB feeder / query pipeline described below still
+> runs on cron, but confirm the Windows MemPalace source is live and the mirror is refreshing
+> before relying on `vault/mempalace/` content. If the store is retired, the mirror should be
+> archived (NEEDS HARIS in the audit).
+
 ## Chamber Architecture (v3.2 — Aug 2026: 12 collections)
 
 > **⚠️ UPDATE Aug 16, 2026:** The 27-collection architecture was consolidated to **12 collections** (~2,014 docs) by `mempalace_optimize.py`. The 6 source-topic chambers (`events-sydney`, `accelerators`, `cloud-frontier`, `startup-funding`, `coding-agents`, `ai-frontier`) and 3 emergent chambers (`market-signals`, `quantum-computing`, `space-tech`) were merged into their parent domain chambers or `pluto_research`. **Current live collections (12):** `regulatory-ai`, `fintech-aml`, `agentic-security`, `cloud-infra`, `critical-infra`, `startup-vc`, `payments-npp`, `digital-identity`, `sovereign-ai`, `agent-architecture`, `aie-podcast`, `pluto_research`. The historical 27-collection detail below is retained for reference only.

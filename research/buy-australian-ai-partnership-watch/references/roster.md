@@ -12,10 +12,11 @@ grow.
 | Delivery Partner | Stone & Chalk |
 | Principal Sponsor | National AI Centre (NAIC), within DISR |
 | First intake | Financial services — banking, insurance, superannuation |
-| Tracks | Digital (open access) · Accelerator (10 companies, 8 weeks) — both free |
+| Tracks | Digital (open access) · Accelerator (10 companies, 8 weeks) — both free. Cohort cap 10 confirmed on the S&C program page 9 Sep 2026. |
 | EOI opened | 27 August 2026 |
-| EOI closes | **24 September 2026** |
-| Accelerator | ~5 October – 27 November 2026 |
+| EOI closes | **24 September 2026** · cohort notified 30 September |
+| Accelerator | **October–December 2026** (~8 weeks) per the S&C program page; showcase late in the program |
+| Problem statements | Not published as at 9 Sep 2026; S&C FAQ says released "during the EOI period" |
 | Govt framing | National AI Plan (2 Dec 2025); founding partners' combined procurement cited as >A$22bn/yr — "serious buyers", not a market size |
 
 ## Organisations

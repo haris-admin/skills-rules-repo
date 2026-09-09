@@ -5,7 +5,8 @@ to the shared fleet knowledge vault **`github.com/haris-admin/alexandria`** — 
 `alexandria_sync.py`, or by draining a local MemPalace queue that ends up there.
 
 Authority: `alexandria/vault/decisions/knowledge-architecture-2026-09-08.md` (ACCEPTED 2026-09-08).
-Operating procedure: skill `alexandria-refinery`. This card is the blocking subset.
+Operating procedure: skill `alexandria-refinery` + `alexandria/vault/_refinery/PLUTO-OPERATING-RULES.md`
+(the binding loop + multi-writer coordination + per-batch checklist). This card is the blocking subset.
 
 ## Why this exists
 
@@ -61,9 +62,18 @@ signal-to-noise ratio from collapsing again as push volume grows.
    history rewrites, no force-push. Full secret scan before every commit — cron output sometimes
    echoes env.
 
-8. **The single writer pushes.** `alexandria` and `alexandria-ops` are written only by the WSL
-   sync host. Everywhere else the repo is **read-only knowledge** — make the change in the relevant
-   local MemPalace store and let the next sync carry it in.
+8. **Single-writer by design; coordinate for real.** The intent is that only the WSL sync host
+   pushes `alexandria` / `alexandria-ops`, and everywhere else the repo is read-only knowledge —
+   make the change in the local MemPalace store and let the next sync carry it in. In practice the
+   sync cron, Pluto, and interactive sessions do all commit to `main`, so whenever you *do* write
+   directly: `git pull --rebase` before every batch; **append, never overwrite** another writer's
+   entry; check `git log -1 -- <file>` before editing a file touched recently; one batch = one
+   commit = one push (never accumulate); never `--force`; and if you conflict on a log/chamber,
+   keep **both** sides. Full protocol: `alexandria/vault/_refinery/PLUTO-OPERATING-RULES.md` §3.
+
+9. **A merge/retire is not done until its feed changes too.** Merging a chamber (`git mv` →
+   `_archive/`) must land in the same commit as removing that name from `_refinery/routing-table.md`
+   and the chamber-refresh cron's domain list — otherwise the next sync regenerates the stub.
 
 ## Tier placement (where a new note lands)
 
@@ -88,4 +98,9 @@ pass promote it. Do not put unverified material straight into `chambers/` or `ca
       `supersedes:` + `contradiction: true`
 - [ ] Facts linked (`↗`), not re-typed; ≥3-chamber facts promoted to `canonical/reference/`
 - [ ] Secret scan clean; no PII / client records
-- [ ] Change made via the single-writer path (sync host), not a stray push from a read-only clone
+- [ ] `git pull --rebase` done at batch start; one batch = one commit = one push (no accumulated
+      uncommitted work); log/chamber conflicts resolved by keeping both sides
+- [ ] If a chamber/domain was merged or retired: `routing-table.md` vocab **and** the refresh cron
+      were changed in the same commit (else it regenerates)
+- [ ] Change made via the single-writer path (sync host) where possible; if writing directly,
+      coordination rules in `PLUTO-OPERATING-RULES.md` §3 followed

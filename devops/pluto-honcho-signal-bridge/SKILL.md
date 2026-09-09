@@ -6,6 +6,13 @@ allowed-tools: [terminal, read_file, write_file, execute_code]
 
 # Pluto Honcho Signal Bridge
 
+> **⚠️ Alexandria mirror check (2026-09-09):** the whole-vault audit
+> (`alexandria/vault/_refinery/rationalisation-2026-09-09/`) found `alexandria/vault/honcho/` is a
+> **single README stub** describing a "raw archive" that was never populated — the bridge cron
+> runs but writes nothing into the Alexandria mirror, and the Honcho workspace itself is
+> near-empty (~220 B/peer). Open question (NEEDS HARIS): populate `vault/honcho/` (wire this
+> bridge to write there) or deprecate Honcho and retire the cron.
+
 ## When to Use
 - Running the Honcho bridge manually after a pipeline run
 - Debugging why signals weren't pushed
