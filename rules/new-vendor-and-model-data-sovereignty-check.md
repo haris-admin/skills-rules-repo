@@ -101,6 +101,15 @@ of re-deriving the pattern from C301 each time.
 | C403 | Didit (KYC/identity verification) | Open — residency unconfirmed, sandbox/synthetic-data-only until resolved |
 | C404 | NVIDIA Nemotron (AI extraction eval) | Open — no `au.`-region Bedrock path found, live-call authorization not yet requested |
 | C411 | CodeRabbit (PR-review SaaS) | Resolved — not adopted. Rejected on marginal-benefit grounds (this repo's own `/code-review`/`/openspec-verify` already know YourApp-specific rules a generic bot doesn't) before the residency question was ever tested against real code; its SaaS tiers have no confirmed AU-residency commitment on record here, so treat as UNCONFIRMED if reconsidered later. |
+| C496 | ElevenLabs Agents (conversational voice — HiveCoach data plane) | Open — no confirmed AU/`ap-southeast-2` residency. Phase-1 approval is synthetic staff-practice media only; not real-client data, not an AU-residency claim, does not carry to a downstream client-facing product. Resolves only via a self-hosted in-region voice stack or a confirmed AU-resident zero-retention contract. Built behind a `VoiceSessionProvider` port per `provider-seam-for-portable-dependency.md`. |
 
 Add a row here whenever this pattern applies to a new vendor/model so the next reader doesn't have
 to grep OpenSpec history to find every prior instance.
+
+## Related
+
+- `provider-seam-for-portable-dependency.md` — how to build the integration once a provider is
+  chosen so a later swap or in-house move is not a rewrite.
+- `data-sovereignty-market-screen` and `au-sovereignty-alignment-audit` skills — the executable
+  per-opportunity screen and the recurring shipped-solution alignment audit.
+- `caduceus-compliance-watch` skill — the live regulatory-date tracker feeding both.

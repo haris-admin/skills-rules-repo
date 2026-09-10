@@ -98,9 +98,11 @@ Do **not** add controls for these now unless a named opportunity requires it.
 
 **Architectural implication (do this now, cheaply):** keep the data plane swappable and
 region-pinned; keep provider adapters behind a port; keep an explicit `region` / `provider` /
-`data_category` field on records; never hard-wire a foreign SaaS into the core. See the HiveCoach
-two-planes pattern (`openspec/changes/496-*/CLAUDE_FEEDBACK.md` in the AMLHive repo) as the worked
-example.
+`data_category` field on records; never hard-wire a foreign SaaS into the core. The full checklist
+for this is the `provider-seam-for-portable-dependency` rule. Worked example: the HiveCoach
+"two planes, one seam" design (`openspec/changes/496-hivecoach-voice-training-simulator/design.md`
+§1 in the AMLHive repo — an ElevenLabs data plane behind a `VoiceSessionProvider` port, control
+plane pinned to `ap-southeast-2`, so a later self-hosted Sydney stack is a swap not a rewrite).
 
 ### 5. Program / grant conflict check
 If the opportunity is tied to a grant or accelerator, name the conflict explicitly:
