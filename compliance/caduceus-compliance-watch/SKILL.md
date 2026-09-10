@@ -28,6 +28,14 @@ Any compliance task: regulatory intel, Tranche 2 analysis, PSP licensing watch, 
    - UBO: human-approved output only, never sell customer docs
    - Flag unsafe copy ("Tranche 2 Compliant in 14 Days" pattern)
 
+## Feeds
+
+This skill owns the authoritative regulatory **dates**. Keep two downstream skills in sync with the
+"Key dates" block below: `data-sovereignty-market-screen` (per-opportunity go/no-go gate) and
+`au-sovereignty-alignment-audit` (recurring check that shipped solutions haven't drifted; its
+`references/au-incoming-regulation-register.md` maps each date here to "does it apply / what does
+aligned look like"). When a date moves here, update those.
+
 ## Key dates (tracked)
 - Tranche 2 in force: 1 Jul 2026 (general commencement 31 Mar 2026)
 - Card surcharge ban: 1 Oct 2026

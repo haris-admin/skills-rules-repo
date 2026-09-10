@@ -26,7 +26,8 @@ Generate project ideas through creative constraints. Constraint + direction = cr
 1. **Pick a constraint** from the library below — random, or matched to the user's domain/mood
 2. **Interpret it broadly** — a coding prompt can become a hardware project, an art prompt can become a CLI tool
 3. **Generate 3 concrete project ideas** that satisfy the constraint
-4. **If they pick one, build it** — create the project, write the code, ship it
+4. **Run the regulated-market & data-sovereignty screen** for each serious idea before recommending it for build. Use [the shared rule](../../rules/new-vendor-and-model-data-sovereignty-check.md); write `N/A` only where no data/market trigger exists.
+5. **If they pick one, build it** — create the project, write the code, ship it
 
 ## The Rule
 
@@ -111,14 +112,17 @@ See `references/full-prompt-library.md` for 30+ additional constraints across co
 1. **[One-line pitch]**
    [2-3 sentences: what you'd build and why it's interesting]
    ⏱ [weekend / week / month] • 🔧 [stack]
+   🌐 [AU / CA / US / EU RAG posture and the gate before real data]
 
 2. **[One-line pitch]**
    [2-3 sentences]
    ⏱ ... • 🔧 ...
+   🌐 [RAG posture and real-data gate]
 
 3. **[One-line pitch]**
    [2-3 sentences]
    ⏱ ... • 🔧 ...
+   🌐 [RAG posture and real-data gate]
 ```
 
 ## Example

@@ -22,3 +22,10 @@ description: Write build-handover notes addressed to "whichever agent implements
 4. **State plainly whether you fixed it yourself or are asking someone else to.** "Already applied
    directly — not a request" reads very differently from "needs correction before build," and
    conflating them wastes the next reader's time re-deriving which is true.
+5. **Direction for another agent is a durable artifact, not a chat message** — this holds even
+   before a spec folder exists. Asked to review-and-direct without building: create the change
+   folder at the correct next number (check the index — never trust a number quoted in a brief),
+   drop a `CLAUDE_FEEDBACK.md` in it stating no spec is authored yet, and enumerate what the next
+   agent must author (which files, what each contains, gating tests and decisions). Give
+   instructions, not implementations. Cross-cutting direction (process, skills, rules) goes in a
+   named `docs/` doc. See the `agent-handoff-direction-artifact` rule for the full contract.

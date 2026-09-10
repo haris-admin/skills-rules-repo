@@ -1,8 +1,44 @@
-# New vendor / AI model data-sovereignty check (all agents)
+# Regulated-market & data-sovereignty screen (all agents)
 
-Applies whenever evaluating, integrating, or requesting access to **any new external vendor or AI
-model YourApp doesn't already use** — a KYC/screening/identity provider, a payments or email
-provider, or a new LLM/inference provider — before any real client data touches it.
+Applies whenever evaluating, integrating, or requesting access to **any new opportunity, market,
+external vendor, or AI model**. It is mandatory before an idea is recommended for build and before
+any real client data touches a new provider or crosses a jurisdictional boundary.
+
+This is an AU-first screen: Australia is enforced now; Canada, the United States and the European
+Union are designed for and monitored, not built for, unless the opportunity actually enters that
+market. It is a product/risk screen, not legal advice. Verify the live primary source and obtain
+legal/privacy review before relying on a jurisdiction-specific conclusion.
+
+## Mandatory opportunity output
+
+Every opportunity evaluation must include this matrix. `RAG` is the decision posture, not a claim
+that the listed law is the only applicable law.
+
+| Jurisdiction | RAG | Current posture | What must be true before real data touches it |
+| --- | --- | --- | --- |
+| Australia | 🔴 enforce now | Store/process application data, backups and infrastructure in `ap-southeast-2`; apply the Privacy Act/APPs (including APP 8 cross-border disclosure), applicable AML/CTF obligations and security controls. Privacy Act changes include the statutory tort for serious invasions of privacy; the ADM privacy-policy obligation starts 10 Dec 2026 for covered decisions. The Voluntary AI Safety Standard and Guidance for AI Adoption are voluntary, but useful procurement/governance evidence; ISO/IEC 42001 and NAIC guidance are assurance frameworks, not legislation. | Document the data map, residency/subprocessors, purpose/lawful collection, retention, security and human accountability. Treat voice recordings as personal information; treat biometric voice features/templates used to identify or verify a person as sensitive information until privacy review says otherwise. |
+| Canada | 🟡 design for / verify on entry | PIPEDA and provincial rules apply depending on activity; Quebec Law 25 has automated-decision transparency/contestability requirements. AIDA remains a proposed regime, not a present compliance claim. Public-sector and financial-sector residency expectations must be checked per customer/province. | Identify the entity, province, sector and transfer route; perform the applicable privacy/impact assessment and obtain customer/legal approval before collection or processing. |
+| United States | 🟡 design for / verify on entry | No single national privacy/AI regime: state privacy laws (including California), sectoral laws such as GLBA/HIPAA where applicable, FTC consumer-protection enforcement and evolving state AI rules all need scoped analysis. SOC 2 is a market assurance expectation, not a law. | Identify states, data categories, sector and consumer-facing decision use; confirm notices, contracts, opt-out/rights, security and any AI-disclosure duties before launch. |
+| European Union | 🟡 design for / verify on entry | GDPR, cross-border-transfer mechanisms and the EU AI Act's risk-based obligations apply when scope is triggered; AI Act timing differs by obligation. The EU Data Act may also apply to connected-product/data-access models. | Establish lawful basis, controller/processor roles, transfer mechanism, DPIA/AI-risk classification, human oversight, transparency and deletion/rights processes before EU personal data is processed. |
+
+If an idea does not process data or enter a jurisdiction, write `N/A — no data/market trigger` and
+state the assumption. Do not omit the row.
+
+## Hard gates
+
+1. **No real data until green for the relevant market.** A new provider, model, region or market is
+   `RED` until the matrix says what data moves, where it moves, why it is permitted and who approved
+   it. A concept/prototype using no personal or production data may remain an explicitly bounded
+   `AMBER` experiment.
+2. **Do not collapse residence, transfer and vendor risk into one question.** Hosting in Australia
+   does not itself settle model inference, support access, telemetry, subprocessors, training,
+   retention or cross-border disclosure.
+3. **Voice is a heightened-data use.** Do not assume a voice product is low-risk because it does not
+   store a recording. Analyse transcript, derived features, biometric use, provider logs and human
+   escalation separately.
+4. **Record status, uncertainty and owner.** Mark each claim `confirmed`, `unconfirmed` or
+   `proposed/monitor`; link the primary source; name the human owner for any open gate. Never turn a
+   proposed law or voluntary framework into a claimed legal duty.
 
 ## Why this exists
 

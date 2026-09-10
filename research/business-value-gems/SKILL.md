@@ -30,12 +30,13 @@ First Pentagon CIO (1991), NASA CIO (2002), Xerox VP. **Core finding: NO statist
 3. **Management, measurement & decision quality** — Drucker, Deming, Herbert Simon, Kahneman, Annie Duke, Gary Klein
 
 ## Mining Protocol (per gem run)
-1. Pick a cluster (or new one). Dispatch parallel sub-agents (1 per cluster), each producing a dossier (~500-750 words):
+1. Run the [regulated-market & data-sovereignty screen](../../rules/new-vendor-and-model-data-sovereignty-check.md) for each proposed application before treating it as actionable. Include the AU/CA/US/EU RAG matrix and the condition before real data touches it; do not turn a voluntary framework or proposed law into a legal claim.
+2. Pick a cluster (or new one). Dispatch parallel sub-agents (1 per cluster), each producing a dossier (~500-750 words):
    - (a) one-line bio · (b) core thesis 1-2 lines · (c) most quotable idea · (d) 1-2 concrete applications to OUR products (name them)
    - Cite-labels [S1]/[T1]/[G1]/[M1] convention
-2. VERIFY via web research — never fabricate. Prefer primary sources (author sites, HBR, MIT, Nobel pages).
-3. Save each dossier to ~/.hermes/research_outputs/ AND file a copy to ~/.hermes/mempalace-inputs/ for the palace queue.
-4. PATCH this skill with the new gems (append to the Gems Register) so the arsenal grows permanently.
+3. VERIFY via web research — never fabricate. Prefer primary sources (author sites, HBR, MIT, Nobel pages).
+4. Save each dossier to ~/.hermes/research_outputs/ AND file a copy to ~/.hermes/mempalace-inputs/ for the palace queue.
+5. PATCH this skill with the new gems (append to the Gems Register) so the arsenal grows permanently.
 
 ## Gems Register (append as mined)
 - [2026-08-31] **Strassmann** — IT spend ≠ profit; R-O-M; Information Productivity; paving the cow path. → 8 ideas mapped (S1-S8). Seed gem.

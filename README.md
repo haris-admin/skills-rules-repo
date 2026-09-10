@@ -427,7 +427,6 @@ Hermes/Pluto.
 | **[Moved](./rules/claude-code-spec-only-cursor-implements.md)** | This rule has been renamed to… |
 | **[Neurodiverse Visual-First Rule (Mandatory Visual Companions & Simple Presentations)](./rules/neurodiverse-visual-first.md)** | **Authority**: Required for all engineering proposals, OpenSpec change sets, technical debt reviews, and stakeholder presentations. |
 | **[New public-page registration checklist (all agents)](./rules/new-public-page-registration-checklist.md)** | Applies when adding a brand-new public (unauthenticated) route under `frontend/app/`, e.g. the `/product`, `/security`, `/austrac-compliance`… |
-| **[New vendor / AI model data-sovereignty check (all agents)](./rules/new-vendor-and-model-data-sovereignty-check.md)** | Applies whenever evaluating, integrating, or requesting access to **any new external vendor or AI model YourApp doesn't already use** — a… |
 | **[No email delivery to A2 Square / AnotherCompany accounts (all agents)](./rules/no-a2square-emails.md)** | Applies whenever sending, drafting, or configuring any YourApp email — SES after-action reports, operational alerts, test emails, error reports, or… |
 | **[No fabricated "Human decision" log entries (all agents)](./rules/no-fabricated-human-decisions.md)** | Applies whenever an agent is tempted to write a "Human decision" / "Human product decision" / "confirmed by [user]" heading into any spec, proposal… |
 | **[No hardcoded "current state" literals in checks (all agents)](./rules/no-hardcoded-current-state-literals.md)** | - |
@@ -445,6 +444,7 @@ Hermes/Pluto.
 | **[Public page SEO metadata (all agents)](./rules/public-page-seo-metadata.md)** | Applies when adding or editing public/marketing routes in `frontend/app/` that appear in `sitemapRoutes`. |
 | **[Python Style Guide & Best Practices](./rules/python-style-guide.md)** | Standards and conventions for writing clean, Pythonic, and type-hinted code. |
 | **[Redirect / alias testing completeness (all agents)](./rules/redirect-alias-testing-completeness.md)** | Applies when adding, editing, or testing any redirect, rewrite, alias, or proxy rule — Next.js `redirects()`/`rewrites()` in `next.config.ts`… |
+| **[Regulated-market & data-sovereignty screen (all agents)](./rules/new-vendor-and-model-data-sovereignty-check.md)** | Applies whenever evaluating, integrating, or requesting access to **any new opportunity, market, external vendor, or AI model**. It is mandatory… |
 | **[Scheduled/automated task placement: GitHub Actions vs. Pluto (all agents)](./rules/scheduled-automation-placement.md)** | Applies whenever proposing new recurring or scheduled automation in this repo — a lint check, a test suite, a security scan, a metrics report, a… |
 | **[Security & Secrets Management](./rules/security-and-secrets.md)** | Universal security protocols, secrets hygiene, and credential protection. |
 | **[Security Guardrails & Safe Coding Guidelines](./rules/security-guardrails.md)** | Enforce baseline security standards across all codebases and AI-assisted workflows. |

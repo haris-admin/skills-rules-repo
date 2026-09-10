@@ -62,6 +62,7 @@ For the **Ideas→Development pipeline** (automated cron job that elevates an id
 4. Extract key signals: trends with hard numbers, regulatory changes with deadlines, emerging gaps
 5. Mark confidence levels: high (official source/multiple surveys), medium (credible analysis), low (speculation)
 6. If GenSparks validates or kills an idea, treat that as a weighted signal (A-grade = strong validation, KILLED = definitive rejection)
+7. Run the mandatory [regulated-market & data-sovereignty screen](../../rules/new-vendor-and-model-data-sovereignty-check.md) for every serious candidate. Include its jurisdiction × obligation matrix and the real-data gate in the recommendation; Australia is enforce-now, other markets are design-for/monitor unless the candidate enters them.
 
 ### Phase 2: Audit Existing Portfolio
 1. Find all `ideas-*` repos:
@@ -107,6 +108,7 @@ When productizing existing infrastructure, run the 88-point framework across 7 d
 - Specific, measurable targets with month-1/month-2/month-3 timelines
 - Include: downloads, industry recognition, paid conversions, enterprise inquiries
 - Include "ultimate success" — what winning looks like at scale
+- Include the regulated-market & data-sovereignty RAG matrix, stating what must be true before real data touches the product.
 
 ### Phase 5: Score with Gumby 1000-Point Assessment
 Score every candidate idea against the 7-dimension framework. See `references/gumby-1000-point-assessment.md` for the full scoring rubric.
