@@ -49,16 +49,61 @@ def parse_frontmatter(content: str):
 
     return data, None
 
+# Top-level directories to never treat as skill-category directories.
+# Mirrors sync.sh's "$REPO_DIR"/*/* discovery glob (which implicitly skips
+# hidden dirs since bash globs don't match dotfiles by default), minus the
+# templates/ directory, which holds the *template* SKILL.md, not a real skill.
+# Kept in sync with generate_catalog.py's SKIP_TOP_LEVEL_DIRS.
+SKIP_TOP_LEVEL_DIRS = {".git", ".github", ".archive", "node_modules", "templates"}
+
+
+def discover_skill_dirs():
+    """Find every <top-level-dir>/<name>/SKILL.md, plus skills/*/SKILL.md —
+    the same set sync.sh actually syncs ("$REPO_DIR"/*/* "$REPO_DIR"/skills/*),
+    deduplicated by resolved SKILL.md path. Previously this validator only
+    walked skills/*, silently skipping the ~213 skills that live under
+    category directories (devops/, research/, compliance/, etc.) — none of
+    those ever got CI structural validation. See generate_catalog.py's
+    discover_skill_dirs(), which this mirrors."""
+    found = {}
+    seen_paths = set()
+
+    def consider(skill_dir):
+        if not skill_dir.is_dir() or skill_dir.name.startswith("."):
+            return
+        skill_md = skill_dir / "SKILL.md"
+        if not skill_md.is_file():
+            return
+        resolved = skill_md.resolve()
+        if resolved in seen_paths:
+            return
+        seen_paths.add(resolved)
+        found[skill_dir.name] = skill_dir
+
+    for top in sorted(ROOT_DIR.iterdir()):
+        if not top.is_dir() or top.name.startswith(".") or top.name in SKIP_TOP_LEVEL_DIRS:
+            continue
+        for sub in sorted(top.iterdir()):
+            consider(sub)
+
+    skills_top = ROOT_DIR / "skills"
+    if skills_top.is_dir():
+        for sub in sorted(skills_top.iterdir()):
+            consider(sub)
+
+    return found
+
+
 def validate_skills(errors):
-    skills_dir = ROOT_DIR / "skills"
-    if not skills_dir.exists():
+    skill_dirs = discover_skill_dirs()
+    if not skill_dirs:
         return
 
-    print("🔍 Validating Skills...")
-    for skill_path in sorted(skills_dir.iterdir()):
+    print(f"🔍 Validating Skills... ({len(skill_dirs)} found across all category dirs)")
+    for skill_path in sorted(skill_dirs.values()):
         if not skill_path.is_dir() or skill_path.name.startswith("."):
             continue
-            
+
         skill_name = skill_path.name
         # Check folder naming convention (lowercase, hyphens/alphanumeric)
         if not re.match(r"^[a-z0-9-]+$", skill_name):
