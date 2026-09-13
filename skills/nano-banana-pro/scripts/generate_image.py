@@ -7,10 +7,10 @@
 # ]
 # ///
 """
-Generate images using Google's Nano Banana Pro (Gemini 3 Pro Image) API.
+Generate images using Google's Nano Banana Pro (Gemini 3.8 Flash) API.
 
 Usage:
-    uv run generate_image.py --prompt "your image description" --filename "output.png" [--resolution 1K|2K|4K] [--api-key KEY]
+    uv run generate_image.py --prompt "your image description" --filename "output.png" [--model gemini-3.8-flash] [--resolution 1K|2K|4K] [--api-key KEY]
 
 Multi-image editing (up to 14 images):
     uv run generate_image.py --prompt "combine these images" --filename "output.png" -i img1.png -i img2.png -i img3.png
@@ -31,7 +31,7 @@ def get_api_key(provided_key: str | None) -> str | None:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Generate images using Nano Banana Pro (Gemini 3 Pro Image)"
+        description="Generate images using Nano Banana Pro (Gemini 3.8 Flash)"
     )
     parser.add_argument(
         "--prompt", "-p",
@@ -49,6 +49,11 @@ def main():
         dest="input_images",
         metavar="IMAGE",
         help="Input image path(s) for editing/composition. Can be specified multiple times (up to 14 images)."
+    )
+    parser.add_argument(
+        "--model", "-m",
+        default="gemini-3.8-flash",
+        help="Gemini model to use (default: gemini-3.8-flash)"
     )
     parser.add_argument(
         "--resolution", "-r",
@@ -120,14 +125,14 @@ def main():
     if input_images:
         contents = [*input_images, args.prompt]
         img_count = len(input_images)
-        print(f"Processing {img_count} image{'s' if img_count > 1 else ''} with resolution {output_resolution}...")
+        print(f"Processing {img_count} image{'s' if img_count > 1 else ''} with model {args.model} and resolution {output_resolution}...")
     else:
         contents = args.prompt
-        print(f"Generating image with resolution {output_resolution}...")
+        print(f"Generating image with model {args.model} and resolution {output_resolution}...")
 
     try:
         response = client.models.generate_content(
-            model="gemini-3-pro-image-preview",
+            model=args.model,
             contents=contents,
             config=types.GenerateContentConfig(
                 response_modalities=["TEXT", "IMAGE"],
@@ -168,7 +173,7 @@ def main():
 
         if image_saved:
             full_path = output_path.resolve()
-            print(f"\nImage saved: {full_path}")
+            print("\nImage saved:", full_path)
             # OpenClaw parses MEDIA tokens and will attach the file on supported providers.
             print(f"MEDIA: {full_path}")
         else:

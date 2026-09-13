@@ -255,7 +255,7 @@ Hermes/Pluto.
 | **[minecraft-modpack-server](./gaming/minecraft-modpack-server/SKILL.md)** | "Host modded Minecraft servers (CurseForge, Modrinth)." | - |
 | **[model-usage](./skills/model-usage/SKILL.md)** | Use CodexBar CLI local cost usage to summarize per-model usage for Codex or Claude, including the current (most recent) model or a full model… | [Codexbar Cli](./skills/model-usage/references/codexbar-cli.md) |
 | **[my-defender-claude](./skills/my-defender-claude/SKILL.md)** | Security and compliance expert for code security reviews, vulnerability assessment, compliance gap analysis, and threat modeling. Expertise in OWASP… | - |
-| **[nano-banana-pro](./skills/nano-banana-pro/SKILL.md)** | Generate or edit images via Gemini 3 Pro Image (Nano Banana Pro). | - |
+| **[nano-banana-pro](./skills/nano-banana-pro/SKILL.md)** | Generate or edit images via Gemini 3.8 Flash (Nano Banana Pro). | - |
 | **[nano-pdf](./skills/nano-pdf/SKILL.md)** | Edit PDFs with natural-language instructions using the nano-pdf CLI. | - |
 | **[native-mcp](./mcp/native-mcp/SKILL.md)** | "MCP client: connect servers, register tools (stdio/HTTP)." | - |
 | **[neurodiverse-visual-specs](./skills/neurodiverse-visual-specs/SKILL.md)** | Author multi-modal, visual-first change companions, simple slide presentations, and executive visual reports for technical proposals, security… | - |
@@ -323,7 +323,7 @@ Hermes/Pluto.
 | **[sag](./skills/sag/SKILL.md)** | ElevenLabs text-to-speech with mac-style say UX. | - |
 | **[sdlc-review](./devops/sdlc-review/SKILL.md)** | Review Kanban handoffs and route verified outcomes. | - |
 | **[secret-and-credential-safety](./cloud-and-aws/secret-and-credential-safety/SKILL.md)** | Absolute mandate against reading, printing, logging, or exposing API keys, connection strings, or cloud credentials. | - |
-| **[security-audit](./skills/security-audit/SKILL.md)** | Perform automated and static security audits, vulnerability assessments, secret detection, and OWASP Top 10 compliance checks. Use when asked to… | [Owasp Top 10](./skills/security-audit/references/owasp-top-10.md) |
+| **[security-audit](./skills/security-audit/SKILL.md)** | Perform a structured, tool-assisted security audit of a codebase — secret/credential exposure, injection and auth flaws, dependency CVEs, and… | [Fastapi Python Checklist](./skills/security-audit/references/fastapi-python-checklist.md) |
 | **[sentry-setup](./devops/sentry-setup/SKILL.md)** | "Set up Sentry error monitoring for Python (FastAPI) and Next.js projects — DSN configuration, SDK installation, config files, test events, and build… | [Homelab Config](./devops/sentry-setup/references/homelab-config.md) |
 | **[sentry-triage](./observability-and-sentry/sentry-triage/SKILL.md)** | Systematic protocol for triaging incoming Sentry issues, filtering 3rd-party noise, and resolving first-party regressions. | - |
 | **[seo-geo-metadata-audit](./frontend-and-ux/seo-geo-metadata-audit/SKILL.md)** | Ensure perfect structured data (JSON-LD), OpenGraph tags, canonical links, and AI search (GEO) crawlability. | - |
@@ -396,7 +396,7 @@ Hermes/Pluto.
 
 | Rule File | Scope & Summary |
 | :--- | :--- |
-| **[`backend/alembic/` shadows the real installed `alembic` PyPI package (all agents)](./rules/alembic-package-name-shadowing.md)** | - |
+| **[`backend/alembic/` shadows the real installed `alembic` PyPI package (all agents)](./rules/alembic-package-name-shadowing.md)** | A local migrations directory named `alembic` can shadow the real installed `alembic` PyPI package on `sys.path`, turning `import alembic.config` into… |
 | **[ACR evidence-capture standard (all agents)](./rules/acr-evidence-capture-standard.md)** | **Blocking, not guidance.** Requirement A429.12 in `openspec/changes/429-acr-annual-compliance-report-real-estate/` (proposal + design). |
 | **[Admin binary-download endpoints need `adminFetchBlob`, not `adminFetch` (all agents)](./rules/admin-fetch-binary-response-contract.md)** | Applies whenever adding, calling, or debugging an `/admin/v1/*` endpoint that returns a file (CSV, PDF, any `StreamingResponse`/non-JSON body) — or… |
 | **[Agent Collaboration & Pair Programming Guidelines](./rules/agent-collaboration.md)** | Guidelines for AI agents (Antigravity, Claude, Cursor, Windsurf) working with human engineers and multi-agent systems. |
@@ -418,7 +418,7 @@ Hermes/Pluto.
 | **[DevOps & Deployment Safety Guidelines](./rules/devops-and-deployment.md)** | Guidelines for infrastructure management, deployment automation, Docker containerization, and release safety. |
 | **[Form Validation & Error Surfacing Standards](./rules/form-validation-and-error-surfacing.md)** | **Canonical rule.** Applies to all frontend and backend forms, user profile updates, authentication endpoints, and API proxies. |
 | **[Frontend Engineering: Next.js & React Guidelines](./rules/frontend-nextjs-react.md)** | Guidelines for building fast, accessible, and scalable React and Next.js applications. |
-| **[Git commit hygiene in a shared, concurrently-edited working tree (all agents)](./rules/git-commit-hygiene-shared-worktree.md)** | - |
+| **[Git commit hygiene in a shared, concurrently-edited working tree (all agents)](./rules/git-commit-hygiene-shared-worktree.md)** | A bare `git commit` with no pathspec commits everything currently staged in the index, including other sessions' unrelated staged files in a shared… |
 | **[Git Conventions & Commit Guidelines](./rules/git-conventions.md)** | Standardized Git workflow, commit messages, and branch naming conventions for repositories. |
 | **[Git Workflow & Version Control Hygiene](./rules/git-workflow-hygiene.md)** | Guidelines for clean commit histories, branching strategies, and repository cleanliness. |
 | **[Incremental local commits after each task (restore points)](./rules/incremental-local-commits.md)** | **Scope:** every agent. **Always apply.** Mirrors: `.cursor/rules/incremental-local-commits.mdc` (Cursor)… |
@@ -430,7 +430,7 @@ Hermes/Pluto.
 | **[New public-page registration checklist (all agents)](./rules/new-public-page-registration-checklist.md)** | Applies when adding a brand-new public (unauthenticated) route under `frontend/app/`, e.g. the `/product`, `/security`, `/austrac-compliance`… |
 | **[No email delivery to A2 Square / AnotherCompany accounts (all agents)](./rules/no-a2square-emails.md)** | Applies whenever sending, drafting, or configuring any YourApp email — SES after-action reports, operational alerts, test emails, error reports, or… |
 | **[No fabricated "Human decision" log entries (all agents)](./rules/no-fabricated-human-decisions.md)** | Applies whenever an agent is tempted to write a "Human decision" / "Human product decision" / "confirmed by [user]" heading into any spec, proposal… |
-| **[No hardcoded "current state" literals in checks (all agents)](./rules/no-hardcoded-current-state-literals.md)** | - |
+| **[No hardcoded "current state" literals in checks (all agents)](./rules/no-hardcoded-current-state-literals.md)** | A check that means "does X match the current state of Y" should derive that value from Y itself, not hardcode today's value as a literal — the… |
 | **[No root or unbounded credentials for agents (all agents, all repos)](./rules/no-root-or-unbounded-credentials-for-agents.md)** | Applies to **every** agent surface — Claude Code, Codex, Cursor, Gemini/Antigravity, and any browser-automation tool — whenever an agent touches a… |
 | **[No secret masking — treat credential-shaped fields as opaque (all agents)](./rules/no-secret-masking.md)** | Applies whenever an agent needs to display, log, or reason about a value that might contain a secret (a connection string, API key, token, password)… |
 | **[Notification / reminder coverage audit (all agents)](./rules/notification-coverage-audit.md)** | Applies when adding a new `event_type` to `ComplianceCalendarEvent`, a new `notification_type` to the Notification Centre, a new… |
@@ -461,7 +461,7 @@ Hermes/Pluto.
 | **[TypeScript Style Guide & Standards](./rules/typescript-style-guide.md)** | Best practices and rules for modern, type-safe TypeScript codebases. |
 | **[UI Casing & Microcopy Standards (all agents)](./rules/ui-casing-and-microcopy-standards.md)** | Canonical: `docs/agent_rules/ui-casing-and-microcopy-standards.md` · Antigravity: `.agents/rules/ui-casing-and-microcopy-standards.md` · Cursor… |
 | **[Valid Red, and guard tests that are not vacuous](./rules/red-for-the-right-reason.md)** | **Scope:** every TDD cycle, every agent. Detail for `docs/agent_rules/openspec-tdd-mandate.md` §4, which owns the Red → Green → Refactor mandate… |
-| **[Verifying a dispatched subagent's work, not just its self-report](./rules/subagent-verification-protocol.md)** | - |
+| **[Verifying a dispatched subagent's work, not just its self-report](./rules/subagent-verification-protocol.md)** | An orchestrator should treat a subagent's own "done, tests pass" report as a claim to verify, not a fact — a subagent that backgrounds a long… |
 | **[Verifying live-state and absence claims (all agents)](./rules/verify-external-agent-reports.md)** | Applies whenever any report — from another agent/tool, or self-generated — makes a "live state," "critical/urgent," or "X is missing/absent from… |
 
 ---

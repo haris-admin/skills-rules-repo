@@ -1,6 +1,6 @@
 ---
 name: nano-banana-pro
-description: Generate or edit images via Gemini 3 Pro Image (Nano Banana Pro).
+description: Generate or edit images via Gemini 3.8 Flash (Nano Banana Pro), including multi-image composition (up to 14 images) and 1K/2K/4K resolutions. Use when asked to generate an image from a prompt, edit an existing image, or combine multiple images into one scene.
 homepage: https://ai.google.dev/
 metadata:
   {
@@ -23,7 +23,7 @@ metadata:
   }
 ---
 
-# Nano Banana Pro (Gemini 3 Pro Image)
+# Nano Banana Pro (Gemini 3.8 Flash)
 
 Use the bundled script to generate or edit images.
 
@@ -44,6 +44,11 @@ Multi-image composition (up to 14 images)
 ```bash
 uv run {baseDir}/scripts/generate_image.py --prompt "combine these into one scene" --filename "output.png" -i img1.png -i img2.png -i img3.png
 ```
+
+Model selection
+
+- Defaults to `gemini-3.8-flash`.
+- Override with `--model <name>` (e.g. `--model gemini-3-pro-image-preview`).
 
 API key
 
