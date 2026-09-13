@@ -1,6 +1,6 @@
 ---
 name: pluto-daily-learning
-description: "Daily learning cron. Query Supabase, dedup, teach, quiz."
+description: "Daily learning cron. Query Supabase, dedup, teach, quiz. Use when running or debugging the 6:15 AM daily learning cron, picking a podcast episode/framework to teach, or diagnosing repeated/duplicate daily-learning content."
 ---
 
 # Pluto Daily Learning — Moonshots Podcast Pipeline

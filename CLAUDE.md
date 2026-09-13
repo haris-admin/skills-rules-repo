@@ -16,6 +16,10 @@ python3 scripts/validate.py
 python3 scripts/generate_catalog.py            # rewrite README.md in place
 python3 scripts/generate_catalog.py --check    # exit 1 if README.md is stale (CI gate)
 
+# Audit skills against Anthropic's Skill-authoring rubric (stricter than validate.py; not a CI gate).
+python3 scripts/audit_skill_quality.py             # full per-skill report
+python3 scripts/audit_skill_quality.py --summary   # aggregate counts only
+
 # Distribute skills/rules to agent tools
 ./sync.sh --global                 # ~/.claude/skills, ~/.Codex/skills, ~/.gemini/config/{skills,rules}
 ./sync.sh --project <dir>          # <dir>/.agents, <dir>/.claude/skills, <dir>/.cursor/rules
@@ -31,22 +35,17 @@ There are no unit tests; `validate.py` is the test suite. To check one skill, ru
 
 ### Skills live in category directories, not just `skills/`
 
-~290 skills are spread across ~40 topic-category top-level directories (`research/`, `devops/`, `compliance/`, `backend-and-database/`, `software-development/`, `productivity/`, `creative/`, …) **plus** the flat `skills/` directory. The canonical path shape is `<category-dir>/<skill-name>/SKILL.md`.
+297 skills are spread across ~40 topic-category top-level directories (`research/`, `devops/`, `compliance/`, `backend-and-database/`, `software-development/`, `productivity/`, `creative/`, …) **plus** the flat `skills/` directory. The canonical path shape is `<category-dir>/<skill-name>/SKILL.md`.
 
-**Two discovery mechanisms with different scope — know which you're dealing with:**
-
-| Consumer | Scope |
-| :-- | :-- |
-| `scripts/validate.py` | **only** `skills/*/SKILL.md` (flat dir) |
-| `scripts/generate_catalog.py`, `sync.sh`, `install.sh` (`--list` is flat) | `*/*/SKILL.md` across **all** non-hidden top-level dirs except `templates/` (see `SKIP_TOP_LEVEL_DIRS`) |
-
-So a skill added under a category dir passes `validate.py` trivially (it's not checked) but is still picked up by the catalog and sync. The catalog generator is the real structural check for category-dir skills.
+`scripts/validate.py`, `scripts/generate_catalog.py`, `sync.sh`, and `install.sh` all discover skills the same way: `*/*/SKILL.md` across every non-hidden top-level dir except `SKIP_TOP_LEVEL_DIRS` (`.git`, `.github`, `.archive`, `node_modules`, `templates`), deduplicated by resolved `SKILL.md` path. `validate.py`'s `discover_skill_dirs()` and `generate_catalog.py`'s copy are meant to stay identical — if you widen one's scope (category dirs, skip-list), widen the other the same way, or CI structural checks and the catalog/sync surface silently diverge again (this happened once: `validate.py` only walked flat `skills/*` until 2026-09-13, so the ~213 category-dir skills got zero CI structural validation for months — see `TECHNICAL_DEBT.md`).
 
 ### SKILL.md contract
 
 YAML frontmatter requires `name` (must match the folder name exactly) and `description` (trigger conditions, third person, "Use when…"). Keep `SKILL.md` concise; push bulk into `references/`, `scripts/`, `examples/` subdirs (progressive disclosure). The catalog links the first `references/*.md` file if present.
 
 **Frontmatter gotcha:** `validate.py`'s `parse_frontmatter()` has a known latent bug (see `TECHNICAL_DEBT.md`) — a plain unquoted multi-line scalar silently loses its first line. `generate_catalog.py` carries its own *corrected* copy of the parser. Write `description:` as a folded scalar (`>-`) as the template does, not a bare wrapped string.
+
+`validate.py` only checks structural minimums (frontmatter present, `name` matches folder, `description` non-trivial). `scripts/audit_skill_quality.py` checks the stricter Anthropic Skill-authoring rubric that a skill can pass `validate.py` while still failing: a `description` that states what the skill does but never *when* to use it, a body over ~500 lines, bundled files `SKILL.md` never links to, reference chains more than one level deep, or `name`/folder using a reserved word (`claude`, `anthropic`). It's not a CI gate — run it manually after adding/editing skills.
 
 ### Skill folder names must be globally unique
 

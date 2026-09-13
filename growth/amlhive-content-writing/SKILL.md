@@ -1,6 +1,6 @@
 ---
 name: amlhive-content-writing
-description: "Write AMLHive public copy within brand and CTA guardrails."
+description: "Write AMLHive public copy within brand and CTA guardrails. Use when producing or reviewing any public AMLHive copy — blog articles, compliance guides, landing pages, newsletters, or social drafts for amlhive.com.au — never for Haris Habib's personal brand content."
 ---
 
 # AMLHive Content Writing

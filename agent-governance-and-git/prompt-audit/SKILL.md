@@ -1,6 +1,6 @@
 ---
 name: prompt-audit
-description: Analyze agent conversation trajectories to identify prompt ambiguities, high-correction loops, and rework patterns.
+description: Analyze agent conversation trajectories to identify prompt ambiguities, high-correction loops, and rework patterns. Use when reviewing past agent sessions for recurring corrections or repeated task loops, or when distilling those patterns into persistent agent rules to prevent repeat friction.
 ---
 
 # Prompt Quality Audit

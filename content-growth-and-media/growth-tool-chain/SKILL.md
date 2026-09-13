@@ -1,6 +1,6 @@
 ---
 name: growth-tool-chain
-description: Multi-stage research pipeline: Perplexity (discover/cite) → Antigravity (orchestrate/challenge) → IDE (implement/verify).
+description: Multi-stage research pipeline: Perplexity (discover/cite) → Antigravity (orchestrate/challenge) → IDE (implement/verify). Use when producing a growth/content artifact (guide, comparison table, feature brief) that needs live citations, fact-checked claims, and dated evidence rather than unsourced assertions.
 ---
 
 # Growth Tool Chain

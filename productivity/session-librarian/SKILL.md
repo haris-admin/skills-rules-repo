@@ -1,6 +1,6 @@
 ---
 name: session-librarian
-description: "Organize sessions by prompt: find, rename, archive, prune."
+description: "Organize sessions by prompt: find, rename, archive, prune. Use when asked what sessions exist about a topic or what was decided, to rename sessions, to clean up or archive stale sessions, or to fork/split work into parallel sessions."
 version: 1.0.0
 author: Hermes Agent + Teknium
 license: MIT

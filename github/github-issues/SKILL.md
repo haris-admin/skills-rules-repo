@@ -1,6 +1,6 @@
 ---
 name: github-issues
-description: "Create, triage, label, assign GitHub issues via gh or REST."
+description: "Create, triage, label, assign GitHub issues via gh or REST. Use when creating a new issue, viewing/searching/filtering issues, applying labels or assignees, commenting, closing/reopening, linking issues to PRs, or running an issue-triage pass."
 version: 1.1.0
 author: Hermes Agent
 license: MIT

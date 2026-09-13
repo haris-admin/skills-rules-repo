@@ -97,6 +97,25 @@ deltaTime               // milliseconds since last frame (float)
 millis()                // milliseconds since sketch started
 ```
 
+## Instance Mode for Multiple Sketches
+
+Global mode pollutes `window`. For production — required when embedding
+multiple sketches on one page or integrating with frameworks — use instance
+mode:
+
+```javascript
+const sketch = (p) => {
+  p.setup = function() {
+    p.createCanvas(800, 800);
+  };
+  p.draw = function() {
+    p.background(0);
+    p.ellipse(p.mouseX, p.mouseY, 50);
+  };
+};
+new p5(sketch, 'canvas-container');
+```
+
 ## Transform Stack
 
 Every transform is cumulative. Use `push()`/`pop()` to isolate.

@@ -1,6 +1,6 @@
 ---
 name: genspark-agent-orchestration
-description: How Pluto directs, monitors, and integrates with Genspark Claw agents (Gumby GC, etc.) — communication protocol, task delegation, credit management, email ingestion pipeline, and capability reference.
+description: How Pluto directs, monitors, and integrates with Genspark Claw agents (Gumby GC, etc.) — communication protocol, task delegation, credit management, email ingestion pipeline, and capability reference. Use when directing Gumby GC on research/slide/image tasks, receiving research outputs from a Genspark agent, setting up new Genspark integrations, planning credit-constrained task allocation, or any inter-agent communication with Genspark Claw instances.
 allowed-tools: [terminal, file, web_search, web_extract, send_message, read_file, write_file, execute_code, cronjob]
 ---
 

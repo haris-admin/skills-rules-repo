@@ -1,6 +1,6 @@
 ---
 name: tapease-daily-settlement
-description: "Tapease Daily Settlement Report — queries trans_clover_transaction_payments, sends HTML email with card scheme breakdown, raw transactions, refunds, and settlement summary"
+description: "Tapease Daily Settlement Report — queries trans_clover_transaction_payments, sends HTML email with card scheme breakdown, raw transactions, refunds, and settlement summary. Use when running, debugging, or modifying the Tapease daily settlement cron/report, or troubleshooting SSM/psql connection failures, timezone/window bugs, or empty-CSV errors in the transaction export."
 trigger: "Daily cron at 9:30 PM AEST via no_agent script"
 ---
 
@@ -100,3 +100,9 @@ Generates a daily settlement report for Tapease covering the **9PM→9PM AEST** 
 - **Refund columns are `net_amount`/`created_time`** — not `bronze_refund_amount`/`bronze_refund_created_time`. Those columns don't exist.
 - **Multi-line f-strings break SSM shell commands** — flatten with `chr(10).replace()` and `re.sub(r'\s+', ' ')`.
 - **Secrets Manager** with wrong creds returns empty stdout → JSON decode error. Fall back to `.openclaw/.env`.\n- **`load_env()` and `make_aws_env()` can return empty if Tapease creds are commented in `.hermes/.env`** — they're uncommented in `.openclaw/.env`. Always scan both.\n- **`~/.aws/config` `region = auto` breaks AWS CLI.** Always force `AWS_DEFAULT_REGION=ap-southeast-2` in your env dict before making any AWS API call.
+
+## Reference Files
+
+- `references/tapease-db-troubleshooting.md` — root-cause chain for the false-zero-transactions bug (wrong column type assumption, AT TIME ZONE backwards, bad UTC pre-compute fix)
+- `references/cron-robustness-patterns.md` — robust cron script patterns for the SSM tunnel and empty-result handling
+- `references/postgres-at-timezone-pitfall.md` — detailed explanation of the PostgreSQL `AT TIME ZONE` string-literal pitfall

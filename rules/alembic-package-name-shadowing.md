@@ -1,5 +1,9 @@
 # `backend/alembic/` shadows the real installed `alembic` PyPI package (all agents)
 
+A local migrations directory named `alembic` can shadow the real installed `alembic` PyPI
+package on `sys.path`, turning `import alembic.config` into a confusing `ModuleNotFoundError`
+that looks like a missing dependency rather than a naming collision.
+
 ## Why this exists
 
 This repo's own Alembic migrations directory is named `alembic` (`backend/alembic/`, with its own

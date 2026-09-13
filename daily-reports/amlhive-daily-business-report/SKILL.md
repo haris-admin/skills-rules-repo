@@ -1,6 +1,6 @@
 ---
 name: amlhive-daily-business-report
-description: "AML Hive Daily System Report — 9AM→9PM AEST window tracking agencies, users, screenings, KYC/KYB, matters, clients, CDD, audit, user activity with hourly trend chart and auto-generated system health assessment"
+description: "AML Hive Daily System Report — 9AM→9PM AEST window tracking agencies, users, screenings, KYC/KYB, matters, clients, CDD, audit, user activity with hourly trend chart and auto-generated system health assessment. Use for the daily 9:15 PM AEST cron run, or when asked to generate/debug the AML Hive daily business/system-behavior report (not infrastructure monitoring — that's the fleet monitor)."
 trigger: "Daily cron at 9:15 PM AEST via no_agent script"
 version: 2.0.0
 ---

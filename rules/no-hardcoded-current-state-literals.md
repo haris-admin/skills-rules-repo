@@ -1,5 +1,9 @@
 # No hardcoded "current state" literals in checks (all agents)
 
+A check that means "does X match the current state of Y" should derive that value from Y itself,
+not hardcode today's value as a literal — the literal silently goes stale the moment Y changes
+somewhere the person changing it has no reason to know this check exists.
+
 ## Why this exists
 
 The same bug shape hit this repo twice in one session (24 Jul 2026):

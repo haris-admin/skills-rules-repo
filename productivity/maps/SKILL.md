@@ -1,6 +1,6 @@
 ---
 name: maps
-description: "Geocode, POIs, routes, timezones via OpenStreetMap/OSRM."
+description: "Geocode places, find nearby points of interest, compute routes/distances, and look up timezones via OpenStreetMap/Nominatim, Overpass, OSRM, and TimeAPI.io — no API key required. Use when a user shares a location pin, asks for nearby restaurants/hospitals/pharmacies/etc., wants an address for coordinates or vice versa, needs driving/walking/cycling distance or turn-by-turn directions, or asks for a location's timezone."
 version: 1.2.0
 author: Mibayy
 license: MIT

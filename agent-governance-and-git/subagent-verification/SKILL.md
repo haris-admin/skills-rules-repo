@@ -1,6 +1,6 @@
 ---
 name: subagent-verification
-description: Verification protocol for orchestrator agents when managing parallel worker subagents.
+description: Verification protocol for an orchestrator agent to check a dispatched subagent's work directly rather than trusting its self-report. Use when a subagent (or parallel batch of subagents) reports a task complete, before accepting that report as fact — verify file scope, run the tests yourself, and confirm the actual changes match the claim.
 ---
 
 # Subagent Verification Protocol

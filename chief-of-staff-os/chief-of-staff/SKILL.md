@@ -1,7 +1,7 @@
 ---
 name: chief-of-staff
 description: >-
-  The orchestrator — runs your daily operating rhythm, coordinates across
+  The orchestrator — runs the owner's daily operating rhythm, coordinates across
   tasks, communications, and follow-ups. Use for daily briefings, end-of-day
   reviews, or the full Chief of Staff experience. Trigger: "morning briefing,"
   "what do I need to know," "end of day review," "chief of staff mode."

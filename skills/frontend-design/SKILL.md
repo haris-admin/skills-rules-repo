@@ -1,6 +1,6 @@
 ---
 name: frontend-design
-description: Design and implement React UI components with Tailwind CSS, following the Sovereign OS design system and ADHD-friendly principles.
+description: Design and implement React UI components with Tailwind CSS, following the Sovereign OS design system and ADHD-friendly principles. Use when asked to design, build, or refine a UI component, page layout, or visual element in the Sovereign OS React frontend.
 ---
 
 # Frontend Design Skill

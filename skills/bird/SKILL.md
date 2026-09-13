@@ -1,6 +1,6 @@
 ---
 name: bird
-description: X/Twitter CLI for reading, searching, posting, and engagement via cookies.
+description: X/Twitter CLI for reading, searching, posting, and engagement via cookies. Use when asked to read or search tweets, check timelines/mentions/bookmarks, follow or engage with an account, or post/reply to a tweet from the command line.
 homepage: https://bird.fast
 metadata:
   {

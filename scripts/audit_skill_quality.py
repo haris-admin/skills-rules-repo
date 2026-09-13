@@ -132,7 +132,16 @@ def check_name(name, dirname):
 def check_nesting(skill_dir_abs, skill_md_body):
     """Reference files linked from SKILL.md that themselves link to further
     .md files — a 2+ level-deep chain, which the official guidance says
-    Claude may only partially read (head -N) rather than in full."""
+    Claude may only partially read (head -N) rather than in full.
+
+    Only a REAL problem if that further file isn't ALSO independently linked
+    directly from SKILL.md (many skills deliberately cross-link two sibling
+    reference files AND link both directly from SKILL.md — that's one-hop
+    reachable either way, not a real nesting issue). Checked against known
+    cases in this repo (hermes-agent, comfyui, humanizer, wsl-cron-test-runner,
+    productivity/box, pluto-weekly-review, research-paper-writing) — every one
+    turned out to already satisfy this, so this refinement matters in practice,
+    not just in theory."""
     direct_links = {l.split("#")[0] for l in
                     re.findall(r'\]\(([^)]+\.md)\)', skill_md_body)}
     nested = []
@@ -146,21 +155,49 @@ def check_nesting(skill_dir_abs, skill_md_body):
             sub_links = set(re.findall(r'\]\(([^)]+\.md)\)', md.read_text(errors="ignore")))
         except Exception:
             continue
-        if sub_links:
-            nested.append((rel, sorted(sub_links)[:3]))
+        # drop any sub-link that's also directly reachable from SKILL.md itself
+        # (by full relative path or by bare filename, matching check_orphans's
+        # own reachability definition)
+        truly_nested = {
+            s for s in sub_links
+            if s not in direct_links
+            and Path(s).name not in skill_md_body
+            and s not in skill_md_body
+        }
+        if truly_nested:
+            nested.append((rel, sorted(truly_nested)[:3]))
     return nested
 
 
 def check_orphans(skill_dir_abs, skill_md_body):
-    """Bundled files SKILL.md never mentions at all — link, backtick, or bare
-    prose. Per the official guidance: 'If Claude never accesses a bundled
-    file, it might be unnecessary or poorly signaled.'"""
+    """references/*.md files SKILL.md never mentions at all — link, backtick,
+    or bare prose. Per the official guidance: 'If Claude never accesses a
+    bundled file, it might be unnecessary or poorly signaled.'
+
+    Scoped to references/*.md only — NOT templates/, tests/, scripts/,
+    LICENSE, README.md, pyproject.toml, etc. Those are legitimate unlinked
+    infrastructure (packaging metadata, test suites, helper modules Claude
+    executes rather than reads); flagging them as 'orphaned documentation'
+    produced 100% false positives when checked against this repo's actual
+    skills (docx, pdf, powerpoint, xlsx, google-workspace, local-places,
+    skill-creator, github-issues, and others all bundle such files by design).
+
+    Also excludes references/*.md files covered by a templated/glob pattern
+    mentioned in SKILL.md (e.g. `references/styles/<style>.md` covering an
+    entire catalog directory like creative/baoyu-infographic's 41 style/layout
+    files) — that's an intentional pattern reference, not an orphan."""
     orphans = []
     for f in skill_dir_abs.rglob("*"):
         if f.is_dir() or f.name in ("SKILL.md", ".DS_Store"):
             continue
+        if not (str(f.relative_to(skill_dir_abs)).startswith("references" + "/") and f.suffix == ".md"):
+            continue
         rel = str(f.relative_to(skill_dir_abs))
         if rel in skill_md_body or f.name in skill_md_body:
+            continue
+        parent = str(f.parent.relative_to(skill_dir_abs))
+        if (re.search(re.escape(parent) + r"/<[^>]+>\.md", skill_md_body)
+                or re.search(re.escape(parent) + r"/\*", skill_md_body)):
             continue
         orphans.append(rel)
     return orphans

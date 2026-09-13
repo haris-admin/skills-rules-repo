@@ -1,6 +1,6 @@
 ---
 name: cloudflare-worker-deploy
-description: Deploy, route, and manage Cloudflare Workers, KV bindings, and R2 storage buckets.
+description: Deploy, route, and manage Cloudflare Workers, KV bindings, and R2 storage buckets. Use when deploying or configuring a Cloudflare Worker via wrangler.toml, setting up custom domains/edge routing/caching, managing dev vs prod KV/R2 namespaces, or purging edge cache after a deploy.
 ---
 
 # Cloudflare Workers & Edge Infrastructure

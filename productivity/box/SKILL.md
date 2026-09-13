@@ -1,6 +1,6 @@
 ---
 name: box
-description: Box manages cloud files, sharing, search, and metadata.
+description: Manages Box cloud files, folders, sharing, metadata, search, and Box AI via the Box CLI, REST fallback, or SDK. Use when organizing, uploading, versioning, moving, or sharing Box files/folders, searching Box content or metadata, running Box AI Q&A/extraction/text-gen, processing a Box folder at scale, or building a Box-backed app, webhook, or integration.
 version: 1.0.0
 author: Chris Kim (iskysun96), Hermes Agent
 license: MIT

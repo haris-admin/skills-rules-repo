@@ -1,6 +1,6 @@
 ---
 name: requesting-code-review
-description: "Pre-commit review: security scan, quality gates, auto-fix."
+description: "Pre-commit review: security scan, quality gates, auto-fix. Use after implementing a feature or fix and before git commit/push, when the user says 'commit', 'ship', 'done', or 'review before merge', or after each task in subagent-driven-development."
 version: 2.0.0
 author: Hermes Agent (adapted from obra/superpowers + MorAlekss)
 license: MIT

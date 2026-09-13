@@ -1,6 +1,6 @@
 ---
 name: alembic-migration-hygiene
-description: Best practices for writing zero-downtime, reversible database migrations with SQLAlchemy and Alembic.
+description: Best practices for writing zero-downtime, reversible database migrations with SQLAlchemy and Alembic. Use when writing, reviewing, or running an Alembic migration — new column, constraint, native enum, or backfill — before merging it or applying it to a database.
 ---
 
 # Alembic Migration Hygiene

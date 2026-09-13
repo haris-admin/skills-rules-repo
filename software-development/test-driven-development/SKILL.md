@@ -1,6 +1,6 @@
 ---
 name: test-driven-development
-description: "TDD: enforce RED-GREEN-REFACTOR, tests before code."
+description: "TDD: enforce RED-GREEN-REFACTOR, tests before code. Use for new features, bug fixes, refactoring, or any behavior change - write the failing test before touching production code."
 version: 1.1.0
 author: Hermes Agent (adapted from obra/superpowers)
 license: MIT

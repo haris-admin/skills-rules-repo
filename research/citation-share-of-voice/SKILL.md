@@ -1,6 +1,6 @@
 ---
 name: citation-share-of-voice
-description: "Measure which vendors get named by search and AI engines."
+description: "Measure which vendors get named by search and AI engines, logging citations (not just rankings) week over week. Use when building or extending a weekly SOV/AI-visibility check, establishing a baseline before a GEO/SEO/content push, measuring whether brand mentions improve, or wiring a measurement step into a recurring briefing pipeline."
 version: 1.0.0
 author: Pluto
 license: proprietary

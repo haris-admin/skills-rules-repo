@@ -1,6 +1,6 @@
 ---
 name: gemini-image-generation
-description: Generate high-quality, text-free editorial hero images and campaign visuals using Gemini Image Generation.
+description: Generate high-quality, text-free editorial hero images and campaign visuals using Gemini Image Generation. Use when a blog/website hero, social feed graphic (LinkedIn/X/Facebook), or vertical story/reel image is needed and should be photorealistic and free of embedded text or AI-cliche artifacts.
 ---
 
 # Gemini Image Generation

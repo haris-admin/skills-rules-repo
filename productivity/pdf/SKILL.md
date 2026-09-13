@@ -1,6 +1,6 @@
 ---
 name: pdf
-description: "PDF files: create, read, merge, fill, OCR, edit text."
+description: "PDF files: create, read, merge, fill, OCR, edit text. Use when asked to generate a report/invoice as PDF, build or fill a fillable AcroForm, extract text/tables/metadata/form values, merge/split/rotate/watermark/stamp/compress pages, export pages as images, or encrypt/decrypt a PDF — not for scanned/image-only PDFs (see references/ocr-extraction.md) or pixel-perfect HTML-to-PDF rendering."
 version: 1.1.0
 author: Nous Research
 license: MIT

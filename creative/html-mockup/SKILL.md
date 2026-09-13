@@ -1,6 +1,6 @@
 ---
 name: html-mockup
-description: "Throwaway HTML mockups: 2-3 design variants to compare."
+description: "Throwaway HTML mockups: 2-3 design variants to compare. Use when the user wants to see a design direction before committing — 'sketch this screen', 'show me what X could look like', 'compare layout A vs B', 'give me 2-3 takes on this UI' — not for production components or already-locked designs."
 version: 1.0.0
 author: Hermes Agent (adapted from gsd-build/get-shit-done)
 license: MIT
@@ -8,7 +8,7 @@ platforms: [linux, macos, windows]
 metadata:
   hermes:
     tags: [html-mockup, sketch, mockup, design, ui, prototype, html, variants, exploration, wireframe, comparison]
-    related_skills: [spike, claude-design, popular-web-designs, excalidraw]
+    related_skills: [spike, canvas-design, popular-web-designs, excalidraw]
 ---
 
 # Sketch
@@ -19,8 +19,8 @@ Load this when the user says things like "sketch this screen", "show me what X c
 
 ## When NOT to use this
 
-- User wants a production component — use `claude-design` or build it properly
-- User wants a polished one-off HTML artifact (landing page, deck) — `claude-design`
+- User wants a production component — use `canvas-design` or build it properly
+- User wants a polished one-off HTML artifact (landing page, deck) — `canvas-design`
 - User wants a diagram — `excalidraw`, `architecture-diagram`
 - The design is already locked — just build it
 

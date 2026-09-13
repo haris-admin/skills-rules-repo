@@ -3,8 +3,8 @@ name: wizard-cycle
 description: >
   The default build cadence for every Simplifii-OS code change: an 8-phase
   plan, explore, test, implement, verify, document, attack, gate loop that makes
-  the builder think before it codes. Load at the start of any build session,
-  whenever a CC-T prompt is being written, when Aaron says "what's the cycle",
+  the builder think before it codes. Use when starting any build session, when a
+  CC-T prompt is being written, when Aaron says "what's the cycle",
   "run the wizard", "before it builds", or when scoping any slice. Sits underneath
   build-loop-translator, cct-lookahead, honest-failure and verify-simple as the
   spine they hang on. The reversible-vs-dangerous call SIZES each phase; it never

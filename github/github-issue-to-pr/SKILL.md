@@ -1,6 +1,6 @@
 ---
 name: github-issue-to-pr
-description: "Carry a GitHub issue to a verified PR with honest CI state."
+description: "Carry a GitHub issue to a verified PR with honest CI state. Use when asked to fix a GitHub issue and open a PR, implement a feature request from an issue, or take a bug from issue to green CI — not for reviewing an existing PR or answering a code question with no requested change."
 version: 0.1.0
 author: Ben Barclay (benbarclay), Hermes Agent
 license: MIT

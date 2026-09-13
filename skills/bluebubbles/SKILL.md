@@ -1,6 +1,6 @@
 ---
 name: bluebubbles
-description: Build or update the BlueBubbles external channel plugin for OpenClaw (extension package, REST send/probe, webhook inbound).
+description: Build or update the BlueBubbles external channel plugin for OpenClaw (extension package, REST send/probe, webhook inbound). Use when working on the BlueBubbles channel plugin — its extension package, REST helpers, webhook handling, reactions/typing/read-receipts, or attachment handling.
 ---
 
 # BlueBubbles plugin

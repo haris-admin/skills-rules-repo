@@ -1,6 +1,6 @@
 ---
 name: weekly-review-planning
-description: "Weekly reset: commitments, stalled work, next-week plan."
+description: "Weekly reset: commitments, stalled work, next-week plan. Use when asked to run a weekly review, surface what was committed to and what's slipping, plan next week from calendar/tasks/notes, find stale or waiting projects, or when a scheduled weekly-review cron tick fires — not for daily briefs or single-inbox triage."
 version: 0.1.0
 author: Ben Barclay (benbarclay), Hermes Agent
 license: MIT

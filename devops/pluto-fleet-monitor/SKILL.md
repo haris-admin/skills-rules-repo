@@ -1,6 +1,6 @@
 ---
 name: pluto-fleet-monitor
-description: "★ Pluto Fleet Monitor — AMLHive AWS Production. EC2, Docker, RDS, CloudWatch, Sentry, public endpoints. Fly.io + Vercel RETIRED Aug 2026 — checks removed (Supabase Auth remains in design). Runs 4x daily (5/11/17/23 AEST). Emails to EMAIL_TO_AMLHIVE from .env."
+description: "★ Pluto Fleet Monitor — AMLHive AWS Production. EC2, Docker, RDS, CloudWatch, Sentry, public endpoints. Fly.io + Vercel RETIRED Aug 2026 — checks removed (Supabase Auth remains in design). Runs 4x daily (5/11/17/23 AEST). Emails to EMAIL_TO_AMLHIVE from .env. Use when monitoring AMLHive AWS production, debugging fleet monitor cron jobs, investigating stale CloudWatch alarms, or diagnosing delivery discrepancies between Telegram and email reports."
 version: 3.5.0
 author: Pluto
 license: MIT
@@ -147,3 +147,14 @@ Section 5b (REF-DB SYNC WORKER) scans `/amlhive/backend` CloudWatch logs over th
 **Symptoms:** Fleet monitor output showed `\n` as visible text in both cron messages and emails. Output was a single unreadable line.
 
 **Lesson:** Always use `"\n".join(lines)` for multi-line report assembly. Single backslash = real newline. Double backslash = literal `\n`.
+
+## Additional references
+
+- `references/alert-patterns-and-sources.md` — which log/CloudWatch patterns generate P0/P1/P2 alerts and their source labels
+- `references/false-positive-suppressions.md` — why and how known-noisy CloudWatch log patterns are suppressed
+- `references/amlhive-aws-healthcheck.md` — overview of the two AmLHive AWS monitoring paths (account 560205084533)
+- `references/amlhive-prod-monitor-spec.md` — source-of-truth behavioural spec for the fleet monitor, defined by Haris 6 Jul 2026
+- `references/sync-api-setup.md` — the amlhive-api Fly.io internal sync endpoints (`/openapi.json`) setup notes
+- `references/sentry-debug-investigation.md` — Sentry token scope limitations and debugging notes (Jul 2026)
+- `references/waf-false-403-debugging.md` — Cloudflare WAF blocking Python-urllib User-Agent, causing false HTTP 403s
+- `references/flyio-deploy-token-diagnostics.md` — Fly.io deploy token format and diagnostics (Jun 2026)

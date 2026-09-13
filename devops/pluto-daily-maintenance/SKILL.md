@@ -1,6 +1,6 @@
 ---
 name: pluto-daily-maintenance
-description: Pluto's lightweight daily maintenance engine — 4-task health check (skills, memory, cron, scripts) run at 2:00 PM AEST. Focus on keeping things running, not dreaming. Saturday deep reviews handle the heavy lifting.
+description: Pluto's lightweight daily maintenance engine — 4-task health check (skills, memory, cron, scripts) run at 2:00 PM AEST. Focus on keeping things running, not dreaming. Saturday deep reviews handle the heavy lifting. Use when running the daily maintenance cron, debugging why it found issues, adding new health checks, or classifying cron errors during any audit.
 ---
 
 # Pluto Daily Maintenance

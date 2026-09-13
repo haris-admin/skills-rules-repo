@@ -1,6 +1,6 @@
 ---
 name: teams-meeting-pipeline
-description: Teams meeting summaries, job replay, Graph subscriptions.
+description: Teams meeting summaries, job replay, Graph subscriptions. Use when asked to summarize a Teams meeting or extract its action items, check pipeline status or a stored meeting job, replay a failed job, validate Microsoft Graph setup, troubleshoot a missing meeting summary, or manage Graph webhook subscriptions.
 version: 1.1.0
 author: Hermes Agent + Teknium
 license: MIT

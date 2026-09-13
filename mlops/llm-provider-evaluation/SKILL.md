@@ -1,6 +1,6 @@
 ---
 name: llm-provider-evaluation
-description: "Pick LLM providers for Hermes: pricing, access, free tiers, hosted inference providers (DeepInfra/SiliconFlow/Novita/Together), Qwen/QAN ecosystem status, DeepSeek hike hedging, provider wiring."
+description: "Pick LLM providers for Hermes: pricing, access, free tiers, hosted inference providers (DeepInfra/SiliconFlow/Novita/Together), Qwen/QAN ecosystem status, DeepSeek hike hedging, provider wiring. Use when asked which model/provider to use, how to get access to a provider without OpenRouter, a provider announces a price/policy change, or when wiring a new provider or cost-routing fallback chain into Hermes."
 version: 1.0.0
 author: Pluto
 license: MIT

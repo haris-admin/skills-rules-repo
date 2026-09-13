@@ -1,6 +1,6 @@
 ---
 name: hermes-agent-profiles
-description: Use when spawning named Hermes sub-agent profiles.
+description: Create and configure named Hermes sub-agent profiles (SOUL.md, AGENT.md, config.yaml, memories, skills) as first-class fleet members with their own identity and lane. Use when spawning named Hermes sub-agent profiles, building a fleet of specialized agents, or giving a second Hermes install its own workforce.
 version: 1.0.0
 author: Pluto
 license: MIT
@@ -134,3 +134,9 @@ roster, relationships, and invocation commands.
   Partners pricing) and the "champion backlog" filing pattern (startup-ideas/
   build-backlog + BUILD_BACKLOG.md + CoS relationships) for partner-sourced
   ideas.
+- `references/mercury-fleet-creation-2026-08-22.md` — full worked transcript of
+  designing and creating the Mercury (Windows) sub-agent fleet from engagement
+  analysis, including the SOUL.md guard gotcha.
+- `references/profile-env-checklist.md` — the profile `.env` failure mode
+  (hand-created profiles have no credentials on first `chat`) and the
+  checklist/fix for it.

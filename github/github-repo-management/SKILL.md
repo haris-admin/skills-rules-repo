@@ -1,6 +1,6 @@
 ---
 name: github-repo-management
-description: "Clone/create/fork repos; manage remotes, releases."
+description: "Clone, create, fork, and configure GitHub repositories, and manage their settings, branch protection, secrets, releases, Actions workflows, and gists — via `gh` first, with a `git`+`curl` fallback for every operation. Use when the user asks to clone/create/fork a repo, set up branch protection or repo secrets, cut a release, list or re-run GitHub Actions workflows, or otherwise manage a GitHub repository outside of PR/issue review."
 version: 1.1.0
 author: Hermes Agent
 license: MIT
@@ -312,50 +312,7 @@ gh secret delete API_KEY
 
 **With curl:**
 
-Secrets require encryption with the repo's public key — more involved via API:
-
-```bash
-# Get the repo's public key for encrypting secrets
-curl -s \
-  -H "Authorization: token $GITHUB_TOKEN" \
-  https://api.github.com/repos/$OWNER/$REPO/actions/secrets/public-key
-
-# Encrypt and set (requires Python with PyNaCl)
-python3 -c "
-from base64 import b64encode
-from nacl import encoding, public
-import json, sys
-
-# Get the public key
-key_id = '<key_id_from_above>'
-public_key = '<base64_key_from_above>'
-
-# Encrypt
-sealed = public.SealedBox(
-    public.PublicKey(public_key.encode('utf-8'), encoding.Base64Encoder)
-).encrypt('your-secret-value'.encode('utf-8'))
-print(json.dumps({
-    'encrypted_value': b64encode(sealed).decode('utf-8'),
-    'key_id': key_id
-}))"
-
-# Then PUT the encrypted secret
-curl -s -X PUT \
-  -H "Authorization: token $GITHUB_TOKEN" \
-  https://api.github.com/repos/$OWNER/$REPO/actions/secrets/API_KEY \
-  -d '<output from python script above>'
-
-# List secrets (names only, values hidden)
-curl -s \
-  -H "Authorization: token $GITHUB_TOKEN" \
-  https://api.github.com/repos/$OWNER/$REPO/actions/secrets \
-  | python3 -c "
-import sys, json
-for s in json.load(sys.stdin)['secrets']:
-    print(f\"  {s['name']:30}  updated: {s['updated_at']}\")"
-```
-
-Note: For secrets, `gh secret set` is dramatically simpler. If setting secrets is needed and `gh` isn't available, recommend installing it for just that operation.
+Secrets require encryption with the repo's public key — more involved via API, and `gh secret set` is dramatically simpler if it's available at all. See [Setting Secrets via curl](references/secrets-encryption-curl.md) for the full get-public-key → PyNaCl-encrypt → PUT pattern and the secret-listing snippet.
 
 ## 8. Releases
 
@@ -518,3 +475,7 @@ for g in json.load(sys.stdin):
 ## Codebase Metrics
 
 For analyzing a repo's size, language composition, and code-vs-comment ratios, see `references/codebase-inspection.md`. Uses pygount for LOC analysis.
+
+## REST API Reference
+
+For a flat method+endpoint lookup table across repos, pull requests, issues, releases, and more (instead of the worked curl examples above), see `references/github-api-cheatsheet.md`.

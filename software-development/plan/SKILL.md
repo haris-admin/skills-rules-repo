@@ -1,6 +1,6 @@
 ---
 name: plan
-description: Write a markdown plan to .hermes/plans/; no execution.
+description: Write a markdown plan to .hermes/plans/ with no execution. Use when asked for a plan, for /plan mode, or to design and write down an approach before any implementation begins.
 version: 2.0.0
 author: Hermes Agent (writing-craft adapted from obra/superpowers)
 license: MIT

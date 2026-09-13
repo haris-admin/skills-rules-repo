@@ -1,6 +1,6 @@
 ---
 name: amlhive-ai-authority
-description: "Build AI discoverability and recommendation authority for AMLHive across ChatGPT, Claude, Gemini, and Perplexity — backlinks, review platforms, custom GPT, third-party listings, and AI crawl optimization."
+description: "Build AI discoverability and recommendation authority for AMLHive across ChatGPT, Claude, Gemini, and Perplexity — backlinks, review platforms, custom GPT, third-party listings, and AI crawl optimization. Use when building G2/Capterra listings, pursuing backlinks or third-party roundup inclusion, building a custom GPT, fixing AI crawlability (llms.txt, SSR indexation, structured data), or running the monthly search-visibility audit."
 version: 1.0.0
 author: Pluto
 prerequisites:
@@ -249,5 +249,10 @@ Week 4:  Reviews requested on G2, 2nd guest post pitched
 Week 6:  5+ backlinks, 3+ G2 reviews, Bing fully indexed
 Week 8:  ChatGPT Browse recommending AMLHive for "best AML software Australia"
 ```
+
+## Additional references
+
+- `references/outreach-templates.md` — backlink outreach email templates (industry directories, guest posts)
+- `references/ai-skepticism-pattern.md` — treating an AI assistant's product review as free market research on which signals it checks
 
 

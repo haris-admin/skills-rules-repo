@@ -1,6 +1,6 @@
 ---
 name: sherpa-onnx-tts
-description: Local text-to-speech via sherpa-onnx (offline, no cloud)
+description: Local text-to-speech via sherpa-onnx (offline, no cloud). Use when asked to generate speech audio fully offline, without an internet connection or a cloud TTS API.
 metadata:
   {
     "openclaw":

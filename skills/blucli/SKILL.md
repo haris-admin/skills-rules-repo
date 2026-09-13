@@ -1,6 +1,6 @@
 ---
 name: blucli
-description: BluOS CLI (blu) for discovery, playback, grouping, and volume.
+description: BluOS CLI (blu) for discovery, playback, grouping, and volume. Use when asked to discover or control a Bluesound/NAD player: play/pause/stop, set volume, manage speaker groups, or search/play a TuneIn station.
 homepage: https://blucli.sh
 metadata:
   {

@@ -1,6 +1,6 @@
 ---
 name: pluto-amlhive-operating-contract
-description: "Canonical operating contract for Pluto — AMLHive SEO, AI discovery, blog and social operations"
+description: "Canonical operating contract for Pluto — AMLHive SEO, AI discovery, blog and social operations. Use when running any Pluto cron cycle (discovery health, search/content review, AI-answer review, metadata/blog/social audit, release verification, weekly security scan) or when deciding what Pluto may or may not do under its authority boundary."
 version: 3.0.0
 author: Haris / Pluto
 tags: [pluto, amlhive, seo, geo, blog, social]
@@ -399,3 +399,11 @@ Ask Harish one concrete question when a human decision is required. Send technic
 | Monthly strategy review | `0 11 * * 1` (Mondays; in-job gate filters day ≤ 7 — OR-semantics fix applied 01 Sep 2026) | LLM job (`50eea054f911`) |
 | AMLHive daily test suite | `0 3 * * *` | `amlhive_daily_test_runner.py` |
 | A2Square weekly test suite | `30 2 * * 1` | `a2square_weekly_test_runner.py` |
+
+## Additional references
+
+- `references/amlhive-rds-schema.md` — AMLHive RDS schema quirks discovered during the July 2026 RDS migration
+- `references/cron-job-patterns.md` — robust cron job patterns for Pluto operations (credential management, never hardcode)
+- `references/psql-query-patterns.md` — PostgreSQL query patterns via SSM psql, including column-discovery-first practice
+- `references/cron-job-registry.md` — the full Pluto AMLHive cron job registry (schedule, job IDs, AEST times)
+- `references/ai-visibility-check.md` — quick AI-answer visibility check pattern for when AMLHive isn't appearing in AI/search results

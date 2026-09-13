@@ -1,6 +1,6 @@
 ---
 name: audio-transcription-wsl
-description: Transcribe .ogg notes on WSL via Whisper + Windows ffmpeg.
+description: Transcribe .ogg notes on WSL via Whisper + Windows ffmpeg. Use when a voice message could not be auto-transcribed, the user regularly sends voice notes, or any local audio file needs speech-to-text on WSL.
 version: 1.0.0
 author: Pluto
 license: MIT

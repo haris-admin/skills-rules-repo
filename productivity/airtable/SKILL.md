@@ -1,6 +1,6 @@
 ---
 name: airtable
-description: Airtable REST API via curl. Records CRUD, filters, upserts.
+description: Airtable REST API via curl. Records CRUD, filters, upserts. Use when reading, creating, updating, deleting, filtering, or upserting Airtable records, or inspecting a base's schema, via the REST API and curl.
 version: 1.1.0
 author: community
 license: MIT

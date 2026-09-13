@@ -1,6 +1,6 @@
 ---
 name: popular-web-designs
-description: 54 real design systems (Stripe, Linear, Vercel) as HTML/CSS.
+description: 54 real design systems (Stripe, Linear, Vercel) as HTML/CSS. Use when asked to build a page that looks like a known product/brand ("make it look like Stripe", "Vercel style", "design like Linear"), or when generating a UI, dashboard, or landing page and a real-world visual reference would help.
 version: 1.0.0
 author: Hermes Agent + Teknium (design systems sourced from VoltAgent/awesome-design-md)
 license: MIT
@@ -26,10 +26,10 @@ system, shadows, responsive behavior, and practical agent prompts with exact CSS
 
 ## Related design skills
 
-- **`claude-design`** — use for the design *process and taste* (scoping a brief,
+- **`canvas-design`** — use for the design *process and taste* (scoping a brief,
   producing variants, verifying a local HTML artifact, avoiding AI-design slop).
   Pair it with this skill when the user wants a thoughtfully-designed page styled
-  after a known brand: `claude-design` drives the workflow, this skill supplies
+  after a known brand: `canvas-design` drives the workflow, this skill supplies
   the visual vocabulary.
 - **`design-md`** — use when the deliverable is a formal DESIGN.md token spec
   file, not a rendered artifact.

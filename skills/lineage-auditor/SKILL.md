@@ -1,6 +1,6 @@
 ---
 name: lineage-auditor
-description: Trace every value rendered on screen back to its named data source, and flag any two surfaces showing contradictory values for the same fact. ALWAYS load when a screenshot or screen transcript shows a date, count, name, or status that might not match another surface, when AURA or any component states a fact, when auditing a new screen before testers see it, or when Aaron reports "it says X here but Y there". Also load before approving any feature that renders extracted document data. Contradiction between surfaces = two sources of truth = P1 minimum; fixture data on a production path = P0.
+description: Trace every value rendered on screen back to its named data source, and flag any two surfaces showing contradictory values for the same fact. Use when a screenshot or screen transcript shows a date, count, name, or status that might not match another surface, when AURA or any component states a fact, when auditing a new screen before testers see it, or when Aaron reports "it says X here but Y there". Also use before approving any feature that renders extracted document data. Contradiction between surfaces = two sources of truth = P1 minimum; fixture data on a production path = P0.
 ---
 
 # Lineage Auditor

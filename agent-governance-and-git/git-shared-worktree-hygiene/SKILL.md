@@ -1,6 +1,6 @@
 ---
 name: git-shared-worktree-hygiene
-description: Safe git workflows for multi-agent environments: pathspec-only staging, milestone commits, and push protection.
+description: Safe git workflows for multi-agent environments: pathspec-only staging, milestone commits, and push protection. Use when an agent is about to run git add, git commit, or git push in a shared or multi-agent worktree.
 ---
 
 # Git Shared Worktree Hygiene

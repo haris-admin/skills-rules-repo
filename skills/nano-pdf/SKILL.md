@@ -1,6 +1,6 @@
 ---
 name: nano-pdf
-description: Edit PDFs with natural-language instructions using the nano-pdf CLI.
+description: Edit PDFs with natural-language instructions using the nano-pdf CLI. Use when asked to edit, change text on, or fix a typo on a specific page of a PDF using a plain-language instruction.
 homepage: https://pypi.org/project/nano-pdf/
 metadata:
   {

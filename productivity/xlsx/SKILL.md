@@ -1,6 +1,6 @@
 ---
 name: xlsx
-description: Create, read, edit Excel .xlsx workbooks and CSVs.
+description: Create, read, edit Excel .xlsx workbooks and CSVs. Use when asked to build a styled multi-sheet Excel report, inspect or dump an existing workbook, edit cells/rows/columns/formulas, recalculate formulas headlessly, or convert between CSV and xlsx — not for legacy .xls files.
 version: 1.1.0
 author: Nous Research
 license: MIT

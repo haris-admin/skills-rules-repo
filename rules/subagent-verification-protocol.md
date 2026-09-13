@@ -1,5 +1,9 @@
 # Verifying a dispatched subagent's work, not just its self-report
 
+An orchestrator should treat a subagent's own "done, tests pass" report as a claim to verify, not
+a fact — a subagent that backgrounds a long verification run and reports before it resolves can
+repeatedly stall a dispatch with no usable pass/fail evidence behind otherwise-correct work.
+
 ## Why this exists
 
 C413 (16 Aug 2026): three parallel backend subagents were dispatched to rework trigger-point

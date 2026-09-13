@@ -1,6 +1,6 @@
 ---
 name: oracle
-description: Best practices for using the oracle CLI (prompt + file bundling, engines, sessions, and file attachment patterns).
+description: Best practices for using the oracle CLI (prompt + file bundling, engines, sessions, and file attachment patterns). Use when asked to consult another model (e.g. GPT-5.2 Pro) with real repo context bundled from files, get a long-think second opinion, or attach a curated file set to a one-shot cross-model prompt.
 homepage: https://askoracle.dev
 metadata:
   {

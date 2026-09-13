@@ -161,4 +161,24 @@ Or use `execute_code` with `terminal()` for more complex processing. This avoids
 2. **Create a separate "Sunday Execution" cron:** Reads the Saturday reports and EXECUTES the fixes, separate from analysis
 3. **Shift responsibilities:** Friday review produces BOTH analysis AND a concrete bash/Python script of fixes for Saturday to run blindly
 
-**Current status (Jun 13):** Loop broken. Friday identifies problems → Saturday analyzes them again → no fixes happen → problems persist next Friday.
+**Current status (Jun 13):** Loop broken. Friday identifies problems → Saturday analyzes them again → no fixes happen → problems persist next Friday. (For the trend across subsequent weeks — implementation rate slowly rising from 0% to 37.5% but still below half — see [resolved-and-historical-incidents.md](resolved-and-historical-incidents.md#saturday-auto-improvement-pipeline-reports--action).)
+
+## Pattern 10: Gateway-Not-Running Warning Can Be a False Positive
+
+**Signal:** `hermes cron list` prints "⚠ Gateway is not running — jobs won't fire automatically."
+
+**Diagnosis:** Always verify with `ps aux | grep "hermes gateway"` before trusting this warning. If the gateway process exists, the warning is stale — ignore it but flag it for investigation. `hermes cron list` IS available inside the agent session and is the preferred first-pass tool for cron health checks.
+
+## Pattern 11: Delivery Failures
+
+**Signal:** `last_delivery_error` is set in `jobs.json`.
+
+**Meaning:** The cron ran (or failed) but its output can't reach the configured destination. Fix by changing `deliver` to `local` or configuring a working delivery target.
+
+## Pattern 2 Update — Stale Stream / Broken Pipe — ✅ FIXED (June 14, 2026)
+
+Pattern 2 above (`deepseek-v4-flash` streaming stalls after 180-240s) was fixed by upgrading every LLM-driven cron (`no_agent: false`) from `deepseek-v4-flash` to `deepseek-v4-pro` on June 14, 2026. The pro model handles long contexts without connection drops. Jobs affected: Morning Research, Morning Briefing, Cross-Chamber Synthesis, Action Bridge, Daily Maintenance, LinkedIn Ideas, Moonshots Learning, Podcast Insight Extractor, Weekly Review, Weekly Improvements, Saturday Review, Sunday Pulse.
+
+**Verification:** Daily Maintenance ran on pro at 19:20 Jun 14 with zero errors. Previously it failed every 2PM run with broken pipe.
+
+**This issue is CLOSED. Do not re-flag.** If a `no_agent: false` cron still shows `model: deepseek-v4-flash`, it's running a different config than the current fleet — check `cronjob list`.

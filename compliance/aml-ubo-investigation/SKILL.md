@@ -1,6 +1,6 @@
 ---
 name: aml-ubo-investigation
-description: "AUSTRAC/FATF-compliant UBO investigation methodology using ASIC extracts, ABN Lookup, and corporate structure analysis"
+description: "AUSTRAC/FATF-compliant UBO investigation methodology using ASIC extracts, ABN Lookup, and corporate structure analysis. Use when a user provides an ASIC company extract, asks to trace an Ultimate Beneficial Owner, check corporate connections between entities, or mentions AUSTRAC, FATF, KYMAC, or Tranche 2."
 version: 1.1.0
 author: Hivey (AML Expert) + Codex Review
 tags: [aml, austrac, fatf, ubo, beneficial-ownership, compliance, corporate]

@@ -1,6 +1,6 @@
 ---
 name: tdd-mandate
-description: Enforce strict Test-Driven Development (TDD) where every implementation traces to an explicit requirement and passes exhaustive tests before shipping.
+description: Enforce strict Test-Driven Development (TDD) where every implementation traces to an explicit requirement and passes exhaustive tests before shipping. Use before writing implementation code for any feature, bug fix, or change — to confirm a failing test exists first, every requirement traces to a test, and tests are never loosened to fit the implementation.
 ---
 
 # Test-Driven Development (TDD) Mandate

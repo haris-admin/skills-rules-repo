@@ -1,6 +1,6 @@
 ---
 name: tui-widgets
-description: Author live widget apps for the Hermes TUI dock.
+description: Author live widget apps for the Hermes TUI dock. Use when asked to build a live TUI panel (ticker, clock, countdown, status card, API-backed readout) or a custom modal tool bound to a slash command in the Hermes TUI (hermes --tui).
 version: 1.0.0
 author: Hermes Agent
 license: MIT

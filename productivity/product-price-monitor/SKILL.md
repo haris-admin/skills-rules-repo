@@ -1,6 +1,6 @@
 ---
 name: product-price-monitor
-description: "Watch product, flight, or listing prices; alert on target."
+description: "Watch product, flight, or listing prices; alert on target. Use when asked to alert on a price drop, flight fare, or availability condition for a specific item, or when a scheduled price-watch cron tick fires — not for one-off 'what does this cost now' lookups."
 version: 0.1.0
 author: Ben Barclay (benbarclay), Hermes Agent
 license: MIT

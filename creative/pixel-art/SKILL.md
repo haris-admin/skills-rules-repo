@@ -1,6 +1,6 @@
 ---
 name: pixel-art
-description: "Pixel art w/ era palettes (NES, Game Boy, PICO-8)."
+description: "Pixel art w/ era palettes (NES, Game Boy, PICO-8). Use when the user wants retro pixel art from a source image, NES/Game Boy/PICO-8/C64/arcade/SNES styling, or a short looping pixel-art animation (rain, fireflies, snow) for posters, avatars, or sprites."
 version: 2.0.0
 author: dodo-reach
 license: MIT

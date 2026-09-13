@@ -1,6 +1,6 @@
 ---
 name: implementer-neutral-handover
-description: Write build-handover notes addressed to "whichever agent implements this," and file your own review/critique findings inside the artifact's own folder — never a separate cross-cutting digest doc.
+description: Write build-handover notes addressed to "whichever agent implements this," and file review/critique findings inside the artifact's own folder — never a separate cross-cutting digest doc. Use when authoring a spec/build handoff for another agent or tool to implement, or when logging review/critique findings against an artifact someone else will act on.
 ---
 
 # Implementer-Neutral Handover + In-Folder Feedback

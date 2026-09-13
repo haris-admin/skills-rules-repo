@@ -1,6 +1,6 @@
 ---
 name: tapease-fleet-monitor
-description: "★ TapEase Fleet Monitor — Direct AWS Production. Account 707843605914. EC2, SSM process checks, nginx logs, CloudWatch alarms, Lambda, RDS. Runs 4x daily (5/11/17/23 AEST). Replaces old bridge-based monitor (Jun 26-Jul 8 2026)."
+description: "★ TapEase Fleet Monitor — Direct AWS Production. Account 707843605914. EC2, SSM process checks, nginx logs, CloudWatch alarms, Lambda, RDS. Runs 4x daily (5/11/17/23 AEST). Replaces old bridge-based monitor (Jun 26-Jul 8 2026). Use when monitoring TapEase AWS production, debugging the fleet monitor cron jobs, investigating TapEase infrastructure, or querying the TapEase RDS via SSM."
 version: 1.0.0
 author: Pluto
 license: MIT
@@ -37,6 +37,7 @@ license: MIT
 
 - `references/rds-deep-dive-methodology.md` — 4-step tracing for RDS error patterns
 - `references/tapease-daily-export-patterns.md` — Full query templates, timezone handling, SSM escaping, and professional email template for the daily transaction export
+- `references/daily-transaction-export.md` — Quick-reference cron details (schedule, job ID, script, delivery) for the daily transaction export
 
 **Primary:** `~/.hermes/scripts/tapease_prod_monitor.py` (created Jul 8, 2026)
 

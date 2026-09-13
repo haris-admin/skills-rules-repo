@@ -1,6 +1,6 @@
 ---
 name: codex-script-analysis
-description: Use Codex CLI from within Python scripts for inline AI-powered diagnosis, report generation, and structured analysis — not task delegation, but lightweight callouts from test runners, fleet monitors, and report scripts
+description: Use Codex CLI or OpenRouter from within Python scripts for inline AI-powered diagnosis, report generation, and structured analysis — not task delegation, but lightweight callouts from test runners, fleet monitors, and report scripts. Use when a cron/no-agent script needs an LLM call to diagnose a failure, analyze operational data, or generate a report, including routing to premium models via Codex CLI when OpenRouter free-tier can't afford them.
 version: 1.1.0
 author: Pluto
 license: MIT
@@ -275,3 +275,9 @@ print(report)  # Stdout for cron delivery
 - `references/professional-html-email-pattern.md` — branded HTML email via `purelymail_sender` builders (WSL python3, NOT Windows py.exe), PDF attachment on the same MIME message, duplicate-Subject + /mnt/c path pitfalls (Aug 2026)
 - `references/professional-pdf-export.md` — reportlab branded PDF export from structured/LLM JSON: header band, footers, per-structure renderers, color conversion + escaping pitfalls, vision verification loop (Aug 2026)
 - `references/monthly-strategy-executor-config.md` — executor `.env` keys and the model routing decision table for the monthly strategy job (Aug 2026)
+- `references/codex-cron-auth-setup.md` — Codex CLI authentication setup for unattended cron scripts
+- `references/codex-cli-wsl-pitfalls.md` — Codex CLI invocation pitfalls specific to WSL (Aug 2026)
+- `references/weekly-review-or-pattern.md` — Weekly Codex review using the OpenRouter free-tier pattern
+- `references/fleet-monitor-codex-integration.md` — wiring a fleet monitor's findings into a Codex diagnosis pass
+- `references/tapease-payout-sweep-pattern.md` — Tapease payout sweep via SSM + OpenRouter pattern
+- `references/codex-cli-path-deep-analysis-2026-08.md` — Codex CLI PATH trap + the deep-analysis background-job pattern (Aug 2026)

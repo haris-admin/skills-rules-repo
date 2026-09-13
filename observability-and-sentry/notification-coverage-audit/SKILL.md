@@ -1,6 +1,6 @@
 ---
 name: notification-coverage-audit
-description: Audit event notifications, email alerts, and in-app trays to ensure 100% deep-link completeness and trigger coverage.
+description: Audit event notifications, email alerts, and in-app trays to ensure 100% deep-link completeness and trigger coverage. Use when adding a new notification type, reviewing an existing notification/email/tray feature, or investigating a report that a notification didn't fire or its link goes nowhere.
 ---
 
 # Notification Coverage Audit

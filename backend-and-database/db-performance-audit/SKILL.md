@@ -1,6 +1,6 @@
 ---
 name: db-performance-audit
-description: Inspect query execution plans, missing indexes, connection pooling health, and cache hit ratios.
+description: Inspect query execution plans, missing indexes, connection pooling health, and cache hit ratios. Use when queries or endpoints are slow, before/after adding an index, or when auditing a Postgres/Redis-backed service for N+1 queries and cache efficiency.
 ---
 
 # Database Performance Audit

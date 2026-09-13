@@ -1,6 +1,6 @@
 ---
 name: p5js
-description: "p5.js sketches: gen art, shaders, interactive, 3D."
+description: "Produces the full p5.js production pipeline: generative art, shaders, interactive/audio-reactive visuals, animation, and 3D/WebGL scenes as self-contained HTML sketches. Use when the user requests p5.js sketches, creative coding, generative art, interactive visualizations, canvas animations, browser-based visual art, or shader effects."
 version: 1.0.0
 author: SHL0MS, Hermes Agent
 license: MIT
@@ -282,203 +282,19 @@ Key implementation patterns:
 
 ## Critical Implementation Notes
 
-### Performance — Disable FES First
+Non-negotiable patterns for every production sketch — each is detailed with
+full code in its linked reference:
 
-The Friendly Error System (FES) adds up to 10x overhead. Disable it in every production sketch:
-
-```javascript
-p5.disableFriendlyErrors = true;  // BEFORE setup()
-
-function setup() {
-  pixelDensity(1);  // prevent 2x-4x overdraw on retina
-  createCanvas(1920, 1080);
-}
-```
-
-In hot loops (particles, pixel ops), use `Math.*` instead of p5 wrappers — measurably faster:
-
-```javascript
-// In draw() or update() hot paths:
-let a = Math.sin(t);          // not sin(t)
-let r = Math.sqrt(dx*dx+dy*dy); // not dist() — or better: skip sqrt, compare magSq
-let v = Math.random();        // not random() — when seed not needed
-let m = Math.min(a, b);       // not min(a, b)
-```
-
-Never `console.log()` inside `draw()`. Never manipulate DOM in `draw()`. See `references/troubleshooting.md` § Performance.
-
-### Seeded Randomness — Always
-
-Every generative sketch must be reproducible. Same seed, same output.
-
-```javascript
-function setup() {
-  randomSeed(CONFIG.seed);
-  noiseSeed(CONFIG.seed);
-  // All random() and noise() calls now deterministic
-}
-```
-
-Never use `Math.random()` for generative content — only for performance-critical non-visual code. Always `random()` for visual elements. If you need a random seed: `CONFIG.seed = floor(random(99999))`.
-
-### Generative Art Platform Support (fxhash / Art Blocks)
-
-For generative art platforms, replace p5's PRNG with the platform's deterministic random:
-
-```javascript
-// fxhash convention
-const SEED = $fx.hash;              // unique per mint
-const rng = $fx.rand;               // deterministic PRNG
-$fx.features({ palette: 'warm', complexity: 'high' });
-
-// In setup():
-randomSeed(SEED);   // for p5's noise()
-noiseSeed(SEED);
-
-// Replace random() with rng() for platform determinism
-let x = rng() * width;  // instead of random(width)
-```
-
-See `references/export-pipeline.md` § Platform Export.
-
-### Color Mode — Use HSB
-
-HSB (Hue, Saturation, Brightness) is dramatically easier to work with than RGB for generative art:
-
-```javascript
-colorMode(HSB, 360, 100, 100, 100);
-// Now: fill(hue, sat, bri, alpha)
-// Rotate hue: fill((baseHue + offset) % 360, 80, 90)
-// Desaturate: fill(hue, sat * 0.3, bri)
-// Darken: fill(hue, sat, bri * 0.5)
-```
-
-Never hardcode raw RGB values. Define a palette object, derive variations procedurally. See `references/color-systems.md`.
-
-### Noise — Multi-Octave, Not Raw
-
-Raw `noise(x, y)` looks like smooth blobs. Layer octaves for natural texture:
-
-```javascript
-function fbm(x, y, octaves = 4) {
-  let val = 0, amp = 1, freq = 1, sum = 0;
-  for (let i = 0; i < octaves; i++) {
-    val += noise(x * freq, y * freq) * amp;
-    sum += amp;
-    amp *= 0.5;
-    freq *= 2;
-  }
-  return val / sum;
-}
-```
-
-For flowing organic forms, use **domain warping**: feed noise output back as noise input coordinates. See `references/visual-effects.md`.
-
-### createGraphics() for Layers — Not Optional
-
-Flat single-pass rendering looks flat. Use offscreen buffers for composition:
-
-```javascript
-let bgLayer, fgLayer, trailLayer;
-function setup() {
-  createCanvas(1920, 1080);
-  bgLayer = createGraphics(width, height);
-  fgLayer = createGraphics(width, height);
-  trailLayer = createGraphics(width, height);
-}
-function draw() {
-  renderBackground(bgLayer);
-  renderTrails(trailLayer);   // persistent, fading
-  renderForeground(fgLayer);  // cleared each frame
-  image(bgLayer, 0, 0);
-  image(trailLayer, 0, 0);
-  image(fgLayer, 0, 0);
-}
-```
-
-### Performance — Vectorize Where Possible
-
-p5.js draw calls are expensive. For thousands of particles:
-
-```javascript
-// SLOW: individual shapes
-for (let p of particles) {
-  ellipse(p.x, p.y, p.size);
-}
-
-// FAST: single shape with beginShape()
-beginShape(POINTS);
-for (let p of particles) {
-  vertex(p.x, p.y);
-}
-endShape();
-
-// FASTEST: pixel buffer for massive counts
-loadPixels();
-for (let p of particles) {
-  let idx = 4 * (floor(p.y) * width + floor(p.x));
-  pixels[idx] = r; pixels[idx+1] = g; pixels[idx+2] = b; pixels[idx+3] = 255;
-}
-updatePixels();
-```
-
-See `references/troubleshooting.md` § Performance.
-
-### Instance Mode for Multiple Sketches
-
-Global mode pollutes `window`. For production, use instance mode:
-
-```javascript
-const sketch = (p) => {
-  p.setup = function() {
-    p.createCanvas(800, 800);
-  };
-  p.draw = function() {
-    p.background(0);
-    p.ellipse(p.mouseX, p.mouseY, 50);
-  };
-};
-new p5(sketch, 'canvas-container');
-```
-
-Required when embedding multiple sketches on one page or integrating with frameworks.
-
-### WebGL Mode Gotchas
-
-- `createCanvas(w, h, WEBGL)` — origin is center, not top-left
-- Y-axis is inverted (positive Y goes up in WEBGL, down in P2D)
-- `translate(-width/2, -height/2)` to get P2D-like coordinates
-- `push()`/`pop()` around every transform — matrix stack overflows silently
-- `texture()` before `rect()`/`plane()` — not after
-- Custom shaders: `createShader(vert, frag)` — test on multiple browsers
-
-### Export — Key Bindings Convention
-
-Every sketch should include these in `keyPressed()`:
-
-```javascript
-function keyPressed() {
-  if (key === 's' || key === 'S') saveCanvas('output', 'png');
-  if (key === 'g' || key === 'G') saveGif('output', 5);
-  if (key === 'r' || key === 'R') { randomSeed(millis()); noiseSeed(millis()); }
-  if (key === ' ') CONFIG.paused = !CONFIG.paused;
-}
-```
-
-### Headless Video Export — Use noLoop()
-
-For headless rendering via Puppeteer, the sketch **must** use `noLoop()` in setup. Without it, p5's draw loop runs freely while screenshots are slow — the sketch races ahead and you get skipped/duplicate frames.
-
-```javascript
-function setup() {
-  createCanvas(1920, 1080);
-  pixelDensity(1);
-  noLoop();                    // capture script controls frame advance
-  window._p5Ready = true;      // signal readiness to capture script
-}
-```
-
-The bundled `scripts/export-frames.js` detects `_p5Ready` and calls `redraw()` once per capture for exact 1:1 frame correspondence. See `references/export-pipeline.md` § Deterministic Capture.
+- **Disable FES first** — `p5.disableFriendlyErrors = true;` before `setup()`; the Friendly Error System adds up to 10x overhead. Also always `pixelDensity(1)` to prevent 2-4x retina overdraw, and prefer `Math.*` over p5 wrappers in hot loops (`Math.sin` not `sin`, etc). Never `console.log()` or manipulate the DOM inside `draw()`. See `references/troubleshooting.md` § Performance.
+- **Seeded randomness always** — `randomSeed(CONFIG.seed); noiseSeed(CONFIG.seed);` in `setup()` so every generative sketch is reproducible. Never `Math.random()` for visual content. For fxhash/Art Blocks platforms, replace p5's PRNG with the platform's deterministic random (`$fx.hash`/`$fx.rand`) — see `references/export-pipeline.md` § Platform Export.
+- **Color mode — use HSB**, not raw RGB: `colorMode(HSB, 360, 100, 100, 100)`. Define a palette object, derive variations procedurally. See `references/color-systems.md`.
+- **Noise — multi-octave (fbm), not raw** `noise(x,y)`, and use domain warping for organic flow. See `references/visual-effects.md`.
+- **`createGraphics()` layers are not optional** — flat single-pass rendering looks flat; composite background/trail/foreground offscreen buffers every frame.
+- **Vectorize hot loops** — `beginShape(POINTS)`/`endShape()` for thousands of particles, or a raw pixel buffer (`loadPixels()`/`updatePixels()`) for tens of thousands. See `references/troubleshooting.md` § Performance.
+- **Instance mode** (`new p5(sketch, 'container')`) is required when embedding multiple sketches on one page or integrating with a framework — global mode pollutes `window`. See `references/core-api.md`.
+- **WebGL mode gotchas** — `createCanvas(w,h,WEBGL)` origin is center not top-left, Y-axis inverted, `push()`/`pop()` around every transform, `texture()` before `rect()`/`plane()`. See `references/webgl-and-3d.md`.
+- **Export key-binding convention** — every sketch's `keyPressed()` should map `s`→PNG, `g`→GIF, `r`→reseed, space→pause.
+- **Headless video export requires `noLoop()`** — call `noLoop()` in `setup()` and set `window._p5Ready = true`; without it Puppeteer's screenshots race ahead of the free-running draw loop and frames get skipped/duplicated. The bundled `scripts/export-frames.js` detects `_p5Ready` and calls `redraw()` once per capture. See `references/export-pipeline.md` § Deterministic Capture.
 
 For multi-scene videos, use the per-clip architecture: one HTML per scene, render independently, stitch with `ffmpeg -f concat`. See `references/export-pipeline.md` § Per-Clip Architecture.
 
@@ -522,37 +338,13 @@ When building p5.js sketches:
 | `references/export-pipeline.md` | `saveCanvas()`, `saveGif()`, `saveFrames()`, deterministic headless capture, ffmpeg frame-to-video, CCapture.js, SVG export, per-clip architecture, platform export (fxhash), video gotchas |
 | `references/troubleshooting.md` | Performance profiling, per-pixel budgets, common mistakes, browser compatibility, WebGL debugging, font loading issues, pixel density traps, memory leaks, CORS |
 | `templates/viewer.html` | Interactive viewer template: seed navigation (prev/next/random/jump), parameter sliders, download PNG, responsive canvas. Start from this for explorable generative art |
+| `references/creative-divergence.md` | Conceptual Blending, SCAMPER Transformation, and Distance Association strategies for experimental/unconventional requests |
 
 ---
 
-## Creative Divergence (use only when user requests experimental/creative/unique output)
+## Creative Divergence
 
-If the user asks for creative, experimental, surprising, or unconventional output, select the strategy that best fits and reason through its steps BEFORE generating code.
-
-- **Conceptual Blending** — when the user names two things to combine or wants hybrid aesthetics
-- **SCAMPER** — when the user wants a twist on a known generative art pattern
-- **Distance Association** — when the user gives a single concept and wants exploration ("make something about time")
-
-### Conceptual Blending
-1. Name two distinct visual systems (e.g., particle physics + handwriting)
-2. Map correspondences (particles = ink drops, forces = pen pressure, fields = letterforms)
-3. Blend selectively — keep mappings that produce interesting emergent visuals
-4. Code the blend as a unified system, not two systems side-by-side
-
-### SCAMPER Transformation
-Take a known generative pattern (flow field, particle system, L-system, cellular automata) and systematically transform it:
-- **Substitute**: replace circles with text characters, lines with gradients
-- **Combine**: merge two patterns (flow field + voronoi)
-- **Adapt**: apply a 2D pattern to a 3D projection
-- **Modify**: exaggerate scale, warp the coordinate space
-- **Purpose**: use a physics sim for typography, a sorting algorithm for color
-- **Eliminate**: remove the grid, remove color, remove symmetry
-- **Reverse**: run the simulation backward, invert the parameter space
-
-### Distance Association
-1. Anchor on the user's concept (e.g., "loneliness")
-2. Generate associations at three distances:
-   - Close (obvious): empty room, single figure, silence
-   - Medium (interesting): one fish in a school swimming the wrong way, a phone with no notifications, the gap between subway cars
-   - Far (abstract): prime numbers, asymptotic curves, the color of 3am
-3. Develop the medium-distance associations — they're specific enough to visualize but unexpected enough to be interesting
+Use only when the user requests experimental/creative/unique output — select
+a strategy (Conceptual Blending, SCAMPER Transformation, or Distance
+Association) and reason through its steps BEFORE generating code. Full
+strategies and worked steps: see [Creative Divergence Strategies](references/creative-divergence.md).

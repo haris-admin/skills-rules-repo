@@ -1,6 +1,6 @@
 ---
 name: openspec-workflow
-description: Structure complex multi-agent features into structured proposals, design documents, executable tasks, and verification gates.
+description: Structure complex multi-agent features into structured proposals, design documents, executable tasks, and verification gates. Use when scoping, writing, or verifying an OpenSpec change (proposal.md, design.md, tasks.md, spec deltas), when closing out or backfilling a change, or when confirming acceptance criteria are actually met by the committed diff rather than just checked off.
 ---
 
 # OpenSpec Workflow

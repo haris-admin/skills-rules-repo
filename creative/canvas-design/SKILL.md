@@ -1,6 +1,6 @@
 ---
-name: claude-design
-description: Design one-off HTML artifacts (landing, deck, prototype).
+name: canvas-design
+description: Guides a from-scratch, high-fidelity HTML design artifact (landing page, prototype, deck, component lab, or motion study) through a taste-driven process — surface-first composition, context gathering, variation, and an anti-slop self-audit — for CLI/API agents that lack the hosted Claude Design UI. Use when the user asks for design work (a mockup, prototype, deck, or visual exploration) that would normally go through Claude Design but the agent is running outside that hosted environment.
 version: 1.1.0
 author: BadTechBandit
 license: MIT
@@ -25,17 +25,17 @@ Hermes has three design-related skills under `skills/creative/`. They do differe
 
 | Skill | What it gives you | Use when the user wants... |
 |---|---|---|
-| **claude-design** (this one) | Design *process and taste* — how to scope a brief, gather context, produce variants, verify a local HTML artifact, avoid AI-design slop | a from-scratch designed artifact (landing page, prototype, deck, component lab, motion study) with no specific brand or token system dictated |
+| **canvas-design** (this one) | Design *process and taste* — how to scope a brief, gather context, produce variants, verify a local HTML artifact, avoid AI-design slop | a from-scratch designed artifact (landing page, prototype, deck, component lab, motion study) with no specific brand or token system dictated |
 | **popular-web-designs** | 54 ready-to-paste design systems — exact colors, typography, components, CSS values for sites like Stripe, Linear, Vercel, Notion, Airbnb | "make it look like Stripe / Linear / Vercel", a page styled after a known brand, or a visual starting point pulled from a real product |
 | **design-md** | Google's DESIGN.md spec format — author/validate/diff/export design-token files, WCAG contrast checking, Tailwind/DTCG export | a formal, persistent, machine-readable design-system *spec file* (tokens + rationale) that lives in a repo and gets consumed by agents over time |
 
 Rule of thumb:
 
-- **Process + taste, one-off artifact** → claude-design
-- **Match a known brand's look** → popular-web-designs (and let claude-design drive the process)
+- **Process + taste, one-off artifact** → canvas-design
+- **Match a known brand's look** → popular-web-designs (and let canvas-design drive the process)
 - **Author the tokens spec itself** → design-md
 
-These compose: use `popular-web-designs` for the visual vocabulary, `claude-design` for how to turn a brief into a thoughtful local HTML file, and `design-md` when the output is the token file rather than a rendered artifact.
+These compose: use `popular-web-designs` for the visual vocabulary, `canvas-design` for how to turn a brief into a thoughtful local HTML file, and `design-md` when the output is the token file rather than a rendered artifact.
 
 ## Runtime Mode
 
@@ -268,86 +268,11 @@ For repo implementation:
 
 ## HTML / CSS / JS Standards
 
-Use modern CSS well:
+Use modern CSS well (variables, grid, container queries, real focus/hover states, `prefers-reduced-motion`), and avoid monolithic files, fragile viewport assumptions, and tiny hit targets. Minimums: 44px mobile hit targets, 12pt print text, 24px+ for 1920×1080 deck text. See [HTML / CSS / JS Standards](references/html-css-js-standards.md) for the full checklist.
 
-- CSS variables for tokens
-- CSS grid for layout
-- container queries when helpful
-- `text-wrap: pretty` where supported
-- real focus states
-- real hover states
-- `prefers-reduced-motion` handling for non-trivial motion
-- responsive scaling
-- semantic HTML where practical
+## Format-Specific Rules
 
-Avoid:
-
-- huge monolithic files when a real repo structure is expected
-- fragile hard-coded viewport assumptions
-- inaccessible tiny hit targets
-- decorative JS that fights usability
-- `scrollIntoView` unless there is no safer option
-
-Mobile hit targets should be at least 44px.
-
-For print documents, text should be at least 12pt.
-
-For 1920×1080 slide decks, text should generally be 24px or larger.
-
-## React Guidance for Standalone HTML
-
-Use plain HTML/CSS/JS by default.
-
-Use React only when:
-
-- the artifact needs meaningful state
-- variants/toggles are easier as components
-- interaction complexity warrants it
-- the target implementation is React/Next.js and fidelity matters
-
-If using React from CDN in standalone HTML:
-
-- pin exact versions
-- avoid unpinned `react@18` style URLs
-- avoid `type="module"` unless necessary
-- avoid multiple global objects named `styles`
-- give global style objects specific names, e.g. `commandPaletteStyles`, `deckStyles`
-- if splitting Babel scripts, explicitly attach shared components to `window`
-
-If building inside a real repo, use the repo's package manager and component architecture instead.
-
-## Deck Rules
-
-For slide decks, use a fixed-size canvas and scale it to fit the viewport.
-
-Default slide size: 1920×1080, 16:9.
-
-Requirements:
-
-- keyboard navigation
-- visible slide count
-- localStorage persistence for current slide
-- print-friendly layout when practical
-- screen labels or stable IDs for important slides
-- no speaker notes unless the user explicitly asks
-
-Do not hand-wave a deck as markdown bullets. Create a designed artifact if asked for a deck.
-
-Use 1–2 background colors max unless the brand system requires more.
-
-Keep slides sparse. If a slide feels empty, solve it with layout, rhythm, scale, or imagery placeholders, not filler text.
-
-## Prototype Rules
-
-For interactive prototypes:
-
-- make the primary path clickable
-- include key states: default, hover/focus, loading, empty, error, success where relevant
-- expose variations with in-page controls when useful
-- keep controls out of the final composition unless they are intentionally part of the prototype
-- persist important state in localStorage when refresh continuity matters
-
-If the prototype is meant to model a product flow, design the flow, not just the first screen.
+React (only when state/interaction complexity warrants it and CDN versions are pinned), slide decks (fixed 1920×1080 canvas, keyboard nav, localStorage slide position, sparse slides), and interactive prototypes (clickable primary path, all key states, localStorage continuity) each have their own detailed rules. See [Format-Specific Rules](references/format-specific-rules.md) for React-in-standalone-HTML, Deck Rules, and Prototype Rules in full.
 
 ## Variation Rules
 
@@ -435,32 +360,7 @@ Minimal is not automatically good. Dense is not automatically cluttered. Choose 
 
 ## Slop Diagnostic: Score Before You Fix
 
-AI design slop has a tiny, predictable failure distribution — designers asked to label AI UIs collapse the "this is AI" signal down to about ten tells. Before polishing or repairing an artifact, run this as an explicit self-audit and write a short report. **Diagnose first, treat second** — auditing and fixing in one breath fails, because the model's prior outweighs the instruction and it repeats the mistake (recolors when it needed re-layout, polishes type on a composition problem).
-
-The ten tells (presence of each = one point of slop; lower is better):
-
-1. **Tech gradient** — blue/violet/indigo glossy gradient on everything.
-2. **Generic tech hue** — the default accent is indigo/violet (not chosen for the brand, just the model's favorite).
-3. **Feature-tile grid** — icon + heading + sentence × 3, all equal weight, nothing prioritized.
-4. **Accent rail** — a colored left strip on cards: decoration pretending to be organization.
-5. **Unearned blur** — glassmorphism with no real depth/elevation system behind it.
-6. **Monument stat** — oversized numbers filling space that should carry product story.
-7. **Icon topper** — a rounded-square icon centered above every heading (Tailwind-template filler).
-8. **Center stack** — everything centered because no real composition was committed to.
-9. **Default type** — Inter (or system-ui) used by default rather than chosen.
-10. **Wrong surface** — the composition doesn't match the surface (e.g. a hero on a Monitor surface). This is the root cause behind most of the others.
-
-How to run it:
-
-- Score the artifact out of 10 (10 = maximum slop). State the score and list which tells fired, in one short report.
-- Treat the report as **context, not a to-do list** — it tells you *where* to spend repair effort, it does not dictate edits.
-- Then repair, matched to the diagnosis:
-  - tells 3, 8, 10 → **re-layout / re-compose** (revisit the surface choice — do not recolor).
-  - tells 1, 2, 9 → **recolor / re-typeset** (palette and type are genuinely the problem here).
-  - tells 4, 5, 6, 7 → **remove the decoration**; replace it with real hierarchy (scale, weight, spacing).
-- Re-score after repairing. Do not declare done while compositional tells (3, 8, 10) are still firing — those are causes, the rest are usually symptoms.
-
-The point of separating diagnosis from treatment: let the audit complain first, then fix only what it complained about, in the register the complaint calls for.
+AI design slop has a tiny, predictable failure distribution — about ten recognizable tells (tech gradients, feature-tile grids, accent rails, unearned blur, wrong surface, etc.). Before polishing or repairing an artifact, run this as an explicit self-audit: score the artifact out of 10, state which tells fired, then repair matched to the diagnosis (re-layout for compositional tells, recolor/re-typeset for palette tells, remove decoration for the rest). **Diagnose first, treat second** — fixing in the same breath as auditing tends to repeat the mistake. See [Slop Diagnostic](references/slop-diagnostic.md) for the full ten-tell list and the diagnosis-to-repair mapping.
 
 ## Typography
 
@@ -549,45 +449,9 @@ Do not draw elaborate fake SVG illustrations unless the assignment is explicitly
 
 Avoid iconography unless it improves scanning or matches the design system.
 
-## Source-Code Fidelity
+## Context, Sourcing, and Copyright
 
-When recreating or extending a UI from a repo:
-
-1. inspect the repo tree
-2. identify the actual UI source files
-3. read theme/token/global style/component files
-4. lift exact values where appropriate
-5. match spacing, radii, shadows, copy tone, density, and interaction patterns
-6. only then design or modify
-
-Do not build from memory when source files are available.
-
-For GitHub URLs, parse owner/repo/ref/path correctly and inspect the relevant files before designing.
-
-## Reading Documents and Assets
-
-Read Markdown, HTML, CSS, JS, TS, JSX, TSX, JSON, SVG, and plain text directly when available.
-
-For DOCX/PPTX/PDF, use available local extraction tools if present. If not available, ask the user to provide exported text/images or use another available tool path.
-
-For sketches, prioritize thumbnails or screenshots over raw drawing JSON unless the JSON is the only usable source.
-
-## Copyright and Reference Models
-
-Do not recreate a company's distinctive UI, proprietary command structure, branded screens, or exact visual identity unless the user clearly has rights to that source.
-
-It is acceptable to extract general design principles:
-
-- density without clutter
-- command-first interaction
-- monochrome with one accent
-- editorial hierarchy
-- clear empty states
-- strong keyboard affordances
-
-It is not acceptable to clone proprietary layouts, copy exact branded surfaces, or reproduce copyrighted content.
-
-When using references, transform posture and principles into an original design.
+When recreating or extending a UI from a repo, inspect the actual source files (theme/token/style/component) and lift exact values before designing — don't build from memory when source is available. Read Markdown/HTML/CSS/JS/JSON/SVG directly; use local extraction tools for DOCX/PPTX/PDF. Never clone a company's distinctive proprietary UI or branded screens — extract general principles (density, command-first interaction, editorial hierarchy) and transform them into an original design. See [Context, Sourcing, and Copyright](references/context-sourcing-and-copyright.md) for the full source-fidelity procedure, document-reading rules, and the acceptable/not-acceptable copyright boundary.
 
 ## Verification
 

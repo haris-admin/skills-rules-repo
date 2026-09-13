@@ -1,6 +1,6 @@
 ---
 name: neurodiverse-visual-specs
-description: Author multi-modal, visual-first change companions, simple slide presentations, and executive visual reports for technical proposals, security audits, and progress briefings. Specifically optimized for neurodivergent (ADHD, Autism, Dyslexia) and non-technical stakeholders following BDA and WCAG standards.
+description: Author multi-modal, visual-first change companions, simple slide presentations, and executive visual reports for technical proposals, security audits, and progress briefings, optimized for neurodivergent (ADHD, Autism, Dyslexia) and non-technical stakeholders following BDA and WCAG standards. Use when asked to create a presentation deck, an executive or stakeholder report, or a change/spec document for a technical proposal, security audit, or progress briefing.
 ---
 
 # Neurodiverse Visual Specs, Presentations & Reporting Standards

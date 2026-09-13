@@ -1,6 +1,6 @@
 ---
 name: codebase-memory
-description: Build and query a persistent mental model of the codebase — architecture, patterns, dependencies, and conventions — so future work starts informed, not cold.
+description: Build and query a persistent mental model of the codebase — architecture, patterns, dependencies, and conventions — so future work starts informed, not cold. Use when starting a new session, onboarding to an unfamiliar area of the codebase, or when context about architecture/conventions would prevent mistakes.
 ---
 
 # Codebase Memory Skill

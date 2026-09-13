@@ -1,6 +1,6 @@
 ---
 name: crap-score
-description: Calculate and reduce Change Risk Anti-Patterns (CRAP) by measuring cyclomatic complexity against automated test coverage.
+description: Calculate and reduce Change Risk Anti-Patterns (CRAP) by measuring cyclomatic complexity against automated test coverage. Use when deciding whether a method needs refactoring or more test coverage before merging, or when auditing a codebase for complex, poorly-tested, high-risk code.
 ---
 
 # CRAP Score Analysis

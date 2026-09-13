@@ -1,6 +1,6 @@
 ---
 name: dogfood
-description: "Exploratory QA of web apps: find bugs, evidence, reports."
+description: "Exploratory QA of web apps: find bugs, evidence, reports. Use when asked to QA-test, dogfood, or find bugs in a web application and produce an evidence-backed bug report."
 version: 1.0.0
 author: Teknium (teknium1), Hermes Agent
 license: MIT

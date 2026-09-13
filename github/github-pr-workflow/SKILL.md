@@ -1,6 +1,6 @@
 ---
 name: github-pr-workflow
-description: "GitHub PR lifecycle: branch, commit, open, CI, merge."
+description: "GitHub PR lifecycle: branch, commit, open, CI, merge. Use when branching, committing, opening a PR, monitoring or auto-fixing CI failures, or merging — the full PR lifecycle end to end."
 version: 1.1.0
 author: Hermes Agent
 license: MIT
@@ -379,3 +379,11 @@ See `references/investigate-first-pr.md` — Two-phase workflow: investigate →
 When `gh` isn't installed and you need to create a PR from a script that reads, modifies, and commits files on a remote repo, use the Python REST API approach.
 
 See `references/python-api-pr.md` — Complete workflow: read file → get SHA → create branch → commit changes → open PR. Includes a working example from the AML Hive ASIC URL PR (PR #1 on `amlhive-tech/amlhive1`).
+
+### CI Troubleshooting Quick Reference
+
+See `references/ci-troubleshooting.md` — common CI failure patterns and how to diagnose them from the logs.
+
+### Conventional Commits Quick Reference
+
+See `references/conventional-commits.md` — commit type table (`type(scope): description`) and when to use each type.

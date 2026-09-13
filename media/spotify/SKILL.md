@@ -1,6 +1,6 @@
 ---
 name: spotify
-description: "Spotify: play, search, queue, manage playlists and devices."
+description: "Spotify: play, search, queue, manage playlists and devices. Use when the user says things like 'play X', 'pause', 'skip', 'queue up X', 'what's playing', 'search for X', 'add to my X playlist', 'make a playlist', or 'save this to my library'."
 version: 1.0.0
 author: Hermes Agent
 license: MIT

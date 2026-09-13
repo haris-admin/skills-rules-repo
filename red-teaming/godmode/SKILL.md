@@ -1,6 +1,6 @@
 ---
 name: godmode
-description: "Jailbreak LLMs: Parseltongue, GODMODE, ULTRAPLINIAN."
+description: "Jailbreak LLMs: Parseltongue (input obfuscation), GODMODE (system-prompt templates), ULTRAPLINIAN (multi-model racing), plus persistent Hermes config wiring. Use when asked to jailbreak a model via API, bypass safety filters on Claude/GPT/Gemini/Grok, set up persistent jailbreaking, red-team a model's safety training, or race multiple models for the least-censored response."
 version: 1.0.0
 author: Hermes Agent + Teknium
 license: MIT

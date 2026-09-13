@@ -1,6 +1,6 @@
 ---
 name: frontend-design-system
-description: Enforce design token consistency, component reuse, and strict WCAG 4.5:1 (text) and 3:1 (non-text) contrast compliance.
+description: Enforce design token consistency, component reuse, and strict WCAG 4.5:1 (text) and 3:1 (non-text) contrast compliance. Use when writing or reviewing frontend UI code for hardcoded colors/inline styles, inconsistent spacing or typography, or insufficient color contrast.
 ---
 
 # Frontend Design System

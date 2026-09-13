@@ -1,6 +1,6 @@
 ---
 name: professional-html-email-pipeline
-description: Purelymail HTML report email, rendering + SMTP pitfalls.
+description: Purelymail HTML report email, rendering + SMTP pitfalls. Use when sending a professional HTML report email via Purelymail SMTP, debugging emails where formatting renders flat or bold shows literally, troubleshooting SMTP 535 authentication failures, or adding a PDF/CSV attachment to a report email.
 ---
 
 # Professional HTML Email Pipeline (Purelymail)

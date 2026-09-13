@@ -1,6 +1,6 @@
 ---
 name: native-mcp
-description: "MCP client: connect servers, register tools (stdio/HTTP)."
+description: "MCP client: connect servers, register tools (stdio/HTTP). Use when connecting to MCP servers, adding external capabilities (filesystem, GitHub, databases, APIs) via MCP config, running local stdio-based or remote HTTP MCP servers, or troubleshooting MCP tool discovery/connection failures."
 version: 1.0.0
 author: Hermes Agent
 license: MIT

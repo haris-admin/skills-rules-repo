@@ -1,6 +1,6 @@
 ---
 name: arxiv
-description: "Search arXiv papers by keyword, author, category, or ID."
+description: "Search and retrieve arXiv papers by keyword, author, category, or ID via the free REST API, plus Semantic Scholar citation counts, references, and recommendations. Use when asked to find or fetch academic/arXiv papers, generate a BibTeX citation, or check a paper's citation count or related work."
 version: 1.0.0
 author: Hermes Agent
 license: MIT

@@ -1,6 +1,6 @@
 ---
 name: merge-reconciler
-description: "Neutral third-party resolution of agent merge conflicts."
+description: "Neutral third-party resolution of agent merge conflicts. Use when two agent branches/worktrees collide during a parallel campaign (kanban pipeline, parallel-PR wave, multi-worktree refactor) and neither original agent should self-adjudicate the conflict; not for conflicts within a single agent's own work or trivial lockfile/generated-file conflicts."
 version: 1.0.0
 author: Hermes Agent
 license: MIT

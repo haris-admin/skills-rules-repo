@@ -1,6 +1,6 @@
 ---
 name: verification-loop
-description: "A comprehensive verification system for Claude Code sessions."
+description: "A comprehensive multi-phase verification system (build, types, lint, tests, security scan, diff review) for Claude Code sessions. Use when asked to verify a change, after completing a feature or significant code change, before creating a PR, or after refactoring."
 origin: ECC
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: pretext
-description: Build creative browser demos with DOM-free text layout.
+description: Build creative browser demos with DOM-free text layout. Use when asked for a "pretext demo", text flowing around a moving shape, ASCII-art effects made of real prose, a text-as-geometry game, kinetic typography, or multiline shrink-wrap UI — not for CSS-solvable static layouts or pure non-text canvas art.
 version: 1.0.0
 author: Hermes Agent
 license: MIT
@@ -8,7 +8,7 @@ platforms: [linux, macos, windows]
 metadata:
   hermes:
     tags: [creative-coding, typography, pretext, ascii-art, canvas, generative, text-layout, kinetic-typography]
-    related_skills: [p5js, claude-design, excalidraw, architecture-diagram]
+    related_skills: [p5js, canvas-design, excalidraw, architecture-diagram]
 ---
 
 # Pretext Creative Demos

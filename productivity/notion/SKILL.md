@@ -1,6 +1,6 @@
 ---
 name: notion
-description: "Notion API + ntn CLI: pages, databases, markdown, Workers."
+description: "Notion API + ntn CLI: pages, databases, markdown, Workers. Use when asked to search, read, create, or update Notion pages/databases, query a database, upload files to Notion, convert Notion content to/from Markdown, or build/deploy a Notion Worker (sync, tool, or webhook)."
 version: 2.0.0
 author: community
 license: MIT
@@ -446,3 +446,7 @@ Headings 5/6 collapse to H4. Multiple `>` lines render as separate quote blocks 
 - Always pass `-s` to curl to suppress progress bars (cleaner agent output).
 - Pipe JSON through `jq` when reading: `... | jq '.results[0].properties'`.
 - Notion also ships an MCP server now (`Notion MCP`, ~91% more token-efficient on DB ops than the previous version) — wire it via Hermes' MCP support if you want streaming Notion access from inside a session, but the paths above are enough for most one-shot tasks.
+
+## Additional references
+
+- `references/block-types.md` — full reference for creating and reading every common Notion block type via the API.

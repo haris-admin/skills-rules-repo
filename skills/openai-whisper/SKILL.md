@@ -1,6 +1,6 @@
 ---
 name: openai-whisper
-description: Local speech-to-text with the Whisper CLI (no API key).
+description: Local speech-to-text or translation with the Whisper CLI, no API key required. Use when asked to transcribe or translate an audio or video file locally without sending it to a cloud API.
 homepage: https://openai.com/research/whisper
 metadata:
   {

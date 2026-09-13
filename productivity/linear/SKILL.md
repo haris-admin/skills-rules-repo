@@ -1,6 +1,6 @@
 ---
 name: linear
-description: "Linear: manage issues, projects, teams via GraphQL + curl."
+description: "Manage Linear issues, projects, teams, and documents via the GraphQL API using curl or a stdlib Python helper script. Use when asked to create, update, assign, or search Linear issues, change issue status or priority, add comments, list/create projects or teams, or fetch/search Linear documents."
 version: 1.0.0
 author: Hermes Agent
 license: MIT

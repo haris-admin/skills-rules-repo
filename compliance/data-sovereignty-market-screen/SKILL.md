@@ -145,3 +145,8 @@ Data: <categories> · whose: <subjects> · actors: <processors/regions/providers
   `caduceus-compliance-watch`. Don't merge the three.
 - Not legal advice. High-risk / novel data flows still go to a lawyer — this screen tells you
   *when* you need one.
+
+## Reference Files
+
+- `references/jurisdiction-obligations.md` — structured AU/CA/US/EU obligations checklist
+  (data residency, privacy, AI regulation, sector rules) backing this screen's matrix.

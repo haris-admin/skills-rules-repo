@@ -408,3 +408,9 @@ if verdict['verdict'] == 'FALSE-POSITIVE':
 - **Cross-platform credential drift:** `.env` files exist in 6+ locations (WSL `~/.hermes/`, Windows `.hermes/`, Windows `.openclaw/`, `.openclaw/workspace/`, `.openclaw/workspace/config/`, `~/.aws/credentials`). Tokens can be completely different values across locations — not just truncated copies. When API calls fail, sweep ALL locations, identify unique key suffixes, test each. Full diagnostic in `references/credential-verification.md`.
 - **macarthurgarments@gmail.com Gmail access:** Himalaya v1.2.0 IMAP/SMTP configured June 3, 2026. Credentials in Windows `.env` (`GOOGLE_GMAIL_APP_PASSWORD_MACARTHUR`). Config at `~/.config/himalaya/config.toml`. Daily Perplexity briefings land here. See `references/macarthurgarments-gmail.md` for full setup and operations.
 - **Time-aware communication (CRITICAL):** Server is UTC, user is Sydney AEST (UTC+10). NEVER use time-based greetings ("good morning", "good evening") without checking current Sydney time first. Haris flagged this June 3 when greeted with "good morning" at 10:16 PM Sydney. When in doubt, skip the greeting or use time-neutral openers.
+
+## Additional references
+
+- `references/build-queue.md` — structure and conventions of the Pluto Build Queue registry at `~/.hermes/mempalace-inputs/.build-queue/BUILD_QUEUE.md`.
+- `references/hermes-systemd-services.md` — why background helper processes spawned from the gateway die silently on gateway restart, and how to persist them via systemd (WSL).
+- `references/mercury-sibling-agent-relay.md` — architecture for Mercury, a sibling Windows Hermes agent connected to Pluto via a zero-shared-state webhook relay bridge.

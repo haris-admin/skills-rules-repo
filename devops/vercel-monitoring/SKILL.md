@@ -1,6 +1,6 @@
 ---
 name: vercel-monitoring
-description: "⚠️ RETIRED Aug 2026 — Vercel no longer used; cron removed, script archived. Historical reference for the watchdog pattern (script-as-cron, stdout=delivery) and purelymail_sender.py email module. Do not debug/re-enable without user direction."
+description: "⚠️ RETIRED Aug 2026 — Vercel no longer used; cron removed, script archived. Historical reference for the watchdog pattern (script-as-cron, stdout=delivery) and purelymail_sender.py email module. Do not debug/re-enable without user direction. Use only if Vercel monitoring is explicitly being re-adopted, or when looking up the historical watchdog cron pattern or purelymail_sender.py usage for reference."
 ---
 
 # Vercel Deployment Monitoring

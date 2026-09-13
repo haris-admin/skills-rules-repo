@@ -1,6 +1,6 @@
 ---
 name: openai-whisper-api
-description: Transcribe audio via OpenAI Audio Transcriptions API (Whisper).
+description: Transcribe audio via OpenAI's cloud Audio Transcriptions API (Whisper) using a bundled curl script. Use when asked to transcribe an audio file via OpenAI's API, e.g. when a local Whisper install isn't available or an API key is preferred.
 homepage: https://platform.openai.com/docs/guides/speech-to-text
 metadata:
   {

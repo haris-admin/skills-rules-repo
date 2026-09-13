@@ -1,6 +1,6 @@
 ---
 name: petdex
-description: Install and select animated petdex mascots for Hermes.
+description: Install, browse, and select animated petdex mascots that react to Hermes agent activity (idle, running, error, done) across CLI, TUI, and desktop. Use when a user wants a terminal/desktop mascot or asks about "pets"/petdex, wants to change, preview, or disable the active pet, or a pet isn't displaying correctly.
 version: 1.0.0
 author: Hermes Agent
 license: MIT

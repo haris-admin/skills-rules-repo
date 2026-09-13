@@ -1,6 +1,6 @@
 ---
 name: voice-call
-description: Start voice calls via the OpenClaw voice-call plugin.
+description: Start voice calls via the OpenClaw voice-call plugin. Use when asked to place, continue, speak into, end, or check the status of a phone call via Twilio/Telnyx/Plivo/mock providers.
 metadata:
   {
     "openclaw":

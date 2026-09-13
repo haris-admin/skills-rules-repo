@@ -1,6 +1,6 @@
 ---
 name: ui-casing-microcopy
-description: Standardize UI casing (Sentence/Title Case), eliminate screaming uppercase strings, and enforce executive microcopy.
+description: Standardize UI casing (Sentence/Title Case), eliminate screaming uppercase strings, and enforce executive microcopy. Use when writing or reviewing UI copy, page headings, button labels, or raw enum strings rendered to users, to keep casing and phrasing consistent and professional.
 ---
 
 # UI Casing & Microcopy Standards

@@ -1,6 +1,6 @@
 ---
 name: aws-toolkit-efficiency
-description: Manage AWS cloud infrastructure, IAM profiles, CloudWatch telemetry, and EC2/ECS deployments with safety and cost-efficiency.
+description: Manage AWS cloud infrastructure, IAM profiles, CloudWatch telemetry, and EC2/ECS deployments with safety and cost-efficiency. Use when running AWS CLI commands against a named profile, investigating a multi-day incident via CloudWatch Logs Insights, or provisioning/changing EC2/ECS infrastructure.
 ---
 
 # AWS Toolkit Efficiency

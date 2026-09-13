@@ -1,6 +1,6 @@
 ---
 name: fastapi-field-propagation
-description: "Add a new field end-to-end through a FastAPI backend: Pydantic model → router → service → database. Covers the 3-layer propagation pattern and Pydantic extra='forbid' gotcha."
+description: "Add a new field end-to-end through a FastAPI backend: Pydantic model → router → service → database. Covers the 3-layer propagation pattern and Pydantic extra='forbid' gotcha. Use when a request fails with 'Extra inputs are not permitted', a field is accepted by one endpoint (e.g. signup) but not another (e.g. admin update), or a downstream feature needs a field that can't be saved through an existing interface."
 version: 1.0.0
 license: MIT
 metadata:
@@ -169,3 +169,7 @@ After adding a field to the model, check if there are `@field_validator` decorat
 - **systematic-debugging** — For tracing error cascades when a missing field blocks downstream features (KYC, card assign, payouts). Use Phase 1 step 8.
 - **github-pr-workflow** — For creating a PR with the field propagation changes.
 - **writing-plans** — For planning a multi-field propagation across multiple endpoints.
+
+## Additional references
+
+- `references/a2square-dob-field-addition.md` — Worked case study: adding `dob`, `middle_name`, and `street_number` to the A2Square Tapease admin update-profile endpoint, including the error cascade this pattern caused before the fix.

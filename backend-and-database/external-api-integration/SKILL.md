@@ -1,6 +1,6 @@
 ---
 name: external-api-integration
-description: Mandatory contract validation and error handling for third-party API providers (Stripe, Dilisense, Veriff, SendGrid, etc.).
+description: Mandatory contract validation and error handling for third-party API providers (Stripe, Dilisense, Veriff, SendGrid, etc.). Use when integrating or calling an external API provider — validating inputs before the call, classifying/handling errors, setting timeouts, or adding audit-trail logging for outbound requests.
 ---
 
 # External API Integration Contract

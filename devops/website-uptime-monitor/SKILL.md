@@ -1,6 +1,6 @@
 ---
 name: website-uptime-monitor
-description: "HTTP health checks: status, SSL, response times."
+description: "HTTP health checks: status, SSL, response times. Use when setting up daily website uptime/health monitoring, adding SSL expiry checks, creating a cron-based website watchdog script, or diagnosing a monitor that started 404ing after a site rebuild moved its paths."
 version: 1.0.0
 author: Pluto
 license: MIT

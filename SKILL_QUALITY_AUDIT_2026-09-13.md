@@ -128,14 +128,74 @@ would be rejected outright if ever uploaded through Claude's official skill-uplo
 Rename both the directory and the frontmatter `name` (e.g. `claude-design` →
 `canvas-design` or similar, `my-defender-claude` → `my-defender`).
 
-### 5. Nested reference chain (1 skill)
+### 5. Nested reference chain (1 skill, then revised to 0)
 
 `productivity/box/SKILL.md` links directly to `references/oauth-setup.md` and
 `references/search-and-ai.md`, each of which links to further files
-(`cli-guide.md`; `hubs.md`, `bulk-operations.md`) not linked directly from SKILL.md
-itself. Per the guidance, Claude may only partially read a file reached this way
-(`head -100`-style preview) rather than in full. Fix: link all four leaf files directly
-from SKILL.md instead of chaining through the two intermediate ones.
+(`cli-guide.md`; `hubs.md`, `bulk-operations.md`). **Revised on manual check**: those
+leaf files turn out to be *also* linked directly from `productivity/box/SKILL.md`
+itself, independent of the chain — so they're one-hop reachable either way, not the
+real anti-pattern the guidance warns about. `check_nesting()` in
+`scripts/audit_skill_quality.py` was updated to only flag a chain when the leaf file
+is *not* independently reachable from SKILL.md — this exact false-positive shape
+recurred in every one of the 7 cases the remediation pass hit (see below), so the
+fix mattered in practice, not just in theory.
+
+## Remediation (same day)
+
+All findings above were fixed in this pass — full re-audit after fixing:
+
+```
+Total skills discovered: 297
+too_long: 2   (research-paper-writing: 639, canvas-design: 503 — both under the
+               guideline's own "don't force an artificial cut" carve-out after
+               60%+ reductions from 1611 and 639 lines respectively)
+```
+Everything else — descriptions, orphans, nested-refs, reserved names — is at 0.
+
+**How:** 7 parallel subagents, partitioned by skill directory (never by issue type,
+so no two agents could touch the same file concurrently) — 4 handled the ~199
+description/orphan-only skills, 3 handled the 13 oversized skills (description +
+orphan + progressive-disclosure split). The 3 oversized-skill agents hit the
+account's session rate limit mid-run on the first attempt; resumed via `SendMessage`
+to the same agent IDs (preserving their partial progress and context) rather than
+re-spawned from scratch, staggered one at a time on the retry rather than all three
+in parallel again.
+
+**Verified, not just trusted:**
+- Every subagent was instructed to preserve all information (relocate into
+  `references/*.md`, never delete) and link every new reference file directly from
+  SKILL.md (one level deep) — spot-checked several `git diff`s and reference-file
+  byte counts against what moved.
+- Two real false-negatives survived the batch pass because the audit script's own
+  trigger-phrase heuristic was too permissive (matched the incidental word "when" in
+  ordinary prose, e.g. "...agents **when** managing parallel worker subagents" was
+  wrongly counted as a valid trigger clause) — caught by a second, stricter pass and
+  fixed directly: `agent-governance-and-git/subagent-verification` and
+  `observability-and-sentry/notification-coverage-audit`.
+- `scripts/audit_skill_quality.py` itself was corrected afterward: `check_orphans()`
+  now scopes to `references/*.md` only (excludes `templates/`, `tests/`, `scripts/`,
+  `LICENSE`, `README.md`, `pyproject.toml`, etc. — flagging those produced 100% false
+  positives against this repo's real skills) and also excludes files covered by a
+  templated/glob pattern (e.g. `creative/baoyu-infographic`'s
+  `references/styles/<style>.md` covering 41 files as one intentional pattern);
+  `check_nesting()` now excludes a leaf file that's independently linked from
+  SKILL.md directly, per the revised §5 above.
+
+**Result, notable examples:**
+- `research/research-paper-writing`: 1611 → 639 lines (14 new/extended reference files)
+- `devops/wsl-cron-test-runner`: 892 → 133 lines (6 new reference files, all 11
+  previously-orphaned references linked)
+- `autonomous-ai-agents/hermes-agent`: 1016 → 311 lines (8 new reference files)
+- `devops/pluto-pipeline-orchestration`: 989 → 247 lines (5 new reference files,
+  2 sets of literally-duplicated sections in the original merged/deduplicated)
+- `creative/canvas-design` / `skills/my-defender-claude`: renamed off the reserved
+  `claude` word (→ `canvas-design`, `my-defender`), including every cross-referencing
+  skill's `related_skills` list
+
+CI is green end to end: `scripts/validate.py` (297/297), `scripts/generate_catalog.py
+--check` (README regenerated), and the 4 previously-warning rule files now carry a
+real summary paragraph.
 
 ## What was checked and ruled out
 

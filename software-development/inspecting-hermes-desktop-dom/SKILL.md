@@ -1,6 +1,6 @@
 ---
 name: inspecting-hermes-desktop-dom
-description: "Read the live Hermes desktop DOM/CSS over CDP."
+description: "Read the live Hermes desktop DOM/CSS over CDP. Use when verifying a UI change took effect, finding which CSS rule is winning, locating a stable selector, or checking a design token's computed value on a running dev build."
 version: 1.0.0
 author: Hermes Agent
 license: MIT

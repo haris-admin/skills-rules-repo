@@ -1,6 +1,6 @@
 ---
 name: jeff-dean-latency-audit
-description: Audit web application performance across the full stack using latency-budget hierarchies (L1 cache -> Memory -> Redis -> DB -> Network).
+description: Audit web application performance across the full stack using latency-budget hierarchies (L1 cache -> Memory -> Redis -> DB -> Network). Use when diagnosing slow page loads or API responses, reviewing payload size/compression, assessing third-party script impact, or checking whether server-side data fetching uses caching layers effectively.
 ---
 
 # Jeff Dean Latency Audit

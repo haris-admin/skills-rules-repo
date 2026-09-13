@@ -1,6 +1,6 @@
 ---
 name: cross-model-review
-description: For a security- or compliance-critical design/spec review, prefer engaging a genuinely different underlying model, not just a fresh context window of the same model.
+description: For a security- or compliance-critical design/spec review, prefer engaging a genuinely different underlying model, not just a fresh context window of the same model. Use when reviewing security-sensitive designs, compliance-critical specs, or amendments to an already-approved plan, and when validating a reviewing model's own claims before acting on them.
 ---
 
 # Cross-Model Adversarial Review

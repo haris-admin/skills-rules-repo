@@ -1,6 +1,6 @@
 ---
 name: weekly-ai-brief
-description: Weekly AI brief - releases, security, policy.
+description: Weekly AI brief - releases, security, policy. Use when compiling the Monday weekly AI digest (Mercury cron) covering agentic AI releases, AI security incidents, and AI policy/regulation news for Telegram delivery.
 ---
 
 # Weekly AI Brief (Mercury cron, Mon ~7AM AEST)

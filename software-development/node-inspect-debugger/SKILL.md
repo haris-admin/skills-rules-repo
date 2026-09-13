@@ -1,6 +1,6 @@
 ---
 name: node-inspect-debugger
-description: "Debug Node.js via --inspect + Chrome DevTools Protocol CLI."
+description: "Debug Node.js via --inspect + Chrome DevTools Protocol CLI. Use when a Node test fails and needs intermediate-state inspection, the Hermes ui-tui or tui_gateway misbehaves, or a running Node process needs a breakpoint, heap snapshot, or CPU profile."
 version: 1.0.0
 author: Hermes Agent
 license: MIT

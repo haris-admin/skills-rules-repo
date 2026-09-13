@@ -1,6 +1,6 @@
 ---
 name: himalaya
-description: "Himalaya CLI: IMAP/SMTP email from terminal."
+description: "Himalaya CLI: IMAP/SMTP email from terminal. Use when reading, listing, searching, sending, replying to, or forwarding email via the Himalaya CLI, or when troubleshooting IMAP/SMTP auth failures, folder aliases, or send/save-to-Sent errors."
 version: 1.1.0
 author: community
 license: MIT
@@ -21,6 +21,7 @@ Himalaya is a CLI email client that lets you manage emails from the terminal usi
 
 - `references/configuration.md` (config file setup + IMAP/SMTP authentication)
 - `references/message-composition.md` (MML syntax for composing emails)
+- `references/smtplib-fallback.md` (Python smtplib fallback for when Himalaya's auth.cmd fails in the sandbox)
 
 ## Prerequisites
 

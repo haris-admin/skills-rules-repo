@@ -1,6 +1,6 @@
 ---
 name: baoyu-infographic
-description: "Infographics: 21 layouts x 21 styles (信息图, 可视化)."
+description: "Infographics: 21 layouts x 21 styles (信息图, 可视化). Use when asked to create an infographic, visual summary, or information graphic — including '信息图', '可视化', or '高密度信息大图' requests — given text, a file, a URL, or a topic to visualize."
 version: 1.56.1
 author: 宝玉 (JimLiu)
 license: MIT

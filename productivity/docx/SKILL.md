@@ -1,6 +1,6 @@
 ---
 name: docx
-description: Create, read, edit, template, and review Word .docx files.
+description: Create, read, edit, template, and review Word .docx files with python-docx — text, styles, tables, images, headers/footers, {{token}} templating, tracked changes, comments, TOC, and page numbers. Use when asked to generate a Word document, inspect or edit an existing .docx, fill a template, accept/reject tracked changes, list or add comments, or triage a .docx that won't open.
 version: 1.1.0
 author: Nous Research
 license: MIT

@@ -1,6 +1,6 @@
 ---
 name: compound-engineering
-description: Capture insights, drift scores, retrospectives, and learned rules from every feature to compound development velocity and reliability.
+description: Capture insights, drift scores, retrospectives, and learned rules from every feature to compound development velocity and reliability. Use when closing out a completed feature or fix — running a retrospective, scoring drift/task loops, and codifying a repeated mistake or ambiguity into a standing rule or skill.
 ---
 
 # Compound Engineering

@@ -1,6 +1,6 @@
 ---
 name: python-debugpy
-description: "Debug Python: pdb REPL + debugpy remote (DAP)."
+description: "Debug Python: pdb REPL + debugpy remote (DAP). Use when a test fails and the traceback doesn't explain why, a long-running process (gateway, daemon) misbehaves and can't be restarted, or locals need inspecting post-mortem or inside a subprocess."
 version: 1.0.0
 author: Hermes Agent
 license: MIT

@@ -422,3 +422,5 @@ ON CONFLICT (name) DO UPDATE SET channel_id = EXCLUDED.channel_id, youtube_handl
 - `references/yt-dlp-android-transcript.md` — Android client workaround for n challenge bypass (June 8, 2026)
 - `references/aie-ingestion-log.md` — AI Engineer ingestion session log (June 8, 2026)
 - `references/insight-extractor-workflow.md` — Full podcast insight extractor workflow: extraction steps, 7-project portfolio mapping, 8-trend methodology, dual-consumer pattern, production track record
+- `references/youtube-data-api-setup.md` — YouTube Data API v3 setup and quota reference
+- `references/youtube-sapisidhash-auth.md` — YouTube cookie + SAPISIDHASH auth workaround for transcript fetching

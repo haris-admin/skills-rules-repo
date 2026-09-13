@@ -51,3 +51,15 @@ Test with:
 export YOUTUBE_DATA_API_KEY=AIzaSy...
 python3 /home/habib/.hermes/scripts/youtube_api_wrapper.py "$YOUTUBE_DATA_API_KEY" "@channel_handle"
 ```
+
+## Gotcha: Key Must Be in BOTH .env Files (June 14, 2026)
+
+The YouTube Data API key (`YOUTUBE_DATA_API_KEY`) was added to Windows `.env` (`/mnt/c/Users/habib/.hermes/.env`) but NOT to WSL `.env` (`~/.hermes/.env`). When cron `no_agent` scripts run, they pick up env vars from the WSL `.env` — not the Windows one. The podcast ingestor silently fell back to yt-dlp (which is IP-blocked).
+
+**Fix:** Always add new API keys to BOTH locations:
+```bash
+# After adding to Windows .env:
+grep 'NEW_KEY' /mnt/c/Users/habib/.hermes/.env >> ~/.hermes/.env
+```
+
+**Best practice:** When adding credentials for cron `no_agent` scripts, add to `~/.hermes/.env` (WSL) FIRST, then copy to Windows `.env` for cross-platform access. The cron scheduler reads from WSL.

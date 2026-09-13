@@ -1,6 +1,6 @@
 ---
 name: doc-coauthoring
-description: Co-author documents with the student — essays, reports, lab write-ups — using scaffolded collaboration that builds their writing while respecting academic integrity.
+description: Co-author documents with the student — essays, reports, lab write-ups — using scaffolded collaboration that builds their writing while respecting academic integrity. Use when a student asks for help writing, structuring, or improving an essay, report, lab write-up, literature review, or reflection piece — scaffolds and questions rather than writing content for them.
 ---
 
 # Document Co-Authoring Skill

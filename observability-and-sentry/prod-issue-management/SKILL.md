@@ -1,6 +1,6 @@
 ---
 name: prod-issue-management
-description: Maintain a unified global production issue register with structured investigation templates and verification evidence.
+description: Maintain a unified global production issue register with structured investigation templates and verification evidence. Use when logging a new production defect, writing up root-cause analysis for a bug, or recording the fix and verification evidence for a resolved production issue.
 ---
 
 # Production Issue Management

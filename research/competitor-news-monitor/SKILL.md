@@ -1,6 +1,6 @@
 ---
 name: competitor-news-monitor
-description: "Watch named companies for material news; cited digests."
+description: "Watch named companies for material news; cited digests. Use when asked to monitor competitors weekly, get notified of pricing/product/funding/leadership changes for named companies, or build a competitor intelligence digest, or when a scheduled competitor-watch cron tick fires — not for one-off company research or plain feed reading."
 version: 0.1.0
 author: Ben Barclay (benbarclay), Hermes Agent
 license: MIT

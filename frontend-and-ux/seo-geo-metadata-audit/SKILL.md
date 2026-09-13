@@ -1,6 +1,6 @@
 ---
 name: seo-geo-metadata-audit
-description: Ensure perfect structured data (JSON-LD), OpenGraph tags, canonical links, and AI search (GEO) crawlability.
+description: Ensure perfect structured data (JSON-LD), OpenGraph tags, canonical links, and AI search (GEO) crawlability. Use when auditing or reviewing a site's meta tags, OpenGraph/Twitter cards, Schema.org structured data, or robots.txt/sitemap.xml/llms.txt for SEO and AI-crawler discoverability.
 ---
 
 # SEO & GEO Metadata Audit

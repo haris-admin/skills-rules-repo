@@ -1,6 +1,6 @@
 ---
 name: resilience-tester
-description: Recalculates the Burrito Path when life events interfere with the schedule (illness, burnout, lost time).
+description: Recalculates the Burrito Path deadline schedule and triggers Emergency Pareto task-hiding when life events interfere (illness, burnout, lost time). Use when a student reports being sick, overwhelmed, or behind schedule, or when focus-session/frustration signals indicate the current pacing needs recalculating.
 ---
 
 # Resilience Stress-Tester

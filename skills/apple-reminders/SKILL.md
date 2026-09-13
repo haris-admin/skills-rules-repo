@@ -1,6 +1,6 @@
 ---
 name: apple-reminders
-description: Manage Apple Reminders via the `remindctl` CLI on macOS (list, add, edit, complete, delete). Supports lists, date filters, and JSON/plain output.
+description: Manage Apple Reminders via the `remindctl` CLI on macOS (list, add, edit, complete, delete). Supports lists, date filters, and JSON/plain output. Use when asked to view, create, edit, complete, or delete Apple Reminders, filter reminders by date or list, or check/request Reminders permissions.
 homepage: https://github.com/steipete/remindctl
 metadata:
   {

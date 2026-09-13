@@ -1,6 +1,6 @@
 ---
 name: youtube-content
-description: "YouTube transcripts to summaries, threads, blogs."
+description: "YouTube transcripts to summaries, threads, blogs. Use when the user shares a YouTube URL or video link, asks to summarize a video, requests a transcript, or wants to extract and reformat content from a YouTube video or channel."
 platforms: [linux, macos, windows]
 ---
 
@@ -46,6 +46,8 @@ After fetching the transcript, format it based on what the user asks for:
 - **Thread**: Twitter/X thread format — numbered posts, each under 280 chars
 - **Blog post**: Full article with title, sections, and key takeaways
 - **Quotes**: Notable quotes with timestamps
+
+See `references/output-formats.md` for full worked examples of each format.
 
 ### Example — Chapters Output
 

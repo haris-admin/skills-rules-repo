@@ -1,6 +1,6 @@
 ---
 name: grounded-citations
-description: "Ground answers and documents in cited, verifiable sources."
+description: "Ground answers and documents in cited, verifiable sources via a URL ledger and optional verbatim-evidence fact-checking mode. Use whenever an answer or artifact rests on fetched (not memorized) information: research, comparisons, news summaries, reports, briefs, docs, or decks that quote or paraphrase outside facts."
 version: 1.1.0
 author: Hermes Agent + Teknium
 license: MIT
@@ -230,3 +230,7 @@ lists exactly the cited ids with the ledger's URLs, and the cited share of
 source-bearing sentences meets the threshold. Read the warnings even when the
 exit code is 0 — uncited registered sources usually mean a claim lost its
 attribution during editing.
+
+## Additional references
+
+- `references/grounding-rationale.md` — design notes on why the ledger uses numbered ids instead of model-reconstructed URLs; read before changing the citation instructions or ledger mechanics.

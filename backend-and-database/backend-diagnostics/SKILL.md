@@ -1,6 +1,6 @@
 ---
 name: backend-diagnostics
-description: Systematic protocol for isolating 500 errors, database connection failures, migration locks, and auth token exchange issues.
+description: Systematic protocol for isolating 500 errors, database connection failures, migration locks, and auth token exchange issues. Use when a backend is throwing 500s, can't connect to its database, is stuck on a migration lock, or auth/JWT token exchange is failing.
 ---
 
 # Backend Diagnostics

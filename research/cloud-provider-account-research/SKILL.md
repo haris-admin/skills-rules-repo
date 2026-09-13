@@ -1,6 +1,6 @@
 ---
 name: cloud-provider-account-research
-description: "Cloud signup research: types, verification, free tiers."
+description: "Cloud signup research: account types, identity/real-name verification, free-tier offers, and startup programs (Alibaba Cloud, AWS, GCP, Azure) with an Australian-entity lens. Use when asked about signing up for a cloud provider, comparing free-tier or startup-program perks, or verifying account-type/entity requirements for a sole trader vs Pty Ltd."
 ---
 
 # Cloud Provider Account Research

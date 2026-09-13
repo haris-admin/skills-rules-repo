@@ -1,6 +1,6 @@
 ---
 name: sdlc-review
-description: Review Kanban handoffs and route verified outcomes.
+description: Review Kanban handoffs and route verified outcomes. Use when spawned to review a task claimed from the Kanban review lane after an implementer submits a review_requested handoff, to independently verify the deliverable and choose approve, request-changes, or escalate.
 version: 1.1.0
 author: Jakub Wolniewicz (@frizikk) + Hermes Agent
 license: MIT

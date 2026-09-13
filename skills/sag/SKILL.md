@@ -1,6 +1,6 @@
 ---
 name: sag
-description: ElevenLabs text-to-speech with mac-style say UX.
+description: ElevenLabs text-to-speech with mac-style say UX. Use when asked to speak text aloud, generate a voice reply or audio clip, or produce ElevenLabs TTS output with pronunciation or emotion control.
 homepage: https://sag.sh
 metadata:
   {

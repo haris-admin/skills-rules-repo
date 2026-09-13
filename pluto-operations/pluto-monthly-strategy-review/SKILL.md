@@ -1,6 +1,6 @@
 ---
 name: pluto-monthly-strategy-review
-description: "Monthly strategy review: evidence, gaps, ≤3 priorities."
+description: "Monthly strategy review: evidence, gaps, ≤3 priorities. Use when running the first-Monday monthly strategy review cron, assembling evidence against baseline, or recommending the month's top priorities — distinct from the pluto-monthly-strategy Honcho/executor handoff skill."
 version: 1.0.0
 tags: [pluto, amlhive, monthly, seo, geo, strategy-review]
 ---

@@ -1,6 +1,6 @@
 ---
 name: songwriting-and-ai-music
-description: "Songwriting craft and Suno AI music prompts."
+description: "Songwriting craft and Suno AI music prompts. Use when writing song lyrics, structuring a song, adapting/parodying an existing song, or crafting a Suno (or HeartMuLa) style/lyrics prompt for AI music generation."
 tags: [songwriting, music, suno, parody, lyrics, creative]
 platforms: [linux, macos, windows]
 triggers:

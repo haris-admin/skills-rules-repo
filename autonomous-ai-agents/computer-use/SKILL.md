@@ -1,6 +1,6 @@
 ---
 name: computer-use
-description: "Drive the desktop background-first; escalate on signal."
+description: "Drive the user's native desktop GUI in the background (no cursor/focus theft) via screenshot+AX-tree capture, element-index clicks, and a verify-then-escalate ladder (background element -> pixel -> foreground). Use when a task needs to operate native desktop apps (Finder/Explorer, Mail/Outlook, Figma, games, etc.) rather than a web page's DOM — not for browser page content (use browser_* tools), file edits (use read_file/write_file), or shell commands (use terminal)."
 version: 2.0.0
 author: Francesco Bonacci (f-trycua), Hermes Agent
 license: MIT

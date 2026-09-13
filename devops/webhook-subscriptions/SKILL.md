@@ -1,6 +1,6 @@
 ---
 name: webhook-subscriptions
-description: "Webhook subscriptions: event-driven agent runs."
+description: "Webhook subscriptions: event-driven agent runs. Use when setting up, managing, testing, or troubleshooting webhook-triggered Hermes agent runs from external services (GitHub, GitLab, Stripe, CI/CD, IoT sensors, monitoring tools)."
 version: 1.1.0
 platforms: [linux, macos, windows]
 metadata:

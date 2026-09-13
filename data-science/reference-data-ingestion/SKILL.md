@@ -1,6 +1,6 @@
 ---
 name: reference-data-ingestion
-description: "Australian government reference data ingestion — ASIC (companies, business names), ACNC (charities), ABN Lookup. Weekly/monthly CSV sync from data.gov.au to R2 storage, then via Hermes sync bridge into Supabase/ref_db. Covers URL management, R2 uploads, verification, and versioning."
+description: "Australian government reference data ingestion — ASIC (companies, business names), ACNC (charities), ABN Lookup. Weekly/monthly CSV sync from data.gov.au to R2 storage, then via Hermes sync bridge into Supabase/ref_db. Covers URL management, R2 uploads, verification, and versioning. Use when setting up or troubleshooting the ASIC/ACNC sync pipeline, uploading new monthly CSV dumps to R2, debugging sync API failures, diagnosing NO_CHANGE staleness, or onboarding a new government dataset."
 version: 1.1.0
 author: Pluto
 license: MIT
@@ -335,3 +335,8 @@ When onboarding a new government dataset to the sync pipeline:
 6. Add sync logic to `backend/app/api/internal/sync.py` (or the appropriate service)
 7. Add the dataset name to the Trigger Sync bash loop
 8. Deploy to Fly.io
+
+## Additional references
+
+- `references/cloudflare-524-verify-after-timeout.md` — Cloudflare 524 timeout on long ASIC syncs: verify the dataset actually updated before treating it as a failed alert
+- `references/setup-session-2026-06-26.md` — narrative log of the Jun 26 2026 end-to-end setup session (token, CSV URLs, download/extraction, R2 upload)

@@ -1,6 +1,6 @@
 ---
 name: sentry-triage
-description: Systematic protocol for triaging incoming Sentry issues, filtering 3rd-party noise, and resolving first-party regressions.
+description: Systematic protocol for triaging incoming Sentry issues, filtering 3rd-party noise, and resolving first-party regressions. Use when triaging new Sentry issues, classifying an error as third-party noise vs a real first-party defect, or deciding whether to log a production issue and write a regression test.
 ---
 
 # Sentry Triage Protocol

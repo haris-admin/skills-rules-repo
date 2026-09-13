@@ -1,6 +1,6 @@
 ---
 name: 10-star-quality-gate
-description: Review user experience and software workflows against an 8-dimension, 1-10 quality rubric inspired by Airbnb's product design framework.
+description: Review user experience and software workflows against an 8-dimension, 1-10 quality rubric inspired by Airbnb's product design framework. Use when reviewing a UI, feature, or workflow before sign-off, or when asked for a UX/quality review covering clarity, speed, error handling, accessibility, or audit-trail completeness.
 ---
 
 # 10-Star Experience Quality Gate

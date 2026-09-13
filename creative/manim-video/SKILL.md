@@ -1,6 +1,6 @@
 ---
 name: manim-video
-description: "Manim CE animations: 3Blue1Brown math/algo videos."
+description: "Manim CE animations: 3Blue1Brown math/algo videos. Use when asked for animated explanations, math animations, concept visualizations, algorithm walkthroughs, technical explainers, or any programmatic animation with geometric/mathematical content."
 version: 1.0.0
 author: SHL0MS, Hermes Agent
 license: MIT

@@ -1,6 +1,6 @@
 ---
 name: zero-click-content
-description: Create high-value social media posts and newsletters that provide complete standalone value without forcing link clicks.
+description: Create high-value social media posts and newsletters that provide complete standalone value without forcing link clicks. Use when writing a post or newsletter for a platform that rewards native, self-contained content (e.g. LinkedIn, X) and a link-gated version would hurt reach or reader trust.
 ---
 
 # Zero-Click Content Framework

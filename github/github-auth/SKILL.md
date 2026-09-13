@@ -1,6 +1,6 @@
 ---
 name: github-auth
-description: "GitHub auth setup: HTTPS tokens, SSH keys, gh CLI login."
+description: "GitHub auth setup: HTTPS tokens, SSH keys, gh CLI login. Use when a user needs to authenticate with GitHub for the first time, is hitting push/auth failures (permission denied, password prompts, stale credentials), or is working across WSL/Windows with org-specific PATs."
 version: 1.2.0
 author: Hermes Agent
 license: MIT

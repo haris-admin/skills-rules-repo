@@ -1,6 +1,6 @@
 ---
 name: simplify-code
-description: "Parallel 4-agent cleanup of recent code changes."
+description: "Parallel 4-agent cleanup of recent code changes. Use when asked to 'simplify', 'simplify my changes', 'review my recent changes', or 'clean up my changes' - a cleanup pass, not a bug hunt."
 version: 1.1.0
 author: Hermes Agent (inspired by Claude Code /simplify)
 license: MIT

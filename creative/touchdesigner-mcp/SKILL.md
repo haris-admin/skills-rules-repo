@@ -1,6 +1,6 @@
 ---
 name: touchdesigner-mcp
-description: Control TouchDesigner via twozero MCP.
+description: Control TouchDesigner via twozero MCP. Use when building or debugging a TouchDesigner network — creating/wiring operators, GLSL shaders, audio-reactive visuals, real-time installations, or VJ setups — through the twozero MCP tools.
 version: 1.1.0
 author: kshitijk4poor
 license: MIT

@@ -1,6 +1,6 @@
 ---
 name: github-code-review
-description: "Review PRs: diffs, inline comments via gh or REST."
+description: "Review PRs: diffs, inline comments via gh or REST. Use when reviewing local changes before pushing, reviewing an open PR, or asked to 'review the code', 'review PR #N', or 'check before pushing'."
 version: 1.1.0
 author: Hermes Agent
 license: MIT

@@ -1,6 +1,6 @@
 ---
 name: postgres-rls-isolation
-description: Implement airtight multi-tenant data isolation using native PostgreSQL Row-Level Security (RLS) and session context variables.
+description: Implement airtight multi-tenant data isolation using native PostgreSQL Row-Level Security (RLS) and session context variables. Use when adding a new tenant-scoped table, wiring up multi-tenant data access, or testing/reviewing that cross-tenant queries and missing tenant context are blocked at the database level.
 ---
 
 # PostgreSQL Native RLS Isolation

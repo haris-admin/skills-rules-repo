@@ -1,5 +1,9 @@
 # Git commit hygiene in a shared, concurrently-edited working tree (all agents)
 
+A bare `git commit` with no pathspec commits everything currently staged in the index, including
+other sessions' unrelated staged files in a shared working tree — pathspec-limiting `git add`
+alone does not protect against this; `commit` needs the same scoping.
+
 ## Why this exists
 
 This repo is routinely worked by multiple concurrent agent sessions (Claude/Codex/Cursor/

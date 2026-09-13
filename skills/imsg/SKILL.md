@@ -1,6 +1,6 @@
 ---
 name: imsg
-description: iMessage/SMS CLI for listing chats, history, watch, and sending.
+description: iMessage/SMS CLI for listing chats, reading history, watching live messages, and sending texts on macOS. Use when asked to check, read, watch, or send an iMessage/SMS conversation via the imsg CLI.
 homepage: https://imsg.to
 metadata:
   {

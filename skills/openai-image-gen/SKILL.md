@@ -1,6 +1,6 @@
 ---
 name: openai-image-gen
-description: Batch-generate images via OpenAI Images API. Random prompt sampler + `index.html` gallery.
+description: Batch-generate images via the OpenAI Images API with a random prompt sampler and an `index.html` gallery. Use when asked to batch-generate images from prompts, generate images with a GPT-image or DALL-E model, or produce a browsable gallery of generated images.
 homepage: https://platform.openai.com/docs/api-reference/images
 metadata:
   {

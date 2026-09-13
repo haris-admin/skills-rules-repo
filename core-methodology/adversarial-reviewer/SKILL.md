@@ -1,6 +1,6 @@
 ---
 name: adversarial-reviewer
-description: Perform deep, critical reviews assuming the proposed architecture or code contains subtle edge-case failures, race conditions, or security flaws.
+description: Perform deep, critical reviews assuming the proposed architecture or code contains subtle edge-case failures, race conditions, or security flaws. Use when reviewing a design doc, architecture proposal, or pull request before it ships — especially multi-tenant, concurrent, or migration-touching changes — and a critical rather than checklist-pass review is needed.
 ---
 
 # Adversarial Reviewer

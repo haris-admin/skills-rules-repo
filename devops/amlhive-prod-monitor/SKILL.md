@@ -1,6 +1,6 @@
 ---
 name: amlhive-prod-monitor
-description: AmLHive direct AWS production monitor — 4x daily script that checks EC2, Docker, RDS, CloudWatch, Sentry, and public endpoints. Produces plain-text reports and delivers via email. Companion to pluto-fleet-monitor skill (which covers full architecture, alert patterns, and known issues).
+description: AmLHive direct AWS production monitor — 4x daily script that checks EC2, Docker, RDS, CloudWatch, Sentry, and public endpoints. Produces plain-text reports and delivers via email. Companion to pluto-fleet-monitor skill (which covers full architecture, alert patterns, and known issues). Use when setting up or modifying amlhive_prod_monitor.py, debugging AMLHive cron monitor job failures, understanding the 4x daily monitor schedule, or checking AMLHive AWS production health.
 allowed-tools: [terminal, read_file, write_file]
 ---
 
@@ -153,3 +153,5 @@ Two additional no_agent scripts run every hour as companions to the 4x daily fle
 - `references/amlhive-daily-report.md` — Daily business operations report (agencies, users, screenings, KYC, clients, matters, CDD, audit). Cron: 9:15 PM AEST. Emails shoaib@amlhive.com.au + tech@amlhive.com.au. Uses SSM tunnel → local psql.
 - `references/ec2-auto-discovery.md` — `get_instance_id()` tag-based auto-discovery function (reusable snippet)
 - `references/alert-email-module.md` — Shared `alert_email.py` module for URGENT RED HTML escalation emails
+- `references/daily-business-report.md` — condensed operational cheat-sheet for the daily business report (cron/connection/single-query pattern/key tables/gotchas); `references/amlhive-daily-report.md` above is the fuller architecture + setup walkthrough for the same report
+- `references/nginx-proxy-monitoring.md` — three-layer nginx/Cloudflare proxy-failure monitoring strategy for `check_cloudflare_origin()` (SSM log tail, CloudWatch search, synthetic checks)

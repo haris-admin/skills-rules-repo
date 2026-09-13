@@ -1,6 +1,6 @@
 ---
 name: comfyui
-description: Generate images, video, and audio via diffusion workflows.
+description: Generate images, video, audio, and 3D content through ComfyUI diffusion workflows using comfy-cli and the REST/WebSocket API. Use when the user wants Stable Diffusion/SDXL/Flux/SD3/AnimateDiff/Wan/Hunyuan generation, needs to run, chain, or debug a ComfyUI workflow, or needs to set up ComfyUI locally or on Comfy Cloud.
 version: 5.1.0
 author: [kshitijk4poor, alt-glitch, purzbeats]
 license: MIT
@@ -46,6 +46,9 @@ for workflow execution.
   free-tier job, 1080p VRAM ceiling), Discord-compatible ffmpeg stitch.
   Authored by [@purzbeats](https://github.com/purzbeats). Load this whenever
   you're starting from an official template.
+- `setup-and-installation.md` — hardware verification, the full path-selection
+  table, all five installation paths (Cloud, Desktop, Portable, comfy-cli,
+  Manual), and post-install model/node/verification steps.
 
 **Scripts (`scripts/`):**
 
@@ -233,16 +236,7 @@ The scripts emit JSON to stdout describing every output file:
 When a user asks to set up ComfyUI, **the FIRST thing to do is ask whether
 they want Comfy Cloud (hosted, zero install, API key) or Local (install
 ComfyUI on their machine)**. Don't start running install commands or hardware
-checks until they've answered.
-
-**Official docs:** https://docs.comfy.org/installation
-**CLI docs:** https://docs.comfy.org/comfy-cli/getting-started
-**Cloud docs:** https://docs.comfy.org/get_started/cloud
-**Cloud API:** https://docs.comfy.org/development/cloud/overview
-
-### Step 0: Ask Local vs Cloud (ALWAYS FIRST)
-
-Suggested script:
+checks until they've answered:
 
 > "Do you want to run ComfyUI locally on your machine, or use Comfy Cloud?
 >
@@ -257,225 +251,39 @@ Suggested script:
 >
 > Which would you like?"
 
-Routing:
-
-- **Cloud** → skip to **Path A**.
-- **Local** → run hardware check first, then pick a path from Paths B–E based on the verdict.
-- **Unsure** → run the hardware check and let the verdict decide.
-
-### Step 1: Verify Hardware (ONLY if user chose local)
-
-```bash
-python scripts/hardware_check.py --json
-# Optional: also probe `torch` for actual CUDA/MPS:
-python scripts/hardware_check.py --json --check-pytorch
-```
-
-| Verdict    | Meaning                                                       | Action |
-|------------|---------------------------------------------------------------|--------|
-| `ok`       | ≥8 GB VRAM (discrete) OR ≥32 GB unified (Apple Silicon)       | Local install — use `comfy_cli_flag` from report |
-| `marginal` | SD1.5 works; SDXL tight; Flux/video unlikely                  | Local OK for light workflows, else **Path A (Cloud)** |
-| `cloud`    | No usable GPU, <6 GB VRAM, <16 GB Apple unified, Intel Mac, Rosetta Python | **Switch to Cloud** unless user explicitly forces local |
-
-The script also surfaces `wsl: true` (WSL2 with NVIDIA passthrough) and
-`rosetta: true` (x86_64 Python on Apple Silicon — must reinstall as ARM64).
-
-If verdict is `cloud` but the user wants local, do not proceed silently.
-Show the `notes` array verbatim and ask whether they want to (a) switch to
-Cloud or (b) force a local install (will OOM or be unusably slow on modern models).
-
-### Choosing an Installation Path
-
-Use the hardware check first. The table below is the fallback for when the
-user has already told you their hardware:
-
-| Situation | Recommended Path |
-|-----------|------------------|
-| `verdict: cloud` from hardware check | **Path A: Comfy Cloud** |
-| No GPU / want to try without commitment | **Path A: Comfy Cloud** |
-| Windows + NVIDIA + non-technical | **Path B: ComfyUI Desktop** |
-| Windows + NVIDIA + technical | **Path C: Portable** or **Path D: comfy-cli** |
-| Linux + any GPU | **Path D: comfy-cli** (easiest) |
-| macOS + Apple Silicon | **Path B: Desktop** or **Path D: comfy-cli** |
-| Headless / server / CI / agents | **Path D: comfy-cli** |
+Routing: **Cloud** → Path A directly. **Local** → run `python
+scripts/hardware_check.py --json` first (verdict `ok`/`marginal`/`cloud`
+decides the path), then pick a path. **Unsure** → run the hardware check and
+let the verdict decide. If the verdict is `cloud` but the user insists on
+local, show the `notes` array verbatim and confirm before forcing it (will
+OOM or be unusably slow on modern models).
 
 For the fully automated path (hardware check → install → launch → verify):
-
 ```bash
 bash scripts/comfyui_setup.sh
 # Or with overrides:
 bash scripts/comfyui_setup.sh --m-series --port=8190 --workspace=/data/comfy
 ```
+It refuses to install locally when the verdict is `cloud` (unless
+`--force-cloud-override`), and prefers `pipx`/`uvx` over global `pip`.
 
-It runs `hardware_check.py` internally, refuses to install locally when the
-verdict is `cloud` (unless `--force-cloud-override`), picks the right
-`comfy-cli` flag, and prefers `pipx`/`uvx` over global `pip` to avoid polluting
-system Python.
+Manual paths in brief: **Path A** Comfy Cloud (sign up, generate an API key,
+`export COMFY_CLOUD_API_KEY=...`, then run workflows with `--host
+https://cloud.comfy.org`; free tier is read-only, Concurrent jobs
+Free/Standard 1, Creator 3, Pro 5). **Path B** ComfyUI Desktop (Windows/macOS
+one-click installer, Beta, no Linux support). **Path C** Portable
+(Windows-only zip + `run_nvidia_gpu.bat`). **Path D** comfy-cli (recommended
+for agents/headless — `pipx install comfy-cli` → `comfy install --nvidia`
+→ `comfy launch --background`). **Path E** Manual install (unsupported
+hardware — `git clone` + `pip install -r requirements.txt`). Post-install:
+download models with `comfy model download --url ... --relative-path
+models/checkpoints`, install custom nodes with `comfy node install <name>`,
+verify with `python scripts/health_check.py`.
 
----
-
-### Path A: Comfy Cloud (No Local Install)
-
-For users without a capable GPU or who want zero setup. Hosted on RTX 6000 Pro.
-
-**Docs:** https://docs.comfy.org/get_started/cloud
-
-1. Sign up at https://comfy.org/cloud
-2. Generate an API key at https://platform.comfy.org/login
-3. Set the key:
-   ```bash
-   export COMFY_CLOUD_API_KEY="your-comfyui-key"
-   ```
-4. Run workflows:
-   ```bash
-   python scripts/run_workflow.py \
-     --workflow workflows/flux_dev_txt2img.json \
-     --args '{"prompt": "..."}' \
-     --host https://cloud.comfy.org \
-     --output-dir ./outputs
-   ```
-
-**Pricing:** https://www.comfy.org/cloud/pricing
-**Concurrent jobs:** Free/Standard 1, Creator 3, Pro 5. Free tier
-**cannot run workflows via API** — only browse models. Paid subscription
-required for `/api/prompt`, `/api/upload/*`, `/api/view`, etc.
-
----
-
-### Path B: ComfyUI Desktop (Windows / macOS)
-
-One-click installer for non-technical users. Currently Beta.
-
-**Docs:** https://docs.comfy.org/installation/desktop
-- **Windows (NVIDIA):** https://download.comfy.org/windows/nsis/x64
-- **macOS (Apple Silicon):** https://comfy.org
-
-Linux is **not supported** for Desktop — use Path D.
-
----
-
-### Path C: ComfyUI Portable (Windows Only)
-
-**Docs:** https://docs.comfy.org/installation/comfyui_portable_windows
-
-Download from https://github.com/comfyanonymous/ComfyUI/releases, extract,
-run `run_nvidia_gpu.bat`. Update via `update/update_comfyui_stable.bat`.
-
----
-
-### Path D: comfy-cli (All Platforms — Recommended for Agents)
-
-The official CLI is the best path for headless/automated setups.
-
-**Docs:** https://docs.comfy.org/comfy-cli/getting-started
-
-#### Install comfy-cli
-
-```bash
-# Recommended:
-pipx install comfy-cli
-# Or use uvx without installing:
-uvx --from comfy-cli comfy --help
-# Or (if pipx/uvx unavailable):
-pip install --user comfy-cli
-```
-
-Disable analytics non-interactively:
-```bash
-comfy --skip-prompt tracking disable
-```
-
-#### Install ComfyUI
-
-```bash
-comfy --skip-prompt install --nvidia              # NVIDIA (CUDA)
-comfy --skip-prompt install --amd                 # AMD (ROCm, Linux)
-comfy --skip-prompt install --m-series            # Apple Silicon (MPS)
-comfy --skip-prompt install --cpu                 # CPU only (slow)
-comfy --skip-prompt install --nvidia --fast-deps  # uv-based dep resolution
-```
-
-Default location: `~/comfy/ComfyUI` (Linux), `~/Documents/comfy/ComfyUI`
-(macOS/Win). Override with `comfy --workspace /custom/path install`.
-
-#### Launch / verify
-
-```bash
-comfy launch --background                       # background daemon on :8188
-comfy launch -- --listen 0.0.0.0 --port 8190    # LAN-accessible custom port
-curl -s http://127.0.0.1:8188/system_stats      # health check
-```
-
----
-
-### Path E: Manual Install (Advanced / Unsupported Hardware)
-
-For Ascend NPU, Cambricon MLU, Intel Arc, or other unsupported hardware.
-
-**Docs:** https://docs.comfy.org/installation/manual_install
-
-```bash
-git clone https://github.com/comfyanonymous/ComfyUI.git
-cd ComfyUI
-pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu130
-pip install -r requirements.txt
-python main.py
-```
-
----
-
-### Post-Install: Download Models
-
-```bash
-# SDXL (general purpose, ~6.5 GB)
-comfy model download \
-  --url "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_base_1.0.safetensors" \
-  --relative-path models/checkpoints
-
-# SD 1.5 (lighter, ~4 GB, good for 6 GB cards)
-comfy model download \
-  --url "https://huggingface.co/stable-diffusion-v1-5/stable-diffusion-v1-5/resolve/main/v1-5-pruned-emaonly.safetensors" \
-  --relative-path models/checkpoints
-
-# Flux Dev fp8 (smaller variant, ~12 GB)
-comfy model download \
-  --url "https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/flux1-dev-fp8.safetensors" \
-  --relative-path models/checkpoints
-
-# CivitAI (set token first):
-comfy model download \
-  --url "https://civitai.com/api/download/models/128713" \
-  --relative-path models/checkpoints \
-  --set-civitai-api-token "YOUR_TOKEN"
-```
-
-List installed: `comfy model list`.
-
-### Post-Install: Install Custom Nodes
-
-```bash
-comfy node install comfyui-impact-pack             # popular utility pack
-comfy node install comfyui-animatediff-evolved     # video generation
-comfy node install comfyui-controlnet-aux          # ControlNet preprocessors
-comfy node install comfyui-essentials              # common helpers
-comfy node update all
-comfy node install-deps --workflow=workflow.json   # install everything a workflow needs
-```
-
-### Post-Install: Verify
-
-```bash
-python scripts/health_check.py
-# → comfy_cli on PATH? server reachable? checkpoints? smoke test?
-
-python scripts/check_deps.py my_workflow.json
-# → are this workflow's nodes/models/embeddings installed?
-
-python scripts/run_workflow.py \
-  --workflow workflows/sd15_txt2img.json \
-  --args '{"prompt": "test", "steps": 4}' \
-  --output-dir ./test-outputs
-```
+Full ask-script routing details, the hardware-verdict table, the
+path-selection table, and every path's complete commands and docs links: see
+[Setup & Installation](references/setup-and-installation.md). Full
+`comfy model` / `comfy node` flag reference: [comfy-cli Command Reference](references/official-cli.md).
 
 ## Image Upload (img2img / Inpainting)
 
@@ -499,53 +307,32 @@ python scripts/run_workflow.py \
   --args '{"prompt": "fill with flowers"}'
 ```
 
-Manual upload via REST:
-```bash
-curl -X POST "http://127.0.0.1:8188/upload/image" \
-  -F "image=@photo.png" -F "type=input" -F "overwrite=true"
-# Returns: {"name": "photo.png", "subfolder": "", "type": "input"}
-
-# Cloud equivalent:
-curl -X POST "https://cloud.comfy.org/api/upload/image" \
-  -H "X-API-Key: $COMFY_CLOUD_API_KEY" \
-  -F "image=@photo.png" -F "type=input" -F "overwrite=true"
-```
+Manual upload via REST (`curl -X POST http://127.0.0.1:8188/upload/image
+-F "image=@photo.png" ...`, or `/api/upload/image` with an `X-API-Key` header
+on Cloud), the full local-vs-cloud endpoint map, queue management
+(`/queue`, `/interrupt`, `/free`), and system management are all documented
+in the [REST + WebSocket API Reference](references/rest-api.md).
 
 ## Cloud Specifics
 
-- **Base URL:** `https://cloud.comfy.org`
-- **Auth:** `X-API-Key` header (or `?token=KEY` for WebSocket)
-- **API key:** set `$COMFY_CLOUD_API_KEY` once and the scripts pick it up automatically
-- **Output download:** `/api/view` returns a 302 to a signed URL; the scripts
-  follow it and strip `X-API-Key` before fetching from the storage backend
-  (don't leak the API key to S3/CloudFront).
-- **Endpoint differences from local ComfyUI:**
-  - `/api/object_info`, `/api/queue`, `/api/userdata` — **403 on free tier**;
-    paid only.
-  - `/history` is renamed to `/history_v2` on cloud (the scripts route
-    automatically).
-  - `/models/<folder>` is renamed to `/experiment/models/<folder>` on cloud
-    (the scripts route automatically).
-  - `clientId` in WebSocket is currently ignored — all connections for a
-    user receive the same broadcast. Filter by `prompt_id` client-side.
-  - `subfolder` is accepted on uploads but ignored — cloud has a flat namespace.
-- **Concurrent jobs:** Free/Standard: 1, Creator: 3, Pro: 5. Extras queue
-  automatically. Use `run_batch.py --parallel N` to saturate your tier.
+Base URL `https://cloud.comfy.org`, auth via `X-API-Key` header (or
+`?token=KEY` for WebSocket) — set `$COMFY_CLOUD_API_KEY` once and the
+scripts pick it up automatically. Concurrent jobs: Free/Standard 1,
+Creator 3, Pro 5 (use `run_batch.py --parallel N` to saturate your tier).
+Several endpoints are renamed or 403-on-free-tier vs. local ComfyUI (the
+scripts route automatically) — full endpoint-by-endpoint diff, the 302
+signed-URL download behavior, and WebSocket `clientId`/`subfolder` quirks:
+see [REST + WebSocket API Reference](references/rest-api.md).
 
 ## Queue & System Management
 
 ```bash
-# Local
-curl -s http://127.0.0.1:8188/queue | python -m json.tool
-curl -X POST http://127.0.0.1:8188/queue -d '{"clear": true}'    # cancel pending
-curl -X POST http://127.0.0.1:8188/interrupt                      # cancel running
-curl -X POST http://127.0.0.1:8188/free \
-  -H "Content-Type: application/json" \
-  -d '{"unload_models": true, "free_memory": true}'
-
-# Cloud — same paths under /api/, plus:
-python scripts/fetch_logs.py --tail-queue --host https://cloud.comfy.org
+curl -s http://127.0.0.1:8188/queue | python -m json.tool   # view queue (local)
+curl -X POST http://127.0.0.1:8188/interrupt                 # cancel running job
+python scripts/fetch_logs.py --tail-queue --host https://cloud.comfy.org  # cloud
 ```
+Clearing the queue, freeing GPU memory, and the cloud-equivalent paths
+under `/api/`: see [REST + WebSocket API Reference](references/rest-api.md).
 
 ## Pitfalls
 

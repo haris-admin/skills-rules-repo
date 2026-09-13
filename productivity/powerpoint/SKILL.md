@@ -1,6 +1,6 @@
 ---
 name: powerpoint
-description: Create, read, edit .pptx decks with python-pptx.
+description: Create, read, edit .pptx decks with python-pptx — slide creation from a JSON spec, text/chart/image edits, template-driven brand decks, and PNG rendering, all offline. Use when asked to build a slide deck or pitch deck, extract text/notes/tables/charts from a .pptx, update an existing deck (text, charts, images, slide order), or produce an on-brand deck from a company template.
 version: 1.1.0
 author: Nous Research
 license: MIT

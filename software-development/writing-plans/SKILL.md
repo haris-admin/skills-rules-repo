@@ -1,6 +1,6 @@
 ---
 name: writing-plans
-description: "Write implementation plans: bite-sized tasks, paths, code."
+description: "Write implementation plans: bite-sized tasks, paths, code. Use when implementing multi-step features, breaking down complex requirements, or before delegating work via subagent-driven-development."
 version: 1.1.0
 author: Hermes Agent (adapted from obra/superpowers)
 license: MIT

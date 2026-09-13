@@ -96,3 +96,7 @@ For transcribing user voice messages when no STT provider is configured, see `pl
 - Audio files accumulate in `voice_outputs/` — consider periodic cleanup
 - The script condenses findings to 2 sentences max. For full-content audio, modify `format_briefing()` to include all sentences.
 - **Dual filename convention:** Research outputs use two naming patterns: `research_DATE.json` (new, e.g. `research_2026-05-31.json`) and `research_TOPIC_DATE.json` (old, e.g. `research_cloud_fintech_2026-05-22.json`). The glob pattern `research_*_{date}.json` only matches the OLD format — the underscore before the date breaks matching for new-format files. As of May 31, 2026, the script uses `glob("research_*.json")` + date-substring filtering to match both conventions.
+
+## Additional references
+
+- `references/tts-voice-migration.md` — the June 9, 2026 migration from Microsoft Edge TTS to OpenAI Nova, including config and rationale.

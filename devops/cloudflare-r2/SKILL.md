@@ -1,6 +1,6 @@
 ---
 name: cloudflare-r2
-description: "General-purpose Cloudflare R2 (S3-compatible object storage) operations — credential management, boto3/AWS CLI setup, public access, custom domain caching behavior, upload/read patterns for static content, and troubleshooting common issues like SignatureDoesNotMatch."
+description: "General-purpose Cloudflare R2 (S3-compatible object storage) operations — credential management, boto3/AWS CLI setup, public access, custom domain caching behavior, upload/read patterns for static content, and troubleshooting common issues like SignatureDoesNotMatch. Use when uploading or reading files from R2 buckets, debugging R2 credential/AccessDenied issues, working with R2 public buckets vs custom domains, or troubleshooting stale content on an R2 custom domain."
 version: 1.0.0
 author: Pluto
 license: MIT

@@ -338,6 +338,8 @@ For deep-dive queries beyond the top-line signals, Gumby can still use the `gumb
 - `references/synthesis-example-2026-05-27.md` — Known-good output from the inaugural cross-chamber synthesis + action bridge + feedback loop run (May 27, 2026). Includes full pattern map, action breakdown, and feedback results.
 - `references/pipeline-stability-validation-2026-05-31.md` — 4-cycle stability validation (May 27–30, 2026): zero script changes, 100% feedback utilization, skill deduplication map showing which "pending" skills are already covered by existing umbrellas.
 - `references/claude-daily-research-ingestion.md` — 🆕 Claude Daily Research ingestion pattern: email format, parsing, chamber routing, watcher format requirements, and user preferences for Sydney events/accelerators (June 7, 2026).
+- `references/chamber-refresh-workflow.md` — `pluto_chamber_refresh.py` workflow: cross-source feed from Gmail/Perplexity + podcast transcripts + research findings into chambers, then triggering synthesis
+- `references/chamber-refresh-verification-2026-06-12.md` — verification log confirming the chamber refresh pipeline ran end-to-end on 2026-06-12
 
 ## Data Flow (v3.0 — Full Pipeline, May 2026)
 

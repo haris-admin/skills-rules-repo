@@ -1,6 +1,6 @@
 ---
 name: secret-and-credential-safety
-description: Absolute mandate against reading, printing, logging, or exposing API keys, connection strings, or cloud credentials.
+description: Absolute mandate against reading, printing, logging, or exposing API keys, connection strings, or cloud credentials. Use whenever a task could read, print, log, or commit a secret-shaped value (.env, .tfvars, .pem, .aws/credentials, *_KEY/*_SECRET/*_TOKEN), or when setting up ignore files across agent tools, or recovering from a suspected credential leak.
 ---
 
 # Secret & Credential Safety

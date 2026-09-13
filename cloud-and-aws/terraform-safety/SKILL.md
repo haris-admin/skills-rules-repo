@@ -1,6 +1,6 @@
 ---
 name: terraform-safety
-description: Rigorous safeguards for Terraform infrastructure changes to prevent accidental destruction, drift, or state file leaks.
+description: Rigorous safeguards for Terraform infrastructure changes to prevent accidental destruction, drift, or state file leaks. Use before running terraform apply/destroy, reviewing a terraform plan, or targeting a resource with -target, especially one touching a live database, persistent disk, or DNS/routing record.
 ---
 
 # Terraform Production Apply Safety

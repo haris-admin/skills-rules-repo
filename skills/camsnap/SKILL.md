@@ -1,6 +1,6 @@
 ---
 name: camsnap
-description: Capture frames or clips from RTSP/ONVIF cameras.
+description: Capture frames or clips from RTSP/ONVIF cameras. Use when asked to take a snapshot, record a clip from, discover, or watch for motion on a configured RTSP/ONVIF camera.
 homepage: https://camsnap.ai
 metadata:
   {

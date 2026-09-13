@@ -1,6 +1,6 @@
 ---
 name: ses-transactional-email
-description: Ensure high email deliverability, MIME RFC-2047 subject encoding, DKIM/SPF verification, and template consistency.
+description: Ensure high email deliverability, MIME RFC-2047 subject encoding, DKIM/SPF verification, and template consistency. Use when sending or reviewing SES transactional email — encoding subject lines, localizing timestamps, masking PII in payloads, or investigating bounce/complaint/deliverability issues.
 ---
 
 # SES Transactional Email Hygiene

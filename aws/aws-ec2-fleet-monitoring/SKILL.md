@@ -1,6 +1,6 @@
 ---
 name: aws-ec2-fleet-monitoring
-description: "Class-level skill for EC2 fleet monitoring that survives instance recycling. Tag-based auto-discovery, SSM execution, and credential management patterns."
+description: "Class-level skill for EC2 fleet monitoring that survives instance recycling. Tag-based auto-discovery, SSM execution, and credential management patterns. Use when building or fixing a fleet-monitor/report script that discovers EC2 instances by Name tag, runs commands via SSM, or needs AWS credentials that keep working after an instance is recycled."
 version: 1.0.0
 author: Pluto
 tags: [aws, ec2, ssm, monitoring, fleet, auto-discovery]
@@ -183,4 +183,5 @@ The reference template (user-approved):
 - `references/ec2-discover-command.md` — Exact AWS CLI commands for instance discovery
 - `references/alert-email-module.md` — Urgent alert email escalation
 - `references/asic-ref-db-sync.md` — ASIC/ref-db sync procedure for Pluto as Hivey named agent
+- `references/version-check-github.md` — hourly production-version check against the GitHub dev-branch API
 - `templates/fleet-monitor-report.md` — User-approved report format template (use this for ALL automated reports)

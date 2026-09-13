@@ -1,6 +1,6 @@
 ---
 name: architecture-diagram
-description: "Dark-themed SVG architecture/cloud/infra diagrams as HTML."
+description: "Dark-themed SVG architecture/cloud/infra diagrams as HTML. Use when asked for a system architecture, cloud infrastructure (VPC/regions/services), microservice topology, or deployment diagram — not for scientific subjects, physical objects, floor plans, or hand-drawn sketches (use excalidraw instead)."
 version: 1.0.0
 author: Cocoon AI (hello@cocoon-ai.com), ported by Hermes Agent
 license: MIT

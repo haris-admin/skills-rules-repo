@@ -1,6 +1,6 @@
 ---
 name: gifgrep
-description: Search GIF providers with CLI/TUI, download results, and extract stills/sheets.
+description: Search GIF providers (Tenor/Giphy) via CLI or TUI, download results, and extract still frames or contact sheets from GIFs/clips using the gifgrep CLI. Use when asked to find, search, browse, or download a GIF, or to extract a still/sheet from a GIF or video clip.
 homepage: https://gifgrep.com
 metadata:
   {

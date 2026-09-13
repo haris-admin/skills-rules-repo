@@ -137,3 +137,8 @@ word-boundary keyword coverage (use `\bterm\b`, not substring — "asic" matches
 - `pluto-mempalace-bridge` / `pluto-autonomous-research` skills hold the
   feed-side operational detail (user-owned as of Aug 2026).
 - Python stdout in cron/background: use `python3 -u` to avoid buffered silence.
+
+## Reference Files
+
+- `references/mempalace-dedup-audit-2026-08.md` — full-palace duplicate analysis from the 16 Aug 2026 audit (62% true-duplicate rate, chamber breakdown, root causes)
+- `references/silent-parser-failure-claude-daily-2026-08.md` — case study of the Gmail Briefing Ingestor silently reporting "0 new emails" for weeks despite emails arriving

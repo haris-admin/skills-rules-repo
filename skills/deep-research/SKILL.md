@@ -1,6 +1,6 @@
 ---
 name: deep-research
-description: Conduct thorough multi-source research on a topic using web search, academic sources, and codebase exploration to produce a synthesised, citation-backed answer.
+description: Conduct thorough multi-source research on a topic using web search, academic sources, and codebase exploration to produce a synthesised, citation-backed answer. Use when a question requires exploring sources beyond the local codebase, comparing approaches or libraries, investigating a bug across docs/issues/forums, or building a literature review or evidence-backed recommendation.
 ---
 
 # Deep Research Skill

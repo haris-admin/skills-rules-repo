@@ -1,6 +1,6 @@
 ---
 name: xurl
-description: "X/Twitter via xurl CLI: raw post search, posting, DM, media."
+description: "X/Twitter via the official xurl CLI: raw post search/read, posting/replying/quoting/deleting, likes/reposts/bookmarks, follows/blocks/mutes, DMs, and media uploads. Use when asked to post, reply to, search, or engage with X/Twitter content, or manage an X account's social graph or DMs."
 version: 1.1.3
 author: xdevplatform + openclaw + Hermes Agent
 license: MIT

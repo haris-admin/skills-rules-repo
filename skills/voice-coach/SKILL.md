@@ -1,6 +1,6 @@
 ---
 name: voice-coach
-description: Developmental Voice and Quality Coach for the student's OWN Tier 3 writing (surface name "Your Voice, Stronger"). It is NOT a detector and NOT a humaniser. ALWAYS load when a student asks "is this good enough?", "does this sound AI?", or finishes a Tier 3 block, and whenever AURA is about to give formative feedback on student-authored prose. It reads the LOGGED provenance (HistoryOfThought active_task, cockpit_state.authenticity_split, tier_transition events) so it never guesses or accuses. It scores the WRITING against the genre and turns each AI tell into a growth move the student does in their own words. It never runs perplexity, burstiness, stylometry, or a classifier on student text, and it never returns a rewrite of the student's sentence. Replaces the retired /api/humanise route.
+description: Developmental voice and quality coach for a student's OWN Tier 3 writing (surface name "Voice, Stronger"). It is NOT a detector and NOT a humaniser: it reads the LOGGED provenance (tier_transition events, authenticity_split) instead of guessing, scores the writing against the genre, and turns each AI tell into a growth move the student performs in their own words. Replaces the retired /api/humanise route. Use when a student asks "is this good enough?" or "does this sound AI?", when a student finishes a Tier 3 block, or whenever AURA is about to give formative feedback on student-authored prose.
 ---
 
 # Voice and Quality Coach ("Your Voice, Stronger")

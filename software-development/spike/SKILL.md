@@ -1,6 +1,6 @@
 ---
 name: spike
-description: "Throwaway experiments to validate an idea before build."
+description: "Throwaway experiments to validate an idea before build. Use when asked to 'let me try this', 'spike this out', 'is this even possible', 'compare A vs B', or for a quick prototype before committing to an approach."
 version: 1.0.0
 author: Hermes Agent (adapted from gsd-build/get-shit-done)
 license: MIT

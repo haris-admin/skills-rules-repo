@@ -1,6 +1,6 @@
 ---
 name: pluto-content-firewall
-description: Content firewall rules for all agents working on Haris Habib's blog content. Defines what can and cannot be mentioned in harishabib.au blog posts, LinkedIn content, and all Haris Habib personal brand materials.
+description: Content firewall rules for all agents working on Haris Habib's blog content. Defines what can and cannot be mentioned in harishabib.au blog posts, LinkedIn content, and all Haris Habib personal brand materials. Use before publishing or editing any harishabib.au blog post, LinkedIn companion post, or personal-brand content, or when asked to run a compliance sweep for firewalled product mentions.
 allowed-tools: []
 ---
 
@@ -94,3 +94,7 @@ When Haris asks for a LinkedIn post to pair with a blog post, write it as a stan
 - **Internal posts (src/content/internal/) still count** — they're redirected to /restricted but should be clean too.
 - **LinkedIn companion sections in blog posts are part of the blog** — they inherit the same firewall rules.
 - **The BrandCopy component on AML Hive is for AML Hive alone** — never reference it from harishabib.au content.
+
+## Additional references
+
+- `references/compliance-sweep.md` — full compliance sweep procedure: when to run it, the grep-ready firewalled-terms list, and how to interpret results.

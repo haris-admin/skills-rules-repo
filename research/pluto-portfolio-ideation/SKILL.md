@@ -203,3 +203,8 @@ File naming: `YYYY-MM-DD-new-ideas-pluto.md`
 - **False "FAILED" cron status:** The cron scheduler flags output containing "Error", "RuntimeError", or "Traceback" as FAILED even when all builds succeeded. CloudProof AU's build report contained `RuntimeError: ---` (as part of the output structure, not an actual error) and was flagged FAILED despite all 8 commits succeeding. Always verify by checking `git log --oneline` and `find . -type f` in the repo — don't trust the status label alone.
 - **Build report wording:** When the cron build agent writes `docs/BUILD_REPORT.md`, avoid leading the report with "Error", "RuntimeError", or "Traceback" in any context — these trigger false-positive failure detection. Use "## Status: Complete ✅" or similar as the first header.
 - **Honcho inbound limitation:** The Pluto↔Honcho bridge is currently outbound-only (Pluto pushes findings → Honcho). There is no automated mechanism for Haris or Gumby to push documents TO Pluto via Honcho. If the user mentions a "honcho push document", check standard file locations (Desktop, Downloads, mempalace-inputs) and ask for the path directly — don't spend cycles searching Honcho peers for inbound documents.
+
+## Additional references
+
+- `references/honcho-bridge-limitations.md` — full detail on the outbound-only Pluto↔Honcho bridge and the inbound gap.
+- `references/ideas-to-development-cron.md` — the reusable cron job pattern that automates the Ideas→Development pipeline for any `ideas-*` repo.

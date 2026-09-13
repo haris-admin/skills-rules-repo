@@ -1,6 +1,6 @@
 ---
 name: llm-cost-routing
-description: "Pick cost-effective LLM fallbacks across providers."
+description: "Pick cost-effective LLM fallbacks across providers. Use when asked whether a provider is still the best deal, a provider announces a price change, choosing fallback models for or_free.py/Hermes/Codex, or comparing DeepSeek/GLM/Qwen flash-tier economics for high-volume cron/agent work."
 version: 1.0.0
 author: Pluto
 license: MIT
@@ -458,3 +458,6 @@ When a provider announces a hike but hasn't published numbers:
   polite delay + BLOCKED detection), Friday 04:05 cron + briefing wiring, and
   the not-yet-working Google/CDP path. Load when running or extending
   `pluto_citation_sov.py` or asked "who is naming us / our competitors".
+- `references/codex-cli-wsl-invocation.md` — proven working invocation for
+  running Codex analysis jobs from WSL (broken PATH shim and other pitfalls
+  hit running synergy scans / deep product analysis / monthly strategy).

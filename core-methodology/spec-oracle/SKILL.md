@@ -1,6 +1,6 @@
 ---
 name: spec-oracle
-description: Establish formal specifications as the definitive source of truth across agent sessions and human-in-the-loop workflows.
+description: Establish formal specifications as the definitive source of truth across agent sessions and human-in-the-loop workflows. Use when code, tests, and documentation disagree, when a spec is ambiguous and needs a human decision, or when there's pressure to re-decide or revert an already-approved architectural decision.
 ---
 
 # Spec Oracle
