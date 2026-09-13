@@ -16,6 +16,7 @@ description: >
 |---|---|---|---|
 | `https://api.tapease.com.au` | **production** backend (`10.0.2.161:80` via nginx on the frontend box) | LE SAN cert | **iOS app, Android app, M2M partners** — this is the one to hand out |
 | `https://api-stg.tapease.com.au` | **staging** backend (`3.26.61.230:8000`) | same SAN cert | app/partner staging + QA |
+| `https://api-pos-stg.tapease.com.au` | **POS staging** backend (`3.26.61.230:8001` — same box as api-stg, different dev port) | same SAN cert | POS integration staging + QA |
 | `http://10.0.2.161:80/` | production backend, internal VPC, no TLS | — | **only** the frontend's server-side proxy (`NEXT_PUBLIC_API_URL`) |
 | `https://tapease.com.au/api/` | production backend (legacy passthrough) | site cert | retained for backward-compat; **do not hand out** — couples callers to the website's nginx |
 | `http://localhost:8000` | local dev backend | — | local development |
@@ -25,16 +26,22 @@ backend host.
 
 ## Rules
 
-- **Give external teams `https://api.tapease.com.au` / `https://api-stg.tapease.com.au`.**
-  Not `tapease.com.au/api`. Tell them to keep the base URL a single config value.
+- **Give external teams `https://api.tapease.com.au` / `https://api-stg.tapease.com.au` /
+  `https://api-pos-stg.tapease.com.au`.** Not `tapease.com.au/api`. Tell them to keep
+  the base URL a single config value.
 - **Never set `NEXT_PUBLIC_API_URL` to a public `https://` URL.** The frontend proxy
   runs *on* the frontend box; the internal `http://10.0.2.161:80/` is same-VPC, no
   TLS, lowest latency. A public URL would hairpin every call out through the edge
   nginx + a TLS handshake.
-- There is **no load balancer**. Both `api.*` subdomains are A-records to the
-  frontend box `13.210.208.34`; nginx there proxies to the backends. A bad nginx
-  reload on that box takes down the site *and* the API — always use
-  `scripts/safe-nginx-reload.sh` (see the `nginx-change` skill).
+- There is **no load balancer**. All `api*` subdomains are A-records to the
+  frontend box `13.210.208.34` (Route53 zone `tapease.com.au.`,
+  `Z03467402O9680BIPVEOP`); nginx there proxies to the backends by `server_name`.
+  A DNS lookup on any of them will always show `13.210.208.34` — that's correct,
+  not a misconfiguration; the real backend host:port only shows up in nginx's
+  `proxy_pass`, not in DNS. A bad nginx reload on that box takes down the site
+  *and* the API — always use `scripts/safe-nginx-reload.sh` (see the
+  `nginx-change` skill, including "Adding a new API subdomain" for how a new one
+  like `api-pos-stg` gets provisioned end-to-end).
 - The production backend is a **single EC2 instance** (`i-062b8ef5437ea6e2f`,
   `tapease-backend.service`) with a history of crash-loops and no reliable
   auto-restart. Treat backend availability as the weak link, not the frontend.
@@ -46,6 +53,8 @@ backend host.
 curl -sS https://api.tapease.com.au/health
 # staging — expect 200, "environment":"dev"
 curl -sS https://api-stg.tapease.com.au/health
+# POS staging — expect 200, matches http://3.26.61.230:8001/health directly
+curl -sS https://api-pos-stg.tapease.com.au/health
 # correct behaviour (not just liveness): empty login must be 422, not 502/500
 curl -sS -o /dev/null -w '%{http_code}\n' -X POST https://api.tapease.com.au/auth/login \
   -H 'content-type: application/json' -d '{}'
