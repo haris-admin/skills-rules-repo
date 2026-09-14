@@ -94,3 +94,52 @@ monthly cost total. Persist anything durable to Alexandria, not just the chat re
 - `productivity/notion` — the general Notion API skill (+ `references/fleet-notion-workspace.md`)
 - `devops/plane-issues` — the issue tracker that mirrors into Notion
 - Rule: `rules/fleet-records-system-of-record.md`
+
+## AWS cost → CMDB (live, since 2026-09-14)
+
+The fleet has **direct AWS access to both accounts**, so AWS cost is pulled from Cost Explorer
+and written into the CMDB automatically.
+
+| Account | ID | IAM user | .env creds | Cost Explorer |
+|---|---|---|---|---|
+| **AMLHive** | `560205084533` | `IAM_MONITOR` | `AWS_ACCESS_KEY_ID_AMLHIVE` | ✅ readable |
+| **Tapease** | `707843605914` | `IAM_GRAFANA` | `AWS_ACCESS_KEY_ID_TAPEASE` | ✅ readable |
+
+CMDB rows: `AWS environment — AMLHive` and `AWS environment — Tapease`.
+Script: `~/.hermes/scripts/aws_cost_sync.py` (idempotent, read-back verified, writes `Monthly Cost`
++ a breakdown `Notes`). Cron `158bf46a5959`, daily **07:05 AEST**, `deliver=local` (silent on
+success; failures go to chat) so the 07:20 CMDB Cost Monitor does the reporting.
+
+### 🔴 THE TRAP — AMLHive's cost reads a FALSE $0.00
+
+`aws ce get-cost-and-usage --metrics UnblendedCost` on the AMLHive account returns **≈ $0.00**
+(e.g. `-0.0000018648`). It is **not** free. The account burns ~**$224/month** of usage that is
+**100% offset by an AWS credits pool**, and credits post as *negative line items in the same
+total*, netting it to zero.
+
+**Always filter the credit/tax record types out to see real consumption:**
+
+```bash
+aws ce get-cost-and-usage --region us-east-1 \
+  --time-period Start=2026-08-01,End=2026-09-01 \
+  --granularity MONTHLY --metrics UnblendedCost \
+  --filter '{"Not":{"Dimensions":{"Key":"RECORD_TYPE","Values":["Credit","Refund","Tax"]}}}' \
+  --group-by Type=DIMENSION,Key=SERVICE --output json
+```
+
+Then read the offset separately with `--group-by Type=DIMENSION,Key=RECORD_TYPE` (a `Credit` row
+appears alongside `Usage`). **Record GROSS usage in `Monthly Cost`** — it is the true cost of
+running the asset — and state the credit offset in `Notes` so nobody reads the cash figure as $0
+and thinks the account is idle.
+
+Baseline @ 2026-08-01→31: **AMLHive gross $224.34** (credit −$224.34, net cash $0) · **Tapease
+gross $378.25** (+$37.83 tax). Tapease's single biggest line is **Amazon VPC $188.99** — the NAT
+instance, a real cost-reduction target. AMLHive's includes **Claude Sonnet 4.6 on Bedrock $24.14**.
+
+### Frontend
+
+The dashboard at `http://127.0.0.1:3009` (Hermes dashboard plugin, "IT Asset & CMDB Dashboard ·
+Notion Live") reads the CMDB live via `/api/assets`, so **a Notion write IS the frontend update** —
+verified byte-identical (`Notion sum == dashboard knownMonthlySpend`). The dashboard is **read-only**:
+`POST`/`PUT` return 404 and `app.js` makes no write calls. Never look for cost data there that
+isn't in Notion.
