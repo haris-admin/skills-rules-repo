@@ -64,6 +64,36 @@ AC whose point is runtime behaviour (`red-for-the-right-reason.md` Rule 3). A ta
 a mock-args or source-grep assertion, where the AC calls for persistence or execution, is a false
 completion-log entry — and this is exactly what `openspec-verify` Mode B step 11 re-checks.
 
+## Production code must never be test-double-aware
+
+Added 9 Sep 2026 (C492 Mode B verification). The inverse of everything above: instead of a test
+being weakened to match the code, the **shipped code** was written to detect a test double and
+skip its real path.
+
+Found in two places in one change's SSRF-hardening work:
+
+- `webhook_sub._post_pinned` imported `unittest.mock.AsyncMock` and returned early —
+  bypassing the SNI-pinning connection path — whenever `client.post` was an `AsyncMock`.
+- `_resolve_all` branched on `hasattr(socket.gethostbyname, "return_value")` (a Mock-detection
+  probe) and carried a hardcoded `example.com/org/net → 93.184.216.34` map, added to make
+  pre-existing SSRF regression tests pass without updating them.
+
+Both shipped to `dev`. The effect: the security control (SSRF address pinning) is silently
+inert in any process where a test double is present, and the tests that were supposed to prove
+the control works are exercising a different code path than production runs.
+
+**The rule:** production code MUST NOT contain any reference to `unittest.mock`, `AsyncMock`,
+`MagicMock`, `hasattr(x, "return_value")`, `"pytest" in sys.modules`, an `if TESTING:` shortcut
+around real logic, or any other test-environment sniff. If a test can only pass by making the
+code aware of the test, the test is at the wrong seam — inject the collaborator (client,
+resolver, clock) as a parameter or via a fixture-overridable factory, and let the real code path
+run unchanged against it. A real-handshake / real-resource fixture (a local HTTPS server, a
+disposable Postgres) is the correct answer when a pure double can't exercise the path honestly.
+
+**The check:** `grep -rn "mock\|Mock\|return_value\|TESTING\|sys.modules" <production dirs>` on any
+change that touched code with awkward-to-mock collaborators (network, DNS, TLS, subprocess,
+clock). Any hit in non-test code is a finding.
+
 ## The check to run on yourself
 
 > If the implementation had a genuine bug, would this test still catch it?

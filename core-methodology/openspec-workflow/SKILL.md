@@ -22,6 +22,27 @@ From a batch validation that found six `status: implemented` changes with accept
 - **Requirement-change test sweep before commit.** If the change alters a contract (signature, return shape, removed fallback, guard swap), grep the whole suite for tests encoding the old contract and update them in the same change. `git stash && <run full suite> && git stash pop` on a clean checkout must be green before the log may claim "all tests pass".
 - **`status: implemented` + a version bump requires every AC met.** Genuinely deferred work → `status: partial` with the remainder enumerated and no release yet.
 
+### Dead-code wiring — a new param the caller never passes (added 9 Sep 2026, C492 AC-15)
+
+When an AC is "wire feature X into entry points A, B, C, D" and the implementation adds a keyword
+argument (`agency_id=None, db=None`) with `if agency_id:`-guarded logic inside each function: the
+feature runs **only where a caller actually passes the argument**. Two of C492's four Bedrock
+AI-extraction entry points got the kwarg but their workers called them positionally with neither —
+so the cost ceiling was inert for those paths, while the task sat checked `[x]`. Check: for every
+"wire into N call sites" AC, `grep` each call site and confirm the new argument is actually passed
+a real value, not left to its default. A guarded optional param with no caller supplying it is
+dead code, not a wired feature. Pair this with the "a cited test must exist" check — the
+per-call-site test would have caught it, and here those tests were marked done but absent.
+
+### Production code that sniffs for test doubles
+
+If a change's tests only pass because the shipped code detects a mock (`isinstance(x, AsyncMock)`,
+`hasattr(x, "return_value")`, `"pytest" in sys.modules`, `if TESTING:`) and skips its real path,
+the AC is not met — production runs a different code path than the tests exercise, and on a
+security control that means the control is inert in any process where a double is present. Grep
+non-test dirs for `mock`/`Mock`/`return_value`/`TESTING` on any change touching hard-to-mock
+collaborators (DNS, TLS, subprocess, clock). See the `test-doubles-vs-assertions` rule.
+
 ## What counts as an OpenSpec-governed change — the carve-out is narrow
 
 Content, doc-only edits, issue triage, deploy-runner skills, and read-only diagnostics are outside OpenSpec. That carve-out does **not** cover: a new or amended `openspec/specs/*/spec.md` (a spec is the output of a change, never hand-authored alone); a CI change that alters what the test suite does or gates (test DB version, coverage floor, a new build-failing scan); a new production-deploy behaviour; a new cloud resource / IAM policy / secret / env var. Each needs its own thin proposal/design/tasks.
