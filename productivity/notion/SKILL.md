@@ -1,12 +1,12 @@
 ---
 name: notion
-description: "Notion API + ntn CLI: pages, databases, markdown, Workers. Use when asked to search, read, create, or update Notion pages/databases, query a database, upload files to Notion, convert Notion content to/from Markdown, or build/deploy a Notion Worker (sync, tool, or webhook)."
+description: "Notion API + ntn CLI: pages, databases, markdown, Workers."
 version: 2.0.0
 author: community
 license: MIT
 platforms: [linux, macos, windows]
 prerequisites:
-  env_vars: [NOTION_API_KEY]
+  env_vars: [NOTION_API_KEY, NOTION_TOKEN]
 metadata:
   hermes:
     tags: [Notion, Productivity, Notes, Database, API, CLI, Workers]
@@ -30,6 +30,10 @@ Talk to Notion two ways. Same integration token works for both — pick by what'
    ```
    NOTION_API_KEY=ntn_your_key_here
    ```
+   **Fleet note (amlhive):** the Windows-side env may store this as **`NOTION_TOKEN`**. Read either
+   name — check `NOTION_TOKEN` first, then `NOTION_API_KEY`, in `/mnt/c/Users/habib/.hermes/.env`
+   (strip CRLF / BOM). The integration there is named `connecting_openclaw`; a second integration
+   `connecting_to_monitoring` also exists — a token only sees what *its own* integration was shared.
 4. **Share target pages/databases with the integration** in Notion: page menu `...` → `Connect to` → your integration name. Without this, the API returns 404 for that page even though it exists.
 
 ### 2. Install `ntn` (preferred path on macOS / Linux)
@@ -63,6 +67,20 @@ fi
 ```
 
 Windows users: skip step 2 entirely until native `ntn` ships — Path B works fine. If you want CLI ergonomics now, install `ntn` inside WSL2.
+
+## This fleet (amlhive) — read first
+
+**Start here: `references/fleet-notion-workspace.md`.** In this fleet the working token is
+**`NOTION_TOKEN_WS`** (integration `My-Token1`), *not* `NOTION_TOKEN` (integration
+`connecting_openclaw`, which authenticates but sees **zero** objects). Notion here is the fleet's
+**CRM + CMDB + business brain**, with 6 known databases (People, IT Assets/Configuration Items,
+Goals Tracker, AI Founder Learning Path, Plane Issues, Plane Projects).
+
+Quick probe (never prints the token):
+```bash
+python3 <this-skill>/scripts/notion_probe.py NOTION_TOKEN_WS --map
+python3 <this-skill>/scripts/notion_probe.py NOTION_TOKEN_WS --recent
+```
 
 ## API Basics
 
@@ -446,7 +464,3 @@ Headings 5/6 collapse to H4. Multiple `>` lines render as separate quote blocks 
 - Always pass `-s` to curl to suppress progress bars (cleaner agent output).
 - Pipe JSON through `jq` when reading: `... | jq '.results[0].properties'`.
 - Notion also ships an MCP server now (`Notion MCP`, ~91% more token-efficient on DB ops than the previous version) — wire it via Hermes' MCP support if you want streaming Notion access from inside a session, but the paths above are enough for most one-shot tasks.
-
-## Additional references
-
-- `references/block-types.md` — full reference for creating and reading every common Notion block type via the API.
