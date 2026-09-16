@@ -139,6 +139,36 @@ if len(parts) >= 2:
 
 This prevents yesterday's errors from appearing in today's report when the log file is quiet.
 
+### Fetching the log — the command shape decides whether you get data (verified Sep 2026)
+
+**Never compose the remote tail as a `cat … | tail … || cat … | tail … || echo SENTINEL`
+chain.** In a pipeline the exit status is the LAST command's, so a successful `tail`
+on an empty stream masks the failed `cat`; the `||` fallback never runs and the
+sentinel never fires. The function then receives an EMPTY string, and code that
+reads `if not out or out.startswith("SSM_")` blames the transport — reporting
+**"⚫ nginx log: SSM error" on a perfectly healthy host**. Use `test -f` guards:
+
+```python
+SSM_NGINX_ERROR_TAIL = ("for f in /var/log/nginx/tapease-error.log /var/log/nginx/error.log; do "
+                        "if [ -f \"$f\" ]; then tail -50 \"$f\"; exit 0; fi; done; "
+                        "echo 'NO_NGINX_LOG'")
+```
+
+**Classify THREE outcomes, not two** — collapsing them is what made a clean host
+look broken:
+
+| SSM result | Meaning | Report as |
+|---|---|---|
+| starts with `SSM_` | real transport/command failure | ⚫ SSM transport error |
+| `NO_NGINX_LOG` | no error log on that host | ○ not found on host |
+| empty string | log present **and 0 bytes** = no errors | ✅ clean (present, 0 bytes) |
+
+**Expected healthy state on both instances is an EMPTY error log** — the backend's
+`/var/log/nginx/error.log` sits at 0 bytes with tiny rotated `error.log-*.gz` files,
+and there is no `tapease-error.log` at all (the access logs are the busy ones).
+So an empty tail is a PASS, never a failure. Confirm the host's real log inventory
+before changing the path list: `ls -la /var/log/nginx/ | head -25` over SSM.
+
 ## CloudWatch Timestamp Gotcha
 
 CloudWatch `describe-alarms` returns `StateUpdatedTimestamp` as a **float** (epoch milliseconds) in JSON output, not a string. Direct indexing `a[2][:16]` fails with `TypeError: 'float' object is not subscriptable`:
@@ -172,13 +202,16 @@ For automations that need to query the Tapease RDS (private subnet), there are t
 The **backend EC2** (`i-062b8ef5437ea6e2f`) has psql 15.15 installed. Use `aws ssm send-command` to run psql there directly:
 
 ```python
-cmd = f'PGPASSWORD="{RDS_PW}" psql -h {RDS_HOST} -U {RDS_USER} -d {RDS_DB} -At -c "{flat_sql}"'
+cmd = f'PGPASSWORD="{_rds_pw()}" psql -h {RDS_HOST} -U {RDS_USER} -d {RDS_DB} -At -c "{flat_sql}"'
 result = _ssm_run([cmd])
 ```
 
 **Key points:**
 - Multi-line SQL must be **flattened** (`sql.replace(chr(10), " ")` + `re.sub(r'\s+', ' ', flat)`) before wrapping in shell command
 - The bastion (`i-06c24009b7ad32725`) does NOT have psql installed — use the backend
+- **Never hardcode the DB password.** `_rds_pw()` = lazy fetch of `password` from Secrets Manager
+  `tapease/rds/credentials-production` (see `tapease_payout_email.py :: fetch_db_password()`). There is
+  NO `RDS_PW` env key — a required lookup for one breaks the job at import.
 - Password comes from Secrets Manager `tapease/rds/credentials-production` with fallback to `.openclaw/.env`
 - Wait for completion by polling `get-command-invocation` every 2s up to 60s
 - `aws ssm send-command` only needs standard AWS CLI — NO `session-manager-plugin` required
@@ -312,7 +345,7 @@ The daily payout email fetches **live version numbers** from running EC2 instanc
 ```python
 # Backend version — read from config.py on backend EC2
 out = ssm_run(env, "grep '^VERSION' /home/ec2-user/app/backend/app/config.py")
-# Returns: VERSION = "4.1.38"
+# Returns: 9:VERSION: str = "4.2.29"   ← includes the linter prefix AND a type annotation
 
 # Frontend version — read from package.json on frontend EC2
 out = ssm_run(env, "grep '\"version\"' /home/ec2-user/app/package.json",
@@ -323,6 +356,21 @@ out = ssm_run(env, "grep '\"version\"' /home/ec2-user/app/package.json",
 **Paths differ between instances:**
 - Backend: `/home/ec2-user/app/backend/app/config.py`
 - Frontend: `/home/ec2-user/app/package.json` (on `i-0aca7e109d0f6e773`)
+
+**Pitfall — the version is declared WITH a type annotation, so `VERSION\s*=` never matches.**
+`config.py` line 9 reads `VERSION: str = "4.2.29"`. A pattern requiring `VERSION`
+immediately followed by `=` finds nothing, `be_ver` keeps its `"?"` default, and the
+email silently ships **`Backend: v?`** in the subject line — no error, no alert.
+Allow an optional annotation:
+
+```python
+m = re.search(r'VERSION(?:\s*:\s*[\w\[\]]+)?\s*=\s*["\']?([\d.]+)', out)
+```
+
+**Tell-tale:** a `v?` (or any placeholder) in the email subject/header means the
+VERSION PROBE failed, not that the backend is unhealthy — treat it as a monitor
+defect and fix the probe. `fetch_versions(env)` is directly callable for a fast
+check without sending the email.
 
 The version appears in the email subject line (`🔵 TapEase Payout Sweep — Tuesday 28 July 2026 (v4.1.38)`), the date bar, and the footer. This gives an immediate visual confirmation of what's deployed.
 

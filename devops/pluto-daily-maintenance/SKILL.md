@@ -25,16 +25,78 @@ description: Pluto's lightweight daily maintenance engine — 4-task health chec
 3. Also check for naming drift — e.g., memory says "Tapease payout sweep" but cron script is `tapease_payout_email.py`; the daily transactions cron (`114039a7ff9b`) uses `tapease_daily_transactions.py` for CSV export, while the payout email cron (`77f0402cb1de`) uses `tapease_payout_email.py`. Another recurring drift: `gmail_health_check.py` (4:50 AM pre-flight) looks for `GMAIL_USER`/`GMAIL_APP_PASSWORD`, but the working ingestor uses `GOOGLE_GMAIL_APP_PASSWORD_MACARTHUR` + hardcoded `macarthurgarments@gmail.com` — when Gmail creds migrate, the health-check's env-var names must be updated in lockstep or it exits 2 ("CONFIG MISSING") forever.
 4. If no MEMORY.md exists, note it — not an error
 
+### Task 2b: Memory architecture hooks — VERIFIED REALITY (10 Sep 2026)
+The 2PM cron prompt itself contains ONLY the 4 tasks above — it is NOT a memory-pipeline hook. Earlier revisions of this skill claimed (a) drain `~/.hermes/mempalace-inputs/`, (b) rebuild the FTS index, (c) run `memory_check.py`, (d) git commit+push the ops/facts repo. Corrected state:
+- **(a)** Inbox draining is owned by the Mempalace Inbox Watcher cron `5678a363ce3b` (every 5m, `mempalace_watcher.py`) + MemPalace Nightly Cleanup `0fc5019948be` (11:55 PM, `mempalace_cleanup.py`). Do not expect `mempalace-inputs/` to be drained by this cron.
+- **(b)** FTS/index rebuild is `mempalace_optimize.py` / `mempalace_cleanup.py` — not run from here.
+- **(c)** `memory_check.py` DOES NOT EXIST anywhere under `~/.hermes` — audit memory inline instead: compare `wc -c` of `~/.hermes/memories/{MEMORY,USER}.md` against `memory_char_limit` / `user_char_limit` in `config.yaml` (currently 4400 / 2500) and flag lines that are not pointer-shaped.
+- **(d)** `~/.hermes/ops/` is a PLAIN directory — NOT a git repo, and no `facts/` subdir exists. There is no commit/push step. Durable facts live in `~/.hermes/ops/environment.md` (pointer target for memory).
+Routing rules: `memory-hygiene` skill; design history: `~/.hermes/ops/memory-architecture-decision-2026-09-03.md`. Never truncate memory without a snapshot.
+
 ### Task 3: Cron Health Pulse
+
+**Run the hardened helpers first — they cover Task 1 and Task 3 steps 1-4 + 6 in one pass:**
+`python3 ~/.hermes/scripts/daily_cron_audit.py` (script-path resolution against BOTH script roots,
+delivery-target histogram, non-ok jobs grouped by delivery, enabled jobs with null/past
+`next_run_at`) and `python3 ~/.hermes/scripts/daily_skill_scan.py` (skill usage + SKILL.md touches in
+the last 24h, legacy-key scans by FILE not path since agent.log is append-only, dead-cron-ID
+detection that skips context already marked RETIRED/PRUNED/dead/historical/PAUSED).
+
 1. Parse `~/.hermes/cron/jobs.json` for `last_status` counts
-2. Classify each error using the error classification guide below
-3. Verify script paths exist for all `no_agent` script-based crons (see Pitfalls: `script` field is basename-only — prepend `~/.hermes/scripts/`)
-4. Check for "never ran" crons — distinguish genuine scheduler bugs from weekly crons awaiting their first window
+2. **Before debugging ANY individual failure, cluster errors by string + timestamp.** Many jobs red
+   inside one window is ONE event, not N bugs. Seen 2026-09-15: 8 agent crons (5:02-6:45) all
+   `RuntimeError: [Errno 32] Broken pipe` = a single DeepSeek upstream outage (503
+   `service_unavailable_error` + `RemoteProtocolError` incomplete-chunked-read) with NO fallback
+   chain configured to absorb it. Commands that settle it: `grep -c "Service is too busy"
+   ~/.hermes/logs/agent.log`; `grep -E "<date> .*attempt 3/3" ~/.hermes/logs/agent.log` (proves the
+   retries were exhausted, not a first-call failure); `hermes fallback list` (a chain resolving to
+   ZERO hops IS the finding). Then fix the absent RESILIENCE, not the past blip.
+3. Classify each error using the error classification guide below
+4. Verify script paths exist for all `no_agent` script-based crons (see Pitfalls: `script` field is basename-only — prepend `~/.hermes/scripts/`)
+5. Check for "never ran" crons — distinguish genuine scheduler bugs from weekly crons awaiting their first window
+6. **Audit DELIVERY TARGETS, not just statuses.** Group every job by `deliver` and count per target; each must point at a live target from the routing table (`telegram:-1004485329864` AMLHive-subject, `telegram:-1003834479227` general/daily) or `local`. A job can report `last_status: ok` every single run while delivering into a retired channel — `ok` only means it RAN. **When the owner says a report or sweep "isn't firing", check `deliver` before debugging the job itself**; a sweep that runs perfectly into a retired channel reads as "not firing" forever. Retarget with `cronjob(action="update", job_id=..., deliver="telegram:<id>")`, then re-verify. Re-run this audit after ANY channel change or owner routing instruction: jobs that were correct when the change was made silently rot afterwards.
+
+### Task 3b: Shared-lane hygiene (added 2026-09-14 after a real cascade)
+
+A dirty index on a shared agent lane blocks jobs that never touched it. Run:
+
+```bash
+cd ~/code/amlhive1 && git status --porcelain | wc -l && test -f .git/MERGE_HEAD && echo MERGE_IN_PROGRESS
+git diff --name-only --diff-filter=U   # unmerged paths
+```
+
+A non-zero `MERGE_HEAD` means an in-progress merge was left behind — the next `git checkout` on that
+lane dies with `error: you need to resolve your current index first`. Seen 2026-09-14: the 03:00
+test runner's `git merge origin/dev` hit an add/add conflict in
+`docs/agent_rules/agent-branch-standard.md`, printed ❌ and CONTINUED (no `merge --abort`), leaving
+MERGE_HEAD set; the Mon 10:30 CRAP job (`153af82d274e`) then failed at step 1 and produced NO report.
+Recovery is the repo's own rule (`docs/agent_rules/agent-branch-standard.md`): a merge conflict →
+`git merge --abort`, STOP and report BLOCKED — do NOT resolve a conflict in a governance doc
+autonomously, and never `git reset --hard` over an in-progress merge. Both lane runners now abort
+themselves and print `⚠️ MERGE_NOT_APPLIED — origin/dev NOT merged (conflict, aborted; BLOCKED)`;
+treat that marker as BLOCKED, never as a pass (the suite then ran on UNMERGED `pluto_pr`).
 
 ### Task 4: Script Validation
 1. Check Python syntax of recently modified scripts: `python3 -m py_compile <script>`
-2. Verify all script paths referenced in cron jobs exist on disk
-3. Report broken scripts immediately
+2. **`py_compile` is NOT proof for a script you just patched.** A newly referenced constant, helper, or import alias that was never defined compiles clean and dies with `NameError` at its next scheduled fire — with no test run in between. Before the schedule fires, (a) run a name-resolution check (AST pass: names loaded at module scope that are neither module-level definitions nor builtins), (b) run ONE live invocation and read its stdout for the expected counts, and (c) for collectors/drains, run it twice and confirm the second run reports "no changes" (idempotency) — a pipeline that double-writes or re-prunes on every run corrupts its own output.
+3. Verify all script paths referenced in cron jobs exist on disk (prepend `~/.hermes/scripts/` — the `script` field is basename-only)
+4. Report broken scripts immediately
+5. **Hardcoded-credential sweep — and the two-party handshake that follows.** Grep the fleet scripts
+   for literal secret assignments by SHAPE (never print the value; report `file:line` only). When you
+   find any, the fix splits in two: **the code stops carrying the value, the owner rotates it** —
+   state that split explicitly, because he cannot rotate until your half is done and listed.
+   (a) **Back up FIRST** — `cp -a ~/.hermes/scripts/*.py ~/.hermes/backups/scripts_$(date +%Y%m%d_%H%M%S)/`
+   plus `jobs.json`: these scripts live outside git, so that copy is the only undo.
+   (b) Move each literal to the **existing** loader convention (`/mnt/c/Users/habib/.hermes/.env` then
+   `~/.hermes/.env` into `os.environ`, as `amlhive_daily_report.py` and `podcast_insight_extract.py`
+   already do) rather than inventing a new secret store.
+   (c) **Fail loudly, naming the missing key** — a default or empty-string fallback silently restores
+   the old behaviour, which is the bug you are fixing.
+   (d) Verify WITHOUT real values: set obvious dummies in the subprocess env and show the script reads
+   them (or exits with the named-key error), then shape-grep to prove no literal remains.
+   (e) Hand back the **rotation list: key name, file, line** — never a value.
+   Cron **prompts inside `jobs.json` carry credentials too**: back that file up before touching it and
+   change only the prompt string, never a job's enabled state.
 
 ## Error Classification Guide
 
@@ -44,7 +106,7 @@ When you see `last_status: error` on a cron, classify before escalating:
 
 **A check that did not actually verify is NEVER a PASS.** This is a classification rule for ALL cron scripts, monitors, and test runners — not just errors:
 
-- `DATASET_SOURCE_UNAVAILABLE` / source-not-configured → **ALERT**, never "skipped, pass". Seen 2026-08-15: `amlhive_asic_sync.py` collapsed every `skipped=true` reason into `⏭️ Skipped (no change)` → summary said ✅ PASS while `asic-registered-schemes` never synced (empty `ASIC_REGISTERED_SCHEMES_CSV_URL`). Fix: classify reasons explicitly — `DATASET_SOURCE_UNAVAILABLE → overall_alert=True`; only `NO_CHANGE` / `FILE_NOT_YET_PUBLISHED` pass.
+- `DATASET_SOURCE_UNAVAILABLE` / source-not-configured → **ALERT**, never "skipped, pass". Seen 2026-08-15: `amlhive_asic_sync.py` collapsed every `skipped=true` reason into `⏭️ Skipped (no change)` → summary said ✅ PASS while `asic-registered-schemes` never synced (empty `ASIC_REGISTERED_SCHEMES_CSV_URL`). Fix: classify reasons explicitly — `DATASET_SOURCE_UNAVAILABLE → overall_alert=True`; only `NO_CHANGE` / `FILE_NOT_YET_PUBLISHED` pass. **One documented exception (verify before flagging):** `amlhive_asic_sync.py` quiet-skips `DATASET_SOURCE_UNAVAILABLE` for `asic-registered-schemes` ONLY (standing order "no ASIC trying for now" — no public CSV source exists), and still alerts for every other dataset with that reason. That single skip is intentional, not a fake pass — see `amlhive-asic-sync` skill. Also: an `enqueued=True` async response is NEVER a pass (rows are a stale fingerprint); the next run reporting `NO_CHANGE` with real remote row counts is the proof the enqueue landed.
 - 0 tests collected / config-parse error → **ERROR**, never "0 passed" (test-runner false-green, Aug 2026; see `wsl-cron-test-runner` for the `guard_no_tests` pattern).
 - A `skipped=true` / `ok` field in a script's own output is only a PASS when the underlying check genuinely completed.
 - When auditing a cron that reports "ok" but skips work, read the script's reason classification before trusting the summary icon.
@@ -56,17 +118,38 @@ When you see `last_status: error` on a cron, classify before escalating:
 ### Transient (watch, auto-recovers)
 - **`GIT_TIMEOUT`**: Script stdout contains `GIT_TIMEOUT`. Network/git-remote issue. Usually self-resolves next run. Escalate only if 3+ consecutive days.
 - **Gateway shutdown**: `Gateway shutdown (final-cleanup) killed the job's tool subprocess`. Caused by gateway restarts. Auto-recovers next cycle.
-- **`Broken pipe` on agent-driven crons**: Stream stale/timeout. Built-in 3-attempt retry usually succeeds.
-- **`Script timed out after 3600s` on `hermes_update_check.sh` (4eef20ef0e25)**: The `hermes update` step (git pull + npm rebuild + web UI build) is slow and can exceed the 3600s cron timeout even when the update SUCCEEDS. Check `~/.hermes/logs/hermes_update.log` first — if it ends with "✓ Code updated!" / "✓ Model catalog cache refreshed", the update applied and only the "Restart gateway" prompt was cut off (gateway is still running old code until its next natural restart). Escalate only if the log shows no "Code updated" line. Note: the 04:00 run may also show `ok` vs `error` depending on whether the load-sleep (30 min) plus slow update fits in the window.
+- **`Interrupted by shutdown before terminal completion` with NO gateway restart**: the message is misleading — the real cause is a scheduler fire-claim loss. Confirm with `grep "fire claim ownership lost" ~/.hermes/logs/errors.log | grep <job-id>`; if the timestamp matches the job's `last_run_at` and `logs/gateway.log` shows no shutdown at that minute, it was a claim-ownership interruption, not a shutdown. The job's deliverable is often ALREADY WRITTEN — check `~/.hermes/cron/output/<id>/` and the artifact's own path (e.g. `research_outputs/`) before calling it a failure. Seen 4x between 09-09 and 09-12 (incl. the 09-12 Saturday Weekly Review, whose 16 KB report was produced at 06:03 before the 06:04 interrupt). Flag as a standing scheduler defect, do not re-escalate the individual jobs.
+- **`Broken pipe` on agent-driven crons**: Stream stale/timeout. Built-in 3-attempt retry usually succeeds — **but check for a CLUSTER before calling it transient.** Several agent crons red in the same window with the same error is ONE provider event, and the retry only saves you if a fallback chain exists. Verified 2026-09-15: 8 jobs, `[Errno 32] Broken pipe` + `503 Service is too busy` from `provider=deepseek`, all dead at attempt 3/3 because the chain was empty — one outage, eight red jobs, no 6:00 AM briefing. See Task 3 step 2 for the cluster commands; resilience fix in `monitoring-alert-verification` + `llm-cost-routing`.
+- **`Script timed out after 3600s` on `hermes_update_check.sh` (4eef20ef0e25)**: The `hermes update` step (git pull + npm rebuild + web UI build) is slow and can exceed the 3600s cron timeout even when the update SUCCEEDS. Check `~/.hermes/logs/hermes_update.log` first — if it ends with "✓ Code updated!" / "✓ Model catalog cache refreshed", the update applied and only the "Restart gateway" prompt was cut off (gateway is still running old code until its next natural restart). Escalate only if the log shows no "Code updated" line. Note: the 03:00 Mon+Fri run (`0 3 * * 1,5`) may also show `ok` vs `error` depending on whether the load-sleep (30 min) plus slow update fits in the window.
 
 ### Stale (error from previous run, job runs infrequently)
 - **Weekly crons (Mon-only, Fri-only)**: An error from the last weekly run persists until the next schedule. Check the `last_run_at` date — if it's days old and the cron only runs once a week, it's stale.
 - **Biweekly crons (Mon+Fri)**: Same pattern — error from Monday persists until Friday.
 
 ### Real (needs action)
+- **`RuntimeError: Missing required environment variable: <KEY>` (cluster of same-day jobs, different
+  scripts)**: a credential-hardening pass removed hardcoded values and pointed the scripts at env keys
+  that **exist in neither `.env`**. The signature is a group of `no_agent` scripts failing on the import
+  line within minutes of each other, each naming a DIFFERENT key (`SUPABASE_HOST`, `RDS_PW`, …) — one
+  sweep, several dead jobs. Do not treat it as a config typo; check journal-style notes at
+  `~/.hermes/ops/credential_exposure_fix_*.md` for the pass that did it, then:
+  1. Confirm absence by NAME across both stores:
+     `for f in /mnt/c/Users/habib/.hermes/.env ~/.hermes/.env; do grep -oE '^[A-Za-z_][A-Za-z0-9_]*' "$f"; done | sort -u`
+  2. Prefer the **dynamic fetch a sibling already uses** (Secrets Manager / SSM) over adding an env key —
+     e.g. `tapease_payout_email.py :: fetch_db_password()` resolves `tapease/rds/credentials-production`.
+     Convert the module-level `_required_env("KEY")` into a lazy cached fetch so import no longer needs
+     the secret.
+  3. Verify by RUNNING the real path (fetch + one read-only query), not by `py_compile` — see the
+     `credential-exposure-remediation` skill, whose dummy-value probe reported `KEY=loaded` for a key
+     production did not have.
+  Seen 2026-09-16: `tapease_daily_transactions.py` (`RDS_PW`), `pluto_chamber_refresh.py` +
+  `podcast_ingestor.py` (`SUPABASE_HOST`) — the two Supabase scripts were repaired the same night by
+  deriving creds from `SUPABASE_OPERATOR_SPOOLER_DATABASE_URL`; the Tapease one stayed broken until
+  fixed here.
 - **`FATAL: password authentication failed`**: Credential is wrong or expired. For env-var-based scripts: check the env var. For SSM-based scripts (`amlhive_daily_report.py`): the AWS Secrets Manager secret (`amlhive/prod/rds`) is out of sync with the actual RDS password — needs AWS console fix (see RDS Credential Isolation pitfall below).
 - **`Traceback` in script**: Genuine Python error. Read the traceback to diagnose.
 - **`401 Unauthorized` on 3+ crons same day**: Systemic credential failure — check provider API keys, not individual crons.
+- **`delivery_failed` with an EMPTY `last_error`**: the script ran and wrote its artifact — the failure is the outbound send, not the job. Confirm in `~/.hermes/logs/agent.log`: `Job '<id>': delivery error: Telegram send failed: Timed out (target telegram:<id>)`. Transient network / flood-control (seen 2026-09-13 07:00 on `8d3be30eb9f7`, whose output file was complete and healthy). Do not escalate unless it repeats on consecutive days — the next scheduled run resends.
 
 ## "Never Ran" — Genuine Bug vs Expected
 
@@ -102,6 +185,30 @@ The fleet monitors (`amlhive_prod_monitor.py`, `tapease_prod_monitor.py`) do **N
 
 See `pluto-fleet-monitor` skill for full AmLHive architecture.
 
+## Retiring a service/monitor — the SECOND-ORDER sweep (verified Sep 2026)
+
+First-order retirement (remove cron, archive script) is NOT enough — downstream
+references keep the dead service "live" in docs, configs, and prompts for months.
+Run the full sweep the same session you retire anything (Vercel example:
+`vercel-monitoring` skill's "Second-order retirement sweep COMPLETED 2026-09-05"
+record):
+
+1. **Cron prompts** — grep jobs.json for the service name: every prompt/script
+   reference must be replaced or the cron agent will cat stale report dirs.
+2. **config.yaml keys** — Hermes REFUSES direct `patch` writes to config.yaml
+   (security-protected). Use the CLI: `hermes config unset <dotted.path>` (e.g.
+   `hermes config unset terminal.vercel_runtime`), then grep to verify gone.
+3. **EVERY SKILL.md + references/** — grep -rln the name across ~/.hermes/skills/
+   and update each live table/row/example (cron tables, delivery exceptions,
+   pipeline diagrams, email example docstrings). Skip: RETIRED markers, dated
+   historical incident logs, curator backups, unrelated design-system mentions.
+4. **Scripts** — grep *.py docstrings/examples; a shared module's usage example
+   that names the dead monitor propagates it into every future consumer.
+5. **Stale data dirs** — archive old report JSONs to `~/.hermes/archive/...` and
+   remove the empty dir so greps and `reviews/` scans stop hitting them.
+6. **Leave a completion record** in the retired service's skill + note remaining
+   string matches are INTENTIONAL — so no future agent re-audits or re-enables.
+
 ## Output
 
 Save detailed results to `~/.hermes/reviews/daily/maintenance-{DATE}.json` with:
@@ -119,7 +226,8 @@ Keep the user-facing report brief (under 5 min runtime target). Only surface wha
 - **Never-ran ≠ broken.** Always check `next_run_at` and the cron's schedule frequency before escalating.
 - **Exit code 1 ≠ failure** for alert scripts that email internally. Check the script's design intent.
 - **Memory.json may not exist.** Not all Hermes profiles use memory. Absence is not an error.
-- **Cron `script` field is basename-only.** The `script` field in `jobs.json` contains just the filename (e.g., `mempalace_watcher.py`), not a full path. When verifying script paths on disk, prepend `~/.hermes/scripts/` before checking `os.path.exists()`. Without the prefix, every script-based cron will appear "missing" — a 100% false-positive rate. The scripts resolve correctly at runtime because Hermes's cron runner knows the scripts directory.
+- **Cron `script` field is basename-only.** The `script` field in `jobs.json` contains just the filename (e.g., `mempalace_watcher.py`), not a full path. When verifying script paths on disk, prepend `~/.hermes/scripts/` before checking `os.path.exists()`. Without the prefix, every script-based cron will appear "missing" — a 100% false-positive rate. The scripts resolve correctly at runtime because Hermes's cron runner knows the scripts directory. **There are TWO scripts roots and they hold DIFFERENT files:** WSL `~/.hermes/scripts/` and Windows `/mnt/c/Users/habib/.hermes/scripts/` (e.g. `pluto_monthly_strategy_job.py` and `send_strategy_professional_email.py` exist ONLY on the Windows side). A cross-reference validator that checks just the WSL root reports ~100% false positives — check both before flagging a referenced script as missing.
+- **Dead cron IDs in skills are usually intentional history.** A validator that flags every 12-hex token absent from `jobs.json` produces ~26 hits, almost all of them documented-retired jobs (`RETIRED` markers, `KNOWN_DEAD_*` sets, `pipeline-orchestration` history, raw-hex `vault/reports` folders like `0ccbb673faea` that alexandria-vault-sync documents as "leave those as historical"). Read the surrounding context before calling one stale; only a dead ID presented as a LIVE schedule is a real fix.
 - **`ideas-*` grep is high-noise.** Several skills (fleet-intelligence, git-sync, weekly-review) legitimately contain `KNOWN_DEAD_REPOS = {'ideas-ndis', 'ideas-exitlens', ...}` lists or documentation referencing `ideas-*/` repo paths. A bare `grep -rl 'ideas-'` across skills will hit all of them. Before flagging a hit as stale, read 2-3 lines of surrounding context. Only escalate if it's an operational reference (e.g., a script hardcoding a dead repo path), not documentation or a KNOWN_DEAD_REPOS set.
 - **Git token obfuscation → "Port number not decimal" error.** When a git sync cron fails with `GIT_FETCH_FAILED: URL rejected: Port number was not a decimal number`, do NOT assume it's only a display artifact. Check the repo's *actual* remote URL (`git remote -v` in the repo dir) — the real root cause seen 2026-08-13 was a **duplicated token in the remote URL**: `https://oauth2:TOKEN@oauth2:TOKEN@github.com/...` (two `@` + two `oauth2:` prefixes; git parses the second `oauth2:TOKEN` as host:port). **⚠️ Check the WINDOWS copy, not the WSL copy:** `daily_repo_sync.py` syncs `/mnt/c/Code/github/almhive-tech/amlhive1` (dir name misspelled `almhive-tech`, remote still `github.com/amlhive-tech`), while the test runner uses `~/code/amlhive1`. The WSL copy can be clean (`at_count:1`) while the Windows copy is corrupted (`at_count:2`) — recurred 2026-08-19 (2nd time after 2026-08-13). Verify the fix landed by re-checking `at_count==1` AND `git ls-remote` exit 0. Fix by deduplicating in-place and verifying auth before writing back:
   ```python
