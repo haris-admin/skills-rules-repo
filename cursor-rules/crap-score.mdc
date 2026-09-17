@@ -1,97 +1,58 @@
 ---
-description: CRAP score (Change Risk Anti-Patterns)
-globs: *
-alwaysApply: false
+name: crap-score
+description: Calculate and reduce Change Risk Anti-Patterns (CRAP) by measuring cyclomatic complexity against automated test coverage across Python and JavaScript/TypeScript codebases. Use when auditing monolithic components, deciding whether methods need strangler-fig refactoring, or reviewing change risk.
 ---
 
-# CRAP score (Change Risk Anti-Patterns)
+# CRAP Score Analysis (Change Risk Anti-Patterns)
 
-Applies when reviewing whether a function is safe to change — not when checking
-the repo-wide coverage floor. Total-% coverage can hide a 40-branch method that
-one happy-path test "covers."
+## 1. Formula & Theoretical Foundation (Savoia / Evans, 2007)
 
-**Advisory, not a CI gate.** Default exit 0. Do not fail a commit/PR on this
-unless the human asked for `--fail-above`. Surface the worst functions and let
-the project lead decide; same posture as `public-claim-audit`.
+$$\text{CRAP}(m) = \text{comp}(m)^2 \times (1 - \text{cov}(m))^3 + \text{comp}(m)$$
 
-Skill: `.claude/skills/crap-score/SKILL.md`
-Scorer: `scripts/crap_score.py`
+Where:
+- `comp(m)` is the McCabe Cyclomatic Complexity (decision points: `if`, `else if`, `for`, `while`, `catch`, `&&`, `||`, `? :`).
+- `cov(m)` is the automated test coverage of method `m` ($0.0$ to $1.0$).
 
-## Formula (Savoia / Evans, 2007)
+### Risk Classification
+| CRAP Score | Risk Category | Action Required |
+|:---|:---|:---|
+| **$\le 8$** | Low Risk | Well-tested, clean, modular code. |
+| **$\le 15$** | Acceptable | Standard production logic. |
+| **$\le 25$** | Moderate Risk | Consider path tests or extracting helpers. |
+| **$> 25$** | High Risk | Refactor before modifying; add regression tests. |
+| **$> 30$** | Critical CRAP | **Violates Clean Code Standard.** Even 100% coverage cannot make high CC safe. |
 
-```
-CRAP(m) = complexity(m)^2 × (1 − coverage(m))^3 + complexity(m)
-```
+---
 
-`coverage(m)` is a 0–1 fraction of executable lines in that function. Complexity
-is McCabe (decision points: `if`/`elif`/`for`/`while`/`except`/`and`/`or`/`match`).
+## 2. Multi-Ecosystem Scanners
 
-| Score | Risk | Clean-code reading |
-|-------|------|--------------------|
-| ≤ 8 | low | Small and tested, or trivial |
-| ≤ 15 | acceptable | Fine for ordinary app code |
-| ≤ 25 | moderate | Split or add path tests |
-| > 25 | high | Do not call this clean |
-| > 30 at 100% coverage | high | The method is too big; tests cannot make it simple |
-
-Industry default flag line is **30**. Fully covered code still fails that line
-once complexity exceeds ~30 — that is the point.
-
-## How to run
-
+### A. JavaScript / TypeScript AST Scanner (Node, React, Next.js)
+In frontend and Node.js repositories (e.g. Simplifii-OS), use the Babel AST parser:
 ```bash
-# Reuse coverage.json if present; otherwise scores coverage as 0% (pessimistic)
-python3 scripts/crap_score.py --root backend/app --top 20
+# Scan full repository
+node scripts/crap_score.js
 
-# After a focused pytest run that wrote JSON
-cd backend && poetry run pytest --cov=app --cov-report=json:coverage.json -q -- tests/services/test_foo.py
-python3 scripts/crap_score.py --root backend/app/services/foo.py --coverage backend/coverage.json
+# Scan specific file or component
+node scripts/crap_score.js src/frontend/CanvasScreen.jsx
 ```
 
-Do **not** kick off a full unfiltered pytest just to get coverage for this audit
-unless the human asked. Pessimistic 0% is an upper bound on risk, not a lie — for a
-*single* function whose file genuinely appears in `coverage.json` with 0% executed.
-
-**It is a lie in aggregate if `coverage.json` doesn't cover the codebase you're scanning
-at all.** Incident, 23 Aug 2026: `coverage.json` had zero entries for 105 of 344 files
-under `backend/app/` (not stale — absent). Every function in those files scored a blanket
-0%, which didn't just inflate their CRAP values, it **distorted the ranking itself** —
-`matter_screening_detail` (real coverage 57.7%, the true #1 by CRAP) was invisible from
-the top-25 entirely, while `validate_ownership_extraction_v2` topped it at 16,256 instead
-of its real value of 130. Root cause: `docs/technical_debt.md` §3.2 (deferred — script
-does not yet detect this itself).
-
-**Preflight check before trusting any `coverage.json` for this audit** (cheap, read-only,
-run it every time):
-
+### B. Python AST Scanner (FastAPI, Django)
+In backend Python repositories, use the Python AST parser:
 ```bash
-python3 -c "import json; print(len(json.load(open('backend/coverage.json'))['files']))"
-find backend/app -name '*.py' | wc -l
+# Pessimistic 0% coverage audit (upper bound on risk)
+python3 scripts/crap_score.py --root backend/app --top 25
+
+# With coverage JSON report
+pytest --cov=app --cov-report=json:coverage.json
+python3 scripts/crap_score.py --root backend/app --coverage coverage.json
 ```
 
-If the two numbers are not equal (or within a couple of files for genuinely new/deleted
-files since the coverage run), the `coverage.json` is **not usable as a pessimistic upper
-bound** — it will misrank, not just under-score. State the mismatch in the log instead of
-presenting the table as reliable, and say the ranking may be incomplete.
+---
 
-Tests: `cd backend && poetry run pytest -q tests/scripts/test_crap_score.py`
-
-## What to do with a high score
-
-1. Coverage is the cheap lever on a small function — add the missing branch tests.
-   Do not weaken existing assertions (`test-quality.mdc` / spec-oracle).
-2. Complexity is the real lever on a long `if`/`elif` nest — extract functions,
-   early return, lookup table. Coverage cannot save a 31-branch function.
-3. Never "fix" CRAP by deleting tests, widening mocks, or skipping branches so
-   the coverage number looks high.
-
-Frontend `lib/**` is not scored yet (no TS McCabe walker). Use this on Python
-under `backend/app/` until a frontend path exists.
-
-## Pluto cadence
-
-Weekly **Monday 10:30 Australia/Sydney**. Canonical contract:
-`docs/pluto_agent_instructions.md` § Weekly CRAP Score. Copy-ready paste:
-`docs/pluto_crap_score_instructions.md`. Pluto logs to
-`docs/pluto_weekly_crap_score_log.md`. Advisory — Pluto must not `--fail-above`
-and must not run a full pytest suite to refresh coverage.
+## 3. The Strangler-Fig Refactoring Pattern
+When faced with a giant monolithic component (e.g. CC > 500, CRAP > 100,000):
+1. **Never attempt a full rewrite**: Rewrites introduce catastrophic regressions and break subtle contracts.
+2. **Carve out independent sub-surfaces**: Extract isolated UI sections, drawers, and accordions into standalone components (e.g. `RubricPanel.jsx`, `StudyTimer.jsx`, `AIChatDrawer.jsx`).
+3. **Strict TDD Unit Tests**: Create dedicated unit test files mocking only external boundaries, asserting controlled and uncontrolled states.
+4. **Mount cleanly**: Replace inline blocks with component mounts and remove obsolete imports from the parent.
+5. **Re-scan and record**: Re-run `crap_score` to measure verified reduction in CC and CRAP score.

@@ -220,3 +220,23 @@ npx vitest run tests/unit/components/            # Button behaviour + contrast a
 4. Token values and Button variants are **product decisions** — a human approves them via the
    OpenSpec plan gate (`docs/agent_rules/openspec-tdd-mandate.md`). Do not repaint the product
    because a colour looks off to you.
+
+
+## 5. Pre-Commit Contrast Gate & Raw RGBA Barrier
+
+In repositories with active Neural Proof / `a11y:contrast` husky hooks (such as Simplifii-OS), the pre-commit hook scans all staged JSX/TSX files for raw `rgba()` values:
+
+```
+[Neural Proof] NEW raw rgba() beyond the accessibility baseline. Commit blocked.
+  src/frontend/...: raw rgba() value - promote to a token in src/theme/tokens.js
+```
+
+### Mandatory Rules for Agents:
+1. **Zero New Raw RGBA Values**: Never write inline `rgba(...)` or hex literals in new components.
+2. **Promote to Tokens**: If a semi-transparent border or background is required, import from `src/theme/tokens.js`:
+   - Subtle white glass border: `GLASS_BORDER` (`rgba(255,255,255,0.08)`)
+   - Hover border: `GLASS_BORDER_HOVER` (`rgba(255,255,255,0.14)`)
+   - Accent glass: `ACCENT_GLASS`
+3. **Template Strings with Tokens**: When combining CSS variables with tokens:
+   - ❌ `borderLeft: '1px solid var(--canvas-hairline, rgba(255,255,255,0.08))'`
+   - ✅ `borderLeft: \`1px solid var(--canvas-hairline, ${GLASS_BORDER})\``

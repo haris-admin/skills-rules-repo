@@ -62,8 +62,7 @@ shared `dev` per `openspec/changes/README.md`.
 delivered as a unit, commit at milestone points (per phase / component, ~2–4 per change — a large
 phased change may have one per phase), not one commit per task — 7–8 check-ins for a single change
 is not wanted. Per-task evidence still goes in the `tasks.md` completion log (the exact command +
-counts for every task). One version bump per completed change at release time
-(`/release-frontend` / `/release-backend`), never per task, never mid-change.
+counts for every task). Version increments follow the two-tier milestone/defect standard (`incremental-version-bumping`).
 
 ## How — hygiene is not optional
 
@@ -93,3 +92,19 @@ The *when* is this file. The *how* is unchanged:
 - `docs/agent_rules/commit-message-quality.md` — the subject
 - `docs/agent_rules/shared-file-commit-resolution.md` — a file that is both yours and theirs
 - `docs/agent_rules/pre-checkin-definition-of-done.md` — closeout gate (not the per-task gate)
+
+
+## Incremental Version Bumping Integration
+
+All atomic check-ins, defect fixes, and capability milestones follow the strict two-tier convention in `incremental-version-bumping`:
+
+$$\text{Milestone Base: } 0.F0.00 \quad \longrightarrow \quad \text{Defect / Increment: } 0.F0.NN$$
+
+Where:
+* $F$ is the Feature / Capability number ($1, 2, 3, 4, 5, 6, 7$).
+* $NN$ is the zero-padded two-digit defect fix / patch increment ($01, 02, 03, \dots, 99$).
+
+Whenever an incremental atomic check-in or feature milestone is made, update the version synchronously across all relevant manifests:
+- **Node / React / Web platforms** (e.g. Simplifii-OS): `.version`, `package.json`, `package-lock.json`
+- **Python / FastAPI backends**: `pyproject.toml`, `app/__init__.py`, `app/main.py`
+- Always use explicit pathspecs (e.g. `git add .version package.json package-lock.json <changed-files>`), never bare `git add .`.
