@@ -70,22 +70,10 @@ Use this skill when:
 ### Proactivity and Collaboration
 
 **Default: Be proactive. Draft first, ask with the draft.**
-
-| Confidence Level | Action |
-|-----------------|--------|
-| **High** (clear repo, obvious contribution) | Write full draft, deliver, iterate on feedback |
-| **Medium** (some ambiguity) | Write draft with flagged uncertainties, continue |
-| **Low** (major unknowns) | Ask 1-2 targeted questions via `clarify`, then draft |
-
-| Section | Draft Autonomously? | Flag With Draft |
-|---------|-------------------|-----------------|
-| Abstract | Yes | "Framed contribution as X — adjust if needed" |
-| Introduction | Yes | "Emphasized problem Y — correct if wrong" |
-| Methods | Yes | "Included details A, B, C — add missing pieces" |
-| Experiments | Yes | "Highlighted results 1, 2, 3 — reorder if needed" |
-| Related Work | Yes | "Cited papers X, Y, Z — add any I missed" |
-
-**Block for input only when**: target venue unclear, multiple contradictory framings, results seem incomplete, explicit request to review first.
+- **High confidence**: Write full draft, deliver, iterate on feedback.
+- **Medium confidence**: Write draft with flagged uncertainties.
+- **Low confidence**: Ask 1-2 targeted questions via `clarify`, then draft.
+Draft Abstract, Intro, Methods, Experiments, and Related Work autonomously by default, flagging assumptions. Block for human input only when target venue is ambiguous or framings contradict. See [references/project-setup-and-collaboration.md](references/project-setup-and-collaboration.md).
 
 ---
 
@@ -146,24 +134,8 @@ Before writing anything, articulate:
 
 > Propose to the scientist: "Based on my understanding, the main contribution is: [one sentence]. The key results show [Y]. Is this the framing you want?"
 
-### Step 0.5: Create a TODO List
-
-Use the `todo` tool to create a structured project plan:
-
-```
-Research Paper TODO:
-- [ ] Define one-sentence contribution
-- [ ] Literature review (related work + baselines)
-- [ ] Design core experiments
-- [ ] Run experiments
-- [ ] Analyze results
-- [ ] Write first draft
-- [ ] Self-review (simulate reviewers)
-- [ ] Revise based on review
-- [ ] Submission prep
-```
-
-Update this throughout the project. It serves as the persistent state across sessions.
+### Step 0.5: Create a Structured Plan
+Track persistent milestones across sessions via `todo`: one-sentence contribution, literature review, experiment design, execution, analysis, first draft, simulated review, revisions, and submission prep.
 
 ### Step 0.6: Estimate Compute Budget
 
@@ -236,21 +208,11 @@ Citation Verification (MANDATORY per citation):
 3. RETRIEVE → Get BibTeX via DOI content negotiation (programmatically, not from memory)
 4. VALIDATE → Confirm the claim you're citing actually appears in the paper
 5. ADD → Add verified BibTeX to bibliography
+```
 If ANY step fails → mark as [CITATION NEEDED], inform scientist
 ```
 
-```python
-# Fetch BibTeX via DOI
-import requests
-
-def doi_to_bibtex(doi: str) -> str:
-    response = requests.get(
-        f"https://doi.org/{doi}",
-        headers={"Accept": "application/x-bibtex"}
-    )
-    response.raise_for_status()
-    return response.text
-```
+See [references/citation-workflow.md](references/citation-workflow.md) for DOI content negotiation scripts and the complete `CitationManager` class.
 
 If you cannot verify a citation:
 
@@ -311,42 +273,9 @@ Follow three patterns from successful research pipelines: **incremental saving**
 
 ### Step 2.5: Design Human Evaluation (If Applicable)
 
-Many NLP, HCI, and alignment papers require human evaluation as primary or complementary evidence. Design this before running automated experiments — human eval often has longer lead times (IRB approval, annotator recruitment).
+Many NLP, HCI, and alignment papers require human evaluation as primary or complementary evidence. Design this before running automated experiments to account for IRB lead times, annotator recruitment (Prolific/MTurk), Likert vs pairwise scales, power analysis sample sizes, and Krippendorff's alpha agreement metrics.
 
-**When human evaluation is needed:**
-- Automated metrics don't capture what you care about (fluency, helpfulness, safety)
-- Your contribution is about human-facing qualities (readability, preference, trust)
-- Reviewers at NLP venues (ACL, EMNLP) expect it for generation tasks
-
-**Key design decisions:**
-
-| Decision | Options | Guidance |
-|----------|---------|----------|
-| **Annotator type** | Expert, crowdworker, end-user | Match to what your claims require |
-| **Scale** | Likert (1-5), pairwise comparison, ranking | Pairwise is more reliable than Likert for LLM outputs |
-| **Sample size** | Per annotator and total items | Power analysis or minimum 100 items, 3+ annotators |
-| **Agreement metric** | Cohen's kappa, Krippendorff's alpha, ICC | Krippendorff's alpha for >2 annotators; report raw agreement too |
-| **Platform** | Prolific, MTurk, internal team | Prolific for quality; MTurk for scale; internal for domain expertise |
-
-**Annotation guideline checklist:**
-```
-- [ ] Clear task description with examples (good AND bad)
-- [ ] Decision criteria for ambiguous cases
-- [ ] At least 2 worked examples per category
-- [ ] Attention checks / gold standard items (10-15% of total)
-- [ ] Qualification task or screening round
-- [ ] Estimated time per item and fair compensation (>= local minimum wage)
-- [ ] IRB/ethics review if required by your institution
-```
-
-**Reporting requirements** (reviewers check all of these):
-- Number of annotators and their qualifications
-- Inter-annotator agreement with specific metric and value
-- Compensation details (amount, estimated hourly rate)
-- Annotation interface description or screenshot (appendix)
-- Total annotation time
-
-See [references/human-evaluation.md](references/human-evaluation.md) for complete guide including statistical tests for human eval data, crowdsourcing quality control patterns, and IRB guidance.
+See [references/human-evaluation.md](references/human-evaluation.md) for complete guidelines including statistical tests for human eval data, crowdsourcing quality control patterns, annotation checklists, and IRB guidance.
 
 ---
 
@@ -417,23 +346,7 @@ After analysis, explicitly answer:
 
 #### Handling Negative or Null Results
 
-When your hypothesis was wrong or results are inconclusive, you have three options:
-
-| Situation | Action | Venue Fit |
-|-----------|--------|-----------|
-| Hypothesis wrong but **why** is informative | Frame paper around the analysis of why | NeurIPS, ICML (if analysis is rigorous) |
-| Method doesn't beat baselines but **reveals something new** | Reframe contribution as understanding/analysis | ICLR (values understanding), workshop papers |
-| Clean negative result on popular claim | Write it up — the field needs to know | NeurIPS Datasets & Benchmarks, TMLR, workshops |
-| Results inconclusive, no clear story | Pivot — run different experiments or reframe | Don't force a paper that isn't there |
-
-**How to write a negative results paper:**
-- Lead with what the community believes and why it matters to test it
-- Describe your rigorous methodology (must be airtight — reviewers will scrutinize harder)
-- Present the null result clearly with statistical evidence
-- Analyze **why** the expected result didn't materialize
-- Discuss implications for the field
-
-**Venues that explicitly welcome negative results**: NeurIPS (Datasets & Benchmarks track), TMLR, ML Reproducibility Challenge, workshops at major conferences. Some workshops specifically call for negative results.
+When hypotheses fail or results are inconclusive: (1) if the failure mechanism is informative, reframe the contribution around analysis (welcomed by TMLR, ICLR, or NeurIPS Datasets & Benchmarks); (2) if cleanly refuting a popular claim, document the negative finding with rigorous statistical proof; (3) if results are simply inconclusive, pivot experiments rather than forcing a weak narrative. See [references/experiment-patterns.md](references/experiment-patterns.md) for handling null results.
 
 ### Step 4.4: Create Figures and Tables
 
@@ -441,38 +354,19 @@ Figures: vector PDF, colorblind-safe palettes, self-contained captions, no in-fi
 
 ### Step 4.5: Decide: More Experiments or Write?
 
-| Situation | Action |
-|-----------|--------|
-| Core claims supported, results significant | Move to Phase 5 (writing) |
-| Results inconclusive, need more data | Back to Phase 2 (design) |
-| Unexpected finding suggests new direction | Back to Phase 2 (design) |
-| Missing one ablation reviewers will ask for | Run it, then Phase 5 |
-| All experiments done but some failed | Note failures, move to Phase 5 |
+If core claims are supported and statistically significant, proceed to Phase 5. If results are inconclusive or a critical ablation is missing, return to Phase 2.
 
 ### Step 4.6: Write the Experiment Log (Bridge to Writeup)
 
-Before moving to paper writing, create a structured `experiment_log.md` that bridges results to prose — contribution, per-experiment claim/setup/key-result/figures, a figures-to-sections table, failed experiments, and open questions. This is the single most important connective tissue between experiments and the writeup: without it, the writing agent has to re-derive the story from raw result files, a common source of hallucinated or misreported numbers. Commit it alongside the results it describes. See [references/experiment-patterns.md](references/experiment-patterns.md#experiment-log-bridge-to-writeup) for the complete template.
+Before moving to paper writing, create a structured `experiment_log.md` that bridges results to prose — contribution, per-experiment claim/setup/key-result/figures, a figures-to-sections table, failed experiments, and open questions. This prevents hallucinated or misreported numbers. Commit it alongside the results it describes. See [references/experiment-patterns.md](references/experiment-patterns.md#experiment-log-bridge-to-writeup) for the complete template.
 
 ---
 
 ## Iterative Refinement: Strategy Selection
 
-Any output in this pipeline — paper drafts, experiment scripts, analysis — can be iteratively refined. The autoreason research provides empirical evidence for when each refinement strategy works and when it fails.
+Any output in this pipeline can be iteratively refined. Use **Autoreason** for mid-tier models on constrained tasks (widest generation-evaluation gap) and code with tests; use **Critique-and-revise** for frontier models on unconstrained tasks and concrete system designs.
 
-### Quick Decision Table
-
-| Your Situation | Strategy | Why |
-|---------------|----------|-----|
-| Mid-tier model + constrained task | **Autoreason** | Sweet spot. Generation-evaluation gap is widest. Baselines actively destroy weak model outputs. |
-| Mid-tier model + open task | **Autoreason** with scope constraints added | Add fixed facts, structure, or deliverable to bound the improvement space. |
-| Frontier model + constrained task | **Autoreason** | Wins 2/3 constrained tasks even at frontier. |
-| Frontier model + unconstrained task | **Critique-and-revise** or **single pass** | Autoreason comes last. Model self-evaluates well enough. |
-| Concrete technical task (system design) | **Critique-and-revise** | Direct find-and-fix loop is more efficient. |
-| Template-filling task (one correct structure) | **Single pass** or **conservative** | Minimal decision space. Iteration adds no value. |
-| Code with test cases | **Autoreason (code variant)** | Structured analysis of *why* it failed before fixing. Recovery rate 62% vs 43%. |
-| Very weak model (Llama 8B class) | **Single pass** | Model too weak for diverse candidates. Invest in generation quality. |
-
-The full methodology — the generation-evaluation gap, the autoreason loop architecture and roles, applying autoreason to paper drafts specifically, the failure taxonomy and recovery patterns, scope-constraint design, and the compute budget reference — lives in [references/autoreason-methodology.md](references/autoreason-methodology.md). Load it before running an actual autoreason loop.
+The full methodology lives in [references/autoreason-methodology.md](references/autoreason-methodology.md). Load it before running an actual autoreason loop.
 
 ---
 
@@ -497,14 +391,7 @@ See [references/reviewer-guidelines.md](references/reviewer-guidelines.md) for t
 
 ### Step 6.2: Prioritize Feedback
 
-After collecting reviews, categorize:
-
-| Priority | Action |
-|----------|--------|
-| **Critical** (technical flaw, missing baseline) | Must fix. May require new experiments → back to Phase 2 |
-| **High** (clarity issue, missing ablation) | Should fix in this revision |
-| **Medium** (minor writing issues, extra experiments) | Fix if time allows |
-| **Low** (style preferences, tangential suggestions) | Note for future work |
+Categorize reviews into Critical (technical flaws/baselines requiring Phase 2 fixes), High (clarity/ablations for this revision), Medium (minor writing), and Low (future work).
 
 ### Step 6.3: Revision Cycle
 
@@ -564,22 +451,9 @@ See [references/post-acceptance-deliverables.md](references/post-acceptance-deli
 
 ---
 
-## Workshop & Short Papers
+## Workshop & Non-Empirical Paper Types
 
-Workshop papers and short papers (e.g., ACL short papers, Findings papers) follow the same pipeline as a full empirical paper but with a lower page limit, a lighter/single-blind review process at workshops, and a different contribution bar (a novel direction or work-in-progress is enough; don't try to compress a long paper into 4 pages — write a more focused one). See [references/paper-types.md](references/paper-types.md#workshop-and-short-papers) for the full workshop-vs-main-conference comparison and ACL's long/short/Findings distinctions.
-
----
-
-## Paper Types Beyond Empirical ML
-
-The main pipeline above targets empirical ML papers. Other paper types need different structures and evidence standards, each fully detailed (including reproducibility/replication papers) in [references/paper-types.md](references/paper-types.md):
-
-| Type | Structure | Contribution Is... | Best Venues |
-|------|-----------|--------------------|-------------|
-| **Theory** | Intro → Preliminaries → Main Results (theorems) → Proof Sketches → Discussion → Full Proofs (appendix) | A theorem, bound, or impossibility result — proofs are the evidence, not experiments | Any theory-friendly venue |
-| **Survey / Tutorial** | Intro → Taxonomy/Organization → Detailed Coverage → Open Problems → Conclusion | The organization, synthesis, and identification of open problems, not new methods | TMLR (survey track), JMLR, Foundations and Trends in ML, ACM Computing Surveys |
-| **Benchmark** | Intro → Task Definition → Dataset Construction → Baseline Evaluation → Analysis → Intended Use & Limitations | The benchmark itself — must fill a genuine evaluation gap, resist saturation, and measure what it claims (construct validity) | NeurIPS Datasets & Benchmarks, ACL (resource papers), LREC-COLING |
-| **Position** | Intro → Background → Thesis/Argument → Supporting Evidence → Counterarguments → Implications | An argument, not a result — must engage seriously with counterarguments | ICML (position track), workshops, TMLR |
+Workshop papers, short papers (ACL Findings), theory papers (theorems and proof sketches), survey/tutorial papers, benchmark/dataset papers, and position papers follow distinct structural and evidence standards. See [references/paper-types.md](references/paper-types.md) for full structural blueprints, contribution standards, and venue mappings.
 
 ---
 
@@ -587,32 +461,20 @@ The main pipeline above targets empirical ML papers. Other paper types need diff
 
 This skill is designed for the Hermes agent, using Hermes tools, delegation, scheduling, and memory for the full research lifecycle. It composes with other Hermes skills (`arxiv` for literature search, `subagent-driven-development` for parallel section drafting, `plan` for Phase 0 setup, `qmd` for local knowledge bases, `diagramming` and `data-science` for figures/analysis), and it supersedes `ml-paper-writing`.
 
-See [references/hermes-agent-integration.md](references/hermes-agent-integration.md) for the complete related-skills table, the Hermes tool reference (`terminal`, `process`, `execute_code`, `delegate_task`, `todo`, `memory`, `cronjob`, `clarify`, cron `deliver:`), concrete tool-usage patterns (experiment monitoring, parallel section drafting, citation verification), state-management conventions for `memory`/`todo` including the session startup protocol, cron monitoring patterns including the `[SILENT]` protocol and deadline tracking, communication/reporting format, and the decision points that require human input (target venue, contribution framing, experiment priority, submission readiness) vs. those an agent should decide autonomously.
+See [references/hermes-agent-integration.md](references/hermes-agent-integration.md) for the complete related-skills table, tool reference, state-management conventions, and decision points requiring human input.
 
 ---
 
-## Reviewer Evaluation Criteria
+## Reviewer Evaluation Criteria & Common Issues
 
-Reviewers check four universal dimensions — Quality (technical soundness, fair baselines), Clarity (reproducible writing, consistent notation), Significance (community impact), and Originality (new insight, not necessarily a new method) — scored on each venue's scale (e.g. NeurIPS's 6-point Strong Reject → Strong Accept scale). See [references/reviewer-guidelines.md](references/reviewer-guidelines.md) for the full per-venue scoring systems, common reviewer concerns, and rebuttal strategies.
+Reviewers evaluate papers across Quality, Clarity, Significance, and Originality. Before submission, ensure:
+- Abstracts lead immediately with the core contribution.
+- Introductions stay under 1.5 pages with clear signposting.
+- Every experiment maps to an explicit hypothesis with statistical significance tests and error bars.
+- Figures have self-contained captions and vector resolution.
+- Code and hyperparameter artifacts are packaged cleanly.
 
----
-
-## Common Issues and Solutions
-
-| Issue | Solution |
-|-------|----------|
-| Abstract too generic | Delete first sentence if it could prepend any ML paper. Start with your specific contribution. |
-| Introduction exceeds 1.5 pages | Split background into Related Work. Front-load contribution bullets. |
-| Experiments lack explicit claims | Add: "This experiment tests whether [specific claim]..." before each one. |
-| Reviewers find paper hard to follow | Add signposting, use consistent terminology, make figure captions self-contained. |
-| Missing statistical significance | Add error bars, number of runs, statistical tests, confidence intervals. |
-| Scope creep in experiments | Every experiment must map to a specific claim. Cut experiments that don't. |
-| Paper rejected, need to resubmit | See Conference Resubmission in Phase 7. Address reviewer concerns without referencing reviews. |
-| Missing broader impact statement | See Step 5.10. Most venues require it. "No negative impacts" is almost never credible. |
-| Human eval criticized as weak | See Step 2.5 and [references/human-evaluation.md](references/human-evaluation.md). Report agreement metrics, annotator details, compensation. |
-| Reviewers question reproducibility | Release code (Step 7.9), document all hyperparameters, include seeds and compute details. |
-| Theory paper lacks intuition | Add proof sketches with plain-language explanations before formal proofs. See [references/paper-types.md](references/paper-types.md). |
-| Results are negative/null | See Phase 4.3 on handling negative results. Consider workshops, TMLR, or reframing as analysis. |
+See [references/reviewer-guidelines.md](references/reviewer-guidelines.md) for full per-venue scoring systems, common concerns, and rebuttal strategies.
 
 ---
 
@@ -637,19 +499,6 @@ Reviewers check four universal dimensions — Quality (technical soundness, fair
 
 ### LaTeX Templates
 
-Templates in `templates/` for: **NeurIPS 2025**, **ICML 2026**, **ICLR 2026**, **ACL**, **AAAI 2026**, **COLM 2025**.
+Templates in `templates/` for: **NeurIPS 2025**, **ICML 2026**, **ICLR 2026**, **ACL**, **AAAI 2026**, **COLM 2025**. See [templates/README.md](templates/README.md) for compilation instructions.
 
-See [templates/README.md](templates/README.md) for compilation instructions.
-
-### Key External Sources
-
-**Writing Philosophy:**
-- [Neel Nanda: How to Write ML Papers](https://www.alignmentforum.org/posts/eJGptPbbFPZGLpjsp/highly-opinionated-advice-on-how-to-write-ml-papers)
-- [Sebastian Farquhar: How to Write ML Papers](https://sebastianfarquhar.com/on-research/2024/11/04/how_to_write_ml_papers/)
-- [Gopen & Swan: Science of Scientific Writing](https://cseweb.ucsd.edu/~swanson/papers/science-of-writing.pdf)
-- [Lipton: Heuristics for Scientific Writing](https://www.approximatelycorrect.com/2018/01/29/heuristics-technical-scientific-writing-machine-learning-perspective/)
-- [Perez: Easy Paper Writing Tips](https://ethanperez.net/easy-paper-writing-tips/)
-
-**APIs:** [Semantic Scholar](https://api.semanticscholar.org/api-docs/) | [CrossRef](https://www.crossref.org/documentation/retrieve-metadata/rest-api/) | [arXiv](https://info.arxiv.org/help/api/basics.html)
-
-**Venues:** [NeurIPS](https://neurips.cc/Conferences/2025/PaperInformation/StyleFiles) | [ICML](https://icml.cc/Conferences/2025/AuthorInstructions) | [ICLR](https://iclr.cc/Conferences/2026/AuthorGuide) | [ACL](https://github.com/acl-org/acl-style-files)
+See [references/sources.md](references/sources.md) for the complete external bibliography, writing guides, and API documentation.

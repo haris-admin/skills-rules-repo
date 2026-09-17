@@ -1,6 +1,7 @@
 ---
 name: incremental-version-bumping
-description: Mandatory version bumping protocol across all agents (Claude Code, Antigravity, Cursor, Codex, Devin) starting with 0.10.0 baseline, defect fixes 0.10.01 onward, new feature releases 0.20.0, 0.30.0, etc.
+description: >-
+  Enforce mandatory incremental version bumping protocol across agent environments (Claude Code, Antigravity, Cursor, Codex, Devin) with 0.F0.0 feature baselines and 0.F0.NN defect increments. Use when tagging a release, incrementing project version files (.version), creating atomic commit check-ins, or reviewing semantic version hygiene.
 ---
 
 # Incremental Version Bumping Standard
