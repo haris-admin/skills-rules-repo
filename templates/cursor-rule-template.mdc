@@ -1,0 +1,35 @@
+---
+description: Concise description of when Cursor should apply this rule.
+globs: src/**/*.{js,ts,jsx,tsx}
+alwaysApply: false
+---
+
+# Rule Name Guidelines
+
+Concise description of the rule scope, audience, and applicability.
+
+**Scope:** Description of who/what this rule applies to.
+
+---
+
+## Core Directives
+
+1. **Directive 1**: Clear, actionable, and non-negotiable instruction.
+2. **Directive 2**: Clear, actionable, and non-negotiable instruction.
+3. **Directive 3**: Clear, actionable, and non-negotiable instruction.
+
+---
+
+## Patterns to Follow
+
+```language
+// Good, compliant example
+```
+
+---
+
+## Patterns to Avoid
+
+```language
+// Anti-pattern to avoid
+```

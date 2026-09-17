@@ -1,0 +1,63 @@
+---
+description: Enforces compliance and quality standards when creating, importing, or editing skills and rules from external repositories into skills-rules-repo.
+globs: rules/*.md, skills/**/SKILL.md, */**/SKILL.md, templates/**
+alwaysApply: false
+---
+
+# Upstream Skill and Rule Intake Compliance
+
+Establish strict compliance, structural, and verification requirements before accepting or importing skills and rules from external repositories into `skills-rules-repo`.
+
+**Scope:** Every agent and engineer contributing or importing skills/rules from external codebases (e.g. `Simplifii-OS`, `amlhive`, `tapease`, `openclaw`).
+
+---
+
+## 1. Core Directives
+
+1. **Never commit without local validation**: All imported skills and rules must pass `python3 scripts/validate.py` and `python3 scripts/generate_catalog.py --check` before check-in.
+2. **Strict separation of skill and rule formats**:
+   - **Skills** MUST live in `<category>/<skill-name>/` or `skills/<skill-name>/` and contain a `SKILL.md` with YAML frontmatter (`name`, `description`).
+   - **Rules** in `rules/*.md` MUST start directly with `# <Title>` followed by a summary paragraph. They **MUST NOT** contain YAML frontmatter (`---`).
+   - **Cursor rules** in `cursor-rules/*.mdc` DO contain Cursor frontmatter (`description`, `globs`, `alwaysApply`).
+3. **Trigger-first descriptions**: A skill description must state *when* to use it in third person (using trigger markers such as *"Use when..."*, *"Trigger on..."*), within 1024 characters.
+4. **Sanitize environment and credential leaks**: Never import absolute machine paths (`/Users/...`, `/home/...`), private hostnames, hardcoded API tokens, or workspace-specific session keys.
+5. **Enforce progressive disclosure**: Keep `SKILL.md` under 500 lines. Place runbooks, schemas, and references in `references/`, reusable scripts in `scripts/`, and mock samples in `examples/`.
+6. **Unique naming**: Skill folder names must be globally unique across all categories and match `^[a-z0-9-]+$`.
+
+---
+
+## 2. Intake Workflow
+
+```
+[External Repo] (.claude/skills, .agents/rules, .cursor/rules)
+       │
+       ▼
+1. Preflight Audit (Validate against templates & scripts/audit_skill_quality.py)
+       │
+       ▼
+2. Normalization (Strip repo-specific paths; strip YAML frontmatter if rule)
+       │
+       ▼
+3. Placement (Assign category directory or rules/)
+       │
+       ▼
+4. Validation & Catalog Regeneration
+   • python3 scripts/validate.py
+   • python3 scripts/generate_catalog.py
+   • python3 scripts/generate_catalog.py --check
+       │
+       ▼
+5. Atomic Commit (Include README.md update in the same commit)
+```
+
+---
+
+## 3. Common Failure Modes to Avoid
+
+| Violation | CI Impact | Remediation |
+|---|---|---|
+| YAML frontmatter in `rules/<rule>.md` | `validate.py` fails: *File should start with an H1 title* | Remove `--- ... ---` block; move description into paragraph below H1 |
+| Missing catalog rebuild | CI fails: *README catalog is out of date* | Run `python3 scripts/generate_catalog.py` and commit `README.md` |
+| First-person description (*"I help with..."*) | Fails skill quality rubric | Rewrite to third person (*"Use when the user needs..."*) |
+| Duplicate skill directory name | Silent overwrite during global `sync.sh` | Check for existing name across all category folders; choose a distinct name |
+| Hardcoded absolute paths | Cross-machine breakage | Use repo-relative paths (`./references/...`) or environment variables |
