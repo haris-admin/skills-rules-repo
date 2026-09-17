@@ -1,9 +1,6 @@
----
-name: crap-score
-description: Calculate and reduce Change Risk Anti-Patterns (CRAP) by measuring cyclomatic complexity against automated test coverage across Python and JavaScript/TypeScript codebases. Use when auditing monolithic components, deciding whether methods need strangler-fig refactoring, or reviewing change risk.
----
-
 # CRAP Score Analysis (Change Risk Anti-Patterns)
+
+Calculate and reduce Change Risk Anti-Patterns (CRAP) by measuring cyclomatic complexity against automated test coverage across Python and JavaScript/TypeScript codebases. Use when auditing monolithic components, deciding whether methods need strangler-fig refactoring, or reviewing change risk.
 
 ## 1. Formula & Theoretical Foundation (Savoia / Evans, 2007)
 
