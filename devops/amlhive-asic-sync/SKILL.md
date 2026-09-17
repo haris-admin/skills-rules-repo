@@ -136,6 +136,20 @@ driven by the exit code + stdout, not by in-script SMTP.
 
 **Fixes:** backend (main-agent scope): (a) worker startup must init ref_db OR seed `sync_state`; (b) drop `source_record_count` from detection (or store raw count) so unchanged months skip; (c) enqueue response should set `rows_synced=0` + `enqueued=True` and cron keys off `enqueued`. Cron script patched (Sep 3): renders enqueue as `⏳ ENQUEUED (async) — unverified` + `❌` + OVERALL ALERT, exit 1 — never ✅ on an unconfirmed sync.
 
+## Issue 374 — Ref-DB SQLite Lock Contention during Concurrent Enqueue (Sep 2026)
+
+**Symptom:** `POST /internal/sync/asic-business-names` at 03:18 AEST hung for 60,970 ms (SQLite 60s `busy_timeout`) and failed with HTTP 500 `OperationalError: database is locked`. The sync job was never enqueued in Redis.
+
+**Root cause:**
+1. Cross-process lock contention: The ARQ worker was actively executing `apply_ref_dataset_sync` on `asic-companies` (multi-million row deduplication and index rebuild on `/data/ref.db`).
+2. Inverted dependency: `sync.py` attempted to write `sync_status="QUEUED"` into SQLite *before* calling `pool.enqueue_job`. Because SQLite allows only 1 active writer, the write timed out and dropped the job enqueue.
+3. Lock upgrade deadlock: `update_sync_state` used the shared reader connection `_conn` and performed `SELECT` then `UPDATE`, deadlocking lock upgrades and blocking all other reader threads for 60s.
+
+**Resolution (v0.50.126):**
+- **Enqueue First:** `pool.enqueue_job` is called *first* in Redis (in-memory, non-blocking).
+- **Resilient Pre-Queue Recording:** `update_sync_state(..., sync_status="QUEUED", timeout=2.0)` catches `OperationalError`, logs a warning, and returns 200 `SyncResponse(enqueued=True)` so client requests never hang 60s. The worker transitions state to `RUNNING` once it starts.
+- **Atomic Upsert & Connection Isolation:** `update_sync_state` uses `INSERT ... ON CONFLICT(dataset) DO UPDATE SET ...` on a dedicated write connection, preventing reader thread starvation.
+
 ## Pitfalls
 
 - **`asic-registered-schemes` skip is CORRECT — do not flag it.** It shows
