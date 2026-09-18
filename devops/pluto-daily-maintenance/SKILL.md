@@ -38,13 +38,20 @@ Routing rules: `memory-hygiene` skill; design history: `~/.hermes/ops/memory-arc
 **Run the hardened helpers first — they cover Task 1 and Task 3 steps 1-4 + 6 in one pass:**
 `python3 ~/.hermes/scripts/daily_cron_audit.py` (script-path resolution against BOTH script roots,
 delivery-target histogram, non-ok jobs grouped by delivery, enabled jobs with null/past
-`next_run_at`) and `python3 ~/.hermes/scripts/daily_skill_scan.py` (skill usage + SKILL.md touches in
+`next_run_at`, **plus `=== error clustering ===` and `=== staleness classification ===`** — step 2
+below is now automated, read it instead of clustering by eye) and `python3 ~/.hermes/scripts/daily_skill_scan.py` (skill usage + SKILL.md touches in
 the last 24h, legacy-key scans by FILE not path since agent.log is append-only, dead-cron-ID
 detection that skips context already marked RETIRED/PRUNED/dead/historical/PAUSED).
 
 1. Parse `~/.hermes/cron/jobs.json` for `last_status` counts
 2. **Before debugging ANY individual failure, cluster errors by string + timestamp.** Many jobs red
-   inside one window is ONE event, not N bugs. Seen 2026-09-15: 8 agent crons (5:02-6:45) all
+   inside one window is ONE event, not N bugs. `daily_cron_audit.py` prints this as
+   `[N job(s)] CLUSTER (one event)` with the id list and time window; treat every cluster as ONE
+   finding. **A cluster keyed on `Script exited with code <n>` alone is a FALSE cluster** — that
+   string carries no discriminating power, so the audit appends the first error-marked stdout line
+   as a discriminator (`… | stdout: ❌ HTTP <n> …`). If you ever see unrelated scripts merged under a
+   bare exit-code signature, fix the discriminator in `_sig()`, do not read it as a real cluster.
+   Seen 2026-09-15: 8 agent crons (5:02-6:45) all
    `RuntimeError: [Errno 32] Broken pipe` = a single DeepSeek upstream outage (503
    `service_unavailable_error` + `RemoteProtocolError` incomplete-chunked-read) with NO fallback
    chain configured to absorb it. Commands that settle it: `grep -c "Service is too busy"
@@ -112,6 +119,13 @@ When you see `last_status: error` on a cron, classify before escalating:
 - When auditing a cron that reports "ok" but skips work, read the script's reason classification before trusting the summary icon.
 
 ### By-Design (NOT errors — do NOT escalate)
+- **`pluto_feedback_processor.py` exit code 3** (`59f18c4d557c`, Pluto Feedback Loop 06:10
+  `deliver: local`): `sys.exit(3)` is the script's own DEGENERATE-SCORER signal. It means every
+  tracked finding carries the same `used_count`, `skipped_count=0`, and no `USED:`/`SKIPPED:`
+  markers exist in the Gumby brief — usage is *inferred, never measured*. All three artefacts are
+  still written (`feedback_<date>.json/.md` + `pluto-feedback-to-gumby.md`). Classification:
+  **REAL / standing config gap, UNCHANGED** — do not re-escalate, and do not "fix" it here. It
+  clears only when Gumby emits the markers or the script exits 0 once its artefact is written.
 - **`amlhive_prod_monitor.py` exit code 1**: The fleet monitor exits 1 when incidents are found (RLS bypass probes, API 500s, CloudWatch alarms). Email IS the alert mechanism. This is documented behavior. Verify by checking the output file for incident details — if present, the monitor worked correctly. The 11AM run often shows `ok` because incidents cleared by then.
 - **Alert scripts that email internally**: Any script that sends its own email alerts should exit 0 even on findings. If it exits 1, it's a false-positive in cron health. See `pipeline-orchestration` skill's "Design rule for no_agent alert scripts."
 
@@ -125,6 +139,20 @@ When you see `last_status: error` on a cron, classify before escalating:
 ### Stale (error from previous run, job runs infrequently)
 - **Weekly crons (Mon-only, Fri-only)**: An error from the last weekly run persists until the next schedule. Check the `last_run_at` date — if it's days old and the cron only runs once a week, it's stale.
 - **Biweekly crons (Mon+Fri)**: Same pattern — error from Monday persists until Friday.
+
+### Real-but-external (the monitor is fine, its UPSTREAM is down)
+- **`🔴 dashboard /api/status unreachable on http://127.0.0.1:3009` (`4c28178fad0f`, CMDB Cost
+  Monitor, 07:20 daily, `deliver: origin`)**: the monitor exits 1 because the Notion-CMDB dashboard
+  plugin it reads is not running — `hermes dashboard --status` reports "No hermes dashboard or serve
+  processes running" and `ss -tlnp` shows nothing on 3009 (nor on the 9119 default). **The blind
+  output is the danger, not the exit code:** the run then prints `Assets: 0`, `Known spend: A$0.00`,
+  `Δ vs last: ±A$0.00` — read as an all-clear that spend collapsed. Compare the day before in
+  `~/.hermes/cron/output/4c28178fad0f/` — a healthy run shows `Assets: 38 (13 priced)` and
+  `A$768.59/month`; a transition to 0/0.00 with `Connection refused` is the DOWN signature. Escalate
+  as "start the :3009 dashboard" (owner: Haris), never as a monitor bug, and never report A$0 as
+  real spend. Probing the LAN alias (192.168.50.210:3009) triggers the security scanner's
+  private-network/plain-HTTP prompt and will hang waiting for approval in a cron — use the loopback
+  check + `hermes dashboard --status` instead.
 
 ### Real (needs action)
 - **`RuntimeError: Missing required environment variable: <KEY>` (cluster of same-day jobs, different
@@ -146,6 +174,26 @@ When you see `last_status: error` on a cron, classify before escalating:
   `podcast_ingestor.py` (`SUPABASE_HOST`) — the two Supabase scripts were repaired the same night by
   deriving creds from `SUPABASE_OPERATOR_SPOOLER_DATABASE_URL`; the Tapease one stayed broken until
   fixed here.
+- **`state.db reported structural corruption` (cluster of agent crons, one morning)**: 8 agent-driven jobs
+  died 06:27→11:01 with `RuntimeError: ⚠️ No reply: the turn was stopped because the state
+  database reported structural corruption` (2026-09-17). The message is self-describing and
+  prescriptive — classify it as **Real/systemic (one event, N red jobs)**, never as N separate bugs.
+  The gateway refuses all writes and diverts transcripts to `~/.hermes/sessions/<id>.jsonl`
+  (which is where you recover the lost turns). Triage order: (1) `hermes doctor --fix`; (2) snapshot
+  the bundle — `cp -a state.db{,-wal,-shm}` into `~/.hermes/backups/` BEFORE anything touches it;
+  (3) `hermes sessions recover --source ~/.hermes/state.db --inspect-only` — this is **safe on a live
+  DB** (it copies the source + sidecars before SQLite opens anything) and prints
+  `recoverable: true/false` plus per-table readability; (4) the actual repair needs the gateway
+  STOPPED — `hermes sessions recover --source ... --output ~/.hermes/recovered-state.db`; the CLI
+  never swaps the live DB (`installed: false`) so the restart is a manual step. **Never run
+  `sqlite3 ".recover"` against the live file** (a vulnerable sqlite3 CLI corrupts it further).
+  Confirming the outcome does NOT rely on the absence of log warnings — prove it with a read-only
+  check on a COPY: `PRAGMA integrity_check` → `ok`, plus an `INSERT INTO messages_fts(messages_fts)
+  VALUES('integrity-check')` on both FTS tables. The live DB had already been repaired by the time
+  of the 23:38 restart (`integrity_check` = ok, 131,607 message rows, history continuous) while
+  `jobs.json` still showed all 8 failures — **jobs.json is a lagging indicator; verify, don't assume
+  the outage is still live.** Note `system sqlite3` is NOT installed on this host; use
+  `~/.hermes/venv/bin/python -c "import sqlite3..."`.
 - **`FATAL: password authentication failed`**: Credential is wrong or expired. For env-var-based scripts: check the env var. For SSM-based scripts (`amlhive_daily_report.py`): the AWS Secrets Manager secret (`amlhive/prod/rds`) is out of sync with the actual RDS password — needs AWS console fix (see RDS Credential Isolation pitfall below).
 - **`Traceback` in script**: Genuine Python error. Read the traceback to diagnose.
 - **`401 Unauthorized` on 3+ crons same day**: Systemic credential failure — check provider API keys, not individual crons.
@@ -208,6 +256,13 @@ record):
    remove the empty dir so greps and `reviews/` scans stop hitting them.
 6. **Leave a completion record** in the retired service's skill + note remaining
    string matches are INTENTIONAL — so no future agent re-audits or re-enables.
+
+## Cron self-scheduling note
+- A catch-up fire is not a config error: the 2026-09-17 run executed at **23:38** instead of its
+  14:00 slot (the gateway was restarted at 23:38 after the state.db repair) and the 2026-09-18 run
+  fired at 14:00:24 on time. Before flagging a wrong-time run, check whether a gateway
+  restart/shutdown happened in that window — if the slot is held correctly the run after it is on
+  time, and there is nothing to fix.
 
 ## Output
 

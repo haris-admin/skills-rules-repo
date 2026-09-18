@@ -81,6 +81,31 @@ UNCHANGED → every subsequent probe re-triggers the full sync → infinite loop
 **Real fix (backend/infra, main-agent scope):** sync is too memory-hungry for
 t3.medium — chunk the upsert, add swap/memory limit, or resize the instance.
 
+## acnc-charities HTTP 500 — PERSISTENT backend fault (Sep 2026, UNRESOLVED)
+
+**Symptom:** `POST https://api.amlhive.com.au/internal/sync/acnc-charities` →
+`❌ HTTP 500 — {"detail":"Internal Server Error"}` → `OVERALL: ❌ ALERT`, script exit 1. The other
+four datasets behave correctly in the same run (`asic-companies` and `asic-business-names`
+`NO_CHANGE` with real remote row counts, `asic-registered-schemes` intentional
+`DATASET_SOURCE_UNAVAILABLE`).
+
+**Signature:** a **bare** 500 with no body detail — different from the OOM class above (which
+shows `502`/`503`/`database is locked`) and different from the ACNC NO_CHANGE skip (which is a
+pass). Do not diagnose it as either.
+
+**Duration:** first seen 2026-09-15 03:15, then 09-16, 09-17, 09-18 — **4 consecutive daily runs,
+no recovery**. `acnc-charities` cannot advance its fingerprint until it succeeds, so the dataset is
+frozen at its pre-09-15 revision. Reported on `cron/output/937bb914c497/` and re-flagged by the
+daily maintenance engine on 09-16 (escalated) and 09-18 (persistent).
+
+**Where the fault is NOT:** not the sync script (health check HTTP 200, other datasets fine), not
+credentials, not the source URL. It is the AMLHive backend endpoint / its Nector sync worker.
+
+**Action:** app-side fix in the AMLHive repo (`/internal/sync/acnc-charities` handler or its worker).
+Needs the backend error log at the failing POST — the generic response body is deliberately
+non-descriptive, so read CloudWatch `/amlhive/backend` around 03:15 AEST. Escalate to Haris; the
+maintenance engine cannot fix this autonomously.
+
 ## ACNC NO_CHANGE skip — VERDICT (Codex investigation, 31 Aug 2026)
 
 **Symptom:** acnc-charities shows `Skipped (no change): NO_CHANGE · 65,589 rows · last
