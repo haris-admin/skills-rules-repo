@@ -76,6 +76,34 @@ git add README.md <path-to-imported-skill-or-rule>
 git commit -m "feat(skills): add <skill-name> from <repo-name>"
 ```
 
+### Step 6: Prevent Post-Import Drift (ongoing, not one-time)
+
+Once a skill exists in both `skills-rules-repo` (canonical) and its originating project (local
+mirror, e.g. `amlhive1/.agents/skills/<name>/`), **`skills-rules-repo` is the source of truth** —
+the project copy must never silently diverge from it. This is standing policy, not a preference:
+
+1. **Add a canonical-source note to the local mirror's `SKILL.md`** (right after the H1, before
+   `## Purpose`): name the exact `skills-rules-repo` path and state that any edit to either copy
+   must be copied to the other in the same session, with `validate.py` +
+   `generate_catalog.py` re-run afterward.
+2. **Before authoring a new skill in a project, check `skills-rules-repo` first** for one that
+   already does the job (search by topic, not just exact name — a differently-named skill can
+   cover the same ground). Two independently-created skills converging on the same design is a
+   sign a shared skill already needed to exist, not confirmation that a second one is fine to
+   keep. Merge into the existing one and retire the duplicate rather than running both.
+3. **If you edit a skill in the project copy, sync it back to `skills-rules-repo` in the same
+   session** — don't leave it as a follow-up. A local-only edit is exactly the drift this step
+   exists to prevent, even if it "still works" from the project.
+
+Worked incident: 17-18 Sep 2026, `amlhive1` — a Claude Code session built out
+`assets/blog-migration/<slug>/social/haris-linkedin-carousel.md` and a companion skill
+(`amlhive-blog-linkedin-push`) end-to-end; separately, a Gemini Antigravity session in the same
+shared worktree independently created a second, narrower skill (`haris-linkedin-carousel`)
+covering the same job with genuinely good ideas of its own. Both had already diverged before
+either was checked against the other or against `skills-rules-repo`. Resolution: merged the
+stronger specifics from the narrower skill into the canonical one, retired the duplicate, and
+added the canonical-source note this step now requires by default.
+
 ---
 
 ## References

@@ -1,6 +1,6 @@
 ---
 name: nano-banana-pro
-description: Generate or edit images via Gemini 3.8 Flash (Nano Banana Pro), including multi-image composition (up to 14 images) and 1K/2K/4K resolutions. Use when asked to generate an image from a prompt, edit an existing image, or combine multiple images into one scene.
+description: Generate or edit images via Gemini's Nano Banana image models (default gemini-3.1-flash-image), including multi-image composition (up to 14 images) and 1K/2K/4K resolutions. Use when asked to generate an image from a prompt, edit an existing image, or combine multiple images into one scene.
 homepage: https://ai.google.dev/
 metadata:
   {
@@ -23,7 +23,7 @@ metadata:
   }
 ---
 
-# Nano Banana Pro (Gemini 3.8 Flash)
+# Nano Banana Pro (Gemini Flash Image)
 
 Use the bundled script to generate or edit images.
 
@@ -47,8 +47,15 @@ uv run {baseDir}/scripts/generate_image.py --prompt "combine these into one scen
 
 Model selection
 
-- Defaults to `gemini-3.8-flash`.
-- Override with `--model <name>` (e.g. `--model gemini-3-pro-image-preview`).
+- Defaults to `gemini-3.1-flash-image` — the latest Flash-tier model that actually supports image
+  output as of 2026-09-17 (verified by listing models against a live key). **`gemini-3.8-flash`
+  looks like the newer/"latest" Flash model by version number, but it is text/multimodal-input
+  only and silently returns no image data (sometimes a text description, sometimes nothing) if
+  you pass it here** — the flash-tier text line and the flash-tier image-generation line advance
+  independently, and "3.8" only exists on the text line. If a future session needs to re-check
+  what's current, list models and filter for `image` in the name/actions rather than assuming the
+  highest version number is image-capable.
+- Override with `--model <name>` (e.g. `--model gemini-3-pro-image-preview` for the Pro tier).
 
 API key
 

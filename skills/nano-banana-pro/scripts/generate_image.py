@@ -7,10 +7,10 @@
 # ]
 # ///
 """
-Generate images using Google's Nano Banana Pro (Gemini 3.8 Flash) API.
+Generate images using Google's Nano Banana Pro (Gemini Flash Image) API.
 
 Usage:
-    uv run generate_image.py --prompt "your image description" --filename "output.png" [--model gemini-3.8-flash] [--resolution 1K|2K|4K] [--api-key KEY]
+    uv run generate_image.py --prompt "your image description" --filename "output.png" [--model gemini-3.1-flash-image] [--resolution 1K|2K|4K] [--api-key KEY]
 
 Multi-image editing (up to 14 images):
     uv run generate_image.py --prompt "combine these images" --filename "output.png" -i img1.png -i img2.png -i img3.png
@@ -52,8 +52,8 @@ def main():
     )
     parser.add_argument(
         "--model", "-m",
-        default="gemini-3.8-flash",
-        help="Gemini model to use (default: gemini-3.8-flash)"
+        default="gemini-3.1-flash-image",
+        help="Gemini model to use (default: gemini-3.1-flash-image)"
     )
     parser.add_argument(
         "--resolution", "-r",
