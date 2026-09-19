@@ -104,6 +104,18 @@ treat that marker as BLOCKED, never as a pass (the suite then ran on UNMERGED `p
    (e) Hand back the **rotation list: key name, file, line** — never a value.
    Cron **prompts inside `jobs.json` carry credentials too**: back that file up before touching it and
    change only the prompt string, never a job's enabled state.
+   **(f) Sweep ARCHIVED OUTPUT, not just scripts/skills.** Agents echo the working command (with the
+   secret inline) into their report files, so the durable leak lives in `reports/` archives and in the
+   two alexandria repos — and a repo copy means the value is already PUBLISHED, including in git
+   history. Scan by SHAPE with a hash-matched pattern file (`rg -l -f <pattern>` where the pattern file
+   is written in-process and shredded after; report `file:line` and counts, never the value) across
+   skills, `cron/jobs.json`, `~/.hermes/ops/`, both alexandria trees and the scripts roots. Seen
+   2026-09-19: a LIVE Supabase operator password (still matching auth) sat in 3 files of the PUBLIC
+   `haris-admin/skills-rules-repo` (HEAD + history) plus 329 archived reports across
+   `haris-admin/alexandria-ops` and the vault. **Classify by whether the leak is ONGOING** — compare
+   the newest affected artifact's date against the last prompt/skill sanitisation; a leak that stopped
+   months ago still needs ROTATION, not more scrubbing. Sanitising the working tree is the cheap half
+   and never the fix: say so plainly and name the rotation target (env key + file:line) in the alert.
 
 ## Error Classification Guide
 
