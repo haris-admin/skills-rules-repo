@@ -65,7 +65,7 @@ allowed-tools: [session_search, terminal, read_file, write_file, execute_code, s
 4. **Check podcast KB episodes ingested this week:**
    The podcast knowledge base lives in **Supabase PostgreSQL**, not local SQLite. Query it via psql:
    ```bash
-   PGPASSWORD='4SIsDTYfvHjAqC7Ygp8B89q7Q743eOC!' PGSSLMODE=require psql -h aws-1-ap-southeast-2.pooler.supabase.com -p 6543 -U postgres.vyqagemgwxfscppkfswq -d postgres -c "SELECT count(*), date(published_date) FROM podcast_kb.episodes WHERE date(published_date) >= 'DATE_START' AND date(published_date) <= 'DATE_END' GROUP BY date(published_date) ORDER BY date(published_date);"
+   PGPASSWORD='...'' PGSSLMODE=require psql -h aws-1-ap-southeast-2.pooler.supabase.com -p 6543 -U postgres.vyqagemgwxfscppkfswq -d postgres -c "SELECT count(*), date(published_date) FROM podcast_kb.episodes WHERE date(published_date) >= 'DATE_START' AND date(published_date) <= 'DATE_END' GROUP BY date(published_date) ORDER BY date(published_date);"
    ```
    If the query fails (no network, auth error), fall back to checking the podcast ingestion logs:
    ```bash

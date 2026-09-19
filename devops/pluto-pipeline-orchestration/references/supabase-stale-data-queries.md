@@ -5,7 +5,7 @@ Used by the Saturday DREAM MODE Phase 1 (pgvector cleanup) and the Friday weekly
 ## Connection
 
 ```bash
-PGPASSWORD='4SIsDTYfvHjAqC7Ygp8B89q7Q743eOC!' PGSSLMODE=require \
+PGPASSWORD='...'' PGSSLMODE=require \
   psql -h aws-1-ap-southeast-2.pooler.supabase.com -p 6543 \
   -U postgres.vyqagemgwxfscppkfswq -d postgres
 ```

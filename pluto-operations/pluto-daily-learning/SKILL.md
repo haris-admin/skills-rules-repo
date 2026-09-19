@@ -99,7 +99,7 @@ print(r.stdout)
 Then re-query with explicit title exclusion(s). This is the pattern used successfully Aug 9, 2026:
 
 ```bash
-PGPASSWORD='4SIsDTYfvHjAqC7Ygp8B89q7Q743eOC!' PGSSLMODE='require' \
+PGPASSWORD='...'' PGSSLMODE='require' \
 psql -h aws-1-ap-southeast-2.pooler.supabase.com -p 6543 \
   -U 'postgres.vyqagemgwxfscppkfswq' -d postgres -A -F '|||' -t \
   -c "SELECT p.name, e.title, e.published_date::text, substring(e.transcript_text, 1, 5000), e.frameworks, e.key_quotes, e.au_relevance_score FROM podcast_kb.episodes e JOIN podcast_kb.podcasts p ON e.podcast_id = p.id WHERE e.transcript_text IS NOT NULL AND e.frameworks IS NOT NULL AND array_length(e.frameworks, 1) > 0 AND e.title NOT IN ('Privacy in the Age of AGI — The End of Personal Data') ORDER BY RANDOM() LIMIT 1;"

@@ -141,6 +141,13 @@ When you see `last_status: error` on a cron, classify before escalating:
 - **Biweekly crons (Mon+Fri)**: Same pattern — error from Monday persists until Friday.
 
 ### Real-but-external (the monitor is fine, its UPSTREAM is down)
+- **`acnc-charities` HTTP 500 on `937bb914c497` (Pluto ASIC / Ref-DB Sync, 03:15 daily)**: a bare 500
+  from `api.amlhive.com.au/internal/sync/acnc-charities` forces `OVERALL: ❌ ALERT` every morning
+  while the other four datasets behave correctly in the SAME run. **Known persistent backend fault
+  since 2026-09-15, UNRESOLVED, app-side owner (AMLHive backend / Nector sync worker).** Classified
+  REAL but STANDING: report the streak, do NOT re-open it as a new finding every day. Re-check the
+  OTHER datasets each run — if they also go `NO_CHANGE` with a stale `last_synced_at`, that IS new
+  and means the whole sync pipeline has stalled. CloudWatch triage: `amlhive-asic-sync` skill.
 - **`🔴 dashboard /api/status unreachable on http://127.0.0.1:3009` (`4c28178fad0f`, CMDB Cost
   Monitor, 07:20 daily, `deliver: origin`)**: the monitor exits 1 because the Notion-CMDB dashboard
   plugin it reads is not running — `hermes dashboard --status` reports "No hermes dashboard or serve

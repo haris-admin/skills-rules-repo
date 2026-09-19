@@ -93,10 +93,13 @@ four datasets behave correctly in the same run (`asic-companies` and `asic-busin
 shows `502`/`503`/`database is locked`) and different from the ACNC NO_CHANGE skip (which is a
 pass). Do not diagnose it as either.
 
-**Duration:** first seen 2026-09-15 03:15, then 09-16, 09-17, 09-18 — **4 consecutive daily runs,
-no recovery**. `acnc-charities` cannot advance its fingerprint until it succeeds, so the dataset is
-frozen at its pre-09-15 revision. Reported on `cron/output/937bb914c497/` and re-flagged by the
-daily maintenance engine on 09-16 (escalated) and 09-18 (persistent).
+**Duration:** first seen 2026-09-15 03:15 and red on every daily run since (09-15 → 09-19) — **5
+consecutive runs, no recovery**. `acnc-charities` cannot advance its fingerprint until it succeeds,
+so the dataset is frozen at its pre-09-15 revision. Reported on `cron/output/937bb914c497/` and
+re-flagged by the daily maintenance engine on 09-16 (escalated), 09-18 (persistent) and 09-19
+(standing). **Treat it as ONE known app-side fault, not a new finding each morning** — report the
+streak length and move on; only a change in the signature (401/403, `database is locked`, a body
+detail) is new information.
 
 **Where the fault is NOT:** not the sync script (health check HTTP 200, other datasets fine), not
 credentials, not the source URL. It is the AMLHive backend endpoint / its Nector sync worker.
