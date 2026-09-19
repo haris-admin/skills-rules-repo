@@ -241,7 +241,7 @@ Runs via cron `ee4e48300826` at 6:45 AM AEST — after all research stages compl
    - The Human-AI Partnership: A Framework for Safe Adoption
    - Resilience Engineering in the Cloud
    - The 2026 Budget Changed the ESOP Question
-4. Maps to Haris's content pillars: AI Agents & Governance, Australian Fintech Regulation, Cloud & Resilience, Startup & ESOP
+4. Maps to Haris's content pillars: AI Agents & Governance, Australian Fintech Regulation, Cloud & Resilience, Startup & ESOP. Gap detection runs against the published inventory (`KNOWN_BLOGS` — 36 posts as of 2026-09-20), refreshed by diffing the live blog index.
 5. Generates 3-5 LinkedIn post ideas (hook + angle + CTA) and 2-3 blog ideas (filling content gaps)
 6. Outputs to `~/.hermes/research_outputs/linkedin-ideas_YYYY-MM-DD.md`
 
@@ -249,11 +249,41 @@ Runs via cron `ee4e48300826` at 6:45 AM AEST — after all research stages compl
 
 **LinkedIn post structure:** Hook (1-2 sentence grabber with specific data), Angle (2-3 sentences connecting to Haris's expertise), CTA (1 sentence engagement prompt referencing specific portfolio offering).
 
+**Generator hardening — condensed rules** (this repo copy is the short form; the full defect log with fixes and
+assertions lives in `references/linkedin-generator-defects.md` — load it before modifying
+`linkedin_ideas_generator.py`):
+1. Blog candidates are gap-checked against `KNOWN_BLOGS` AND rotated against the previous 4 days. Refresh
+   `KNOWN_BLOGS` by diffing the live blog index (HTML-unescape + alphanumeric-normalise both sides) and retire a
+   candidate key when its gap is published under ANY title.
+2. Zero signals from himalaya → fall back to `get_signals_from_files()` (newest gmail-briefing / claude-research /
+   content-ideas files in `~/.hermes/mempalace-inputs/`), never to template hooks.
+3. Hooks lead with the finding's strongest stat only when the stat clause stands alone (`_hook_stat_ok`).
+4. Pillar resolution order: `portfolio_hit` first (FinAI File AU → AI governance, CloudProof AU → cloud,
+   ExitLens AU → Startup & ESOP), then the scoped ecosystem/innovation-policy exception, then word-boundary
+   regulator / cloud / startup keywords, then the remaining `portfolio_hit`.
+5. Every tracked research topic needs `BLOG_CANDIDATES` entries — a missing topic silently degrades that day's
+   blog block to another pillar.
+6. Never slice a hook or an angle at a character limit: cut at a clause boundary, close the cut with terminal
+   punctuation, and balance parentheses AND quotation marks.
+7. A hook stat must be a complete clause, never a bare number — skip numbers inside parentheses.
+8. Order research ideas one-per-pillar before truncating (cap 6); order blog picks by keyword hits, then
+   topic-pillar match, then key.
+9. Pad the blog quota ONLY with candidates whose pillar is already in play (`day_pillars()`) — two relevant ideas
+   beat three — and apply that same pillar gate to MATCHED candidates, not just the padding slot.
+10. A re-run must re-append everything from the `# ✅ Curated by Pluto` marker — never discard hand curation.
+11. The rotation window (4 days) must stay shorter than the research topic cycle (5 days); `KNOWN_BLOGS` is what
+    retires a candidate for good.
+12. Assert over the written file: every angle ends in terminal punctuation, no hook contains more than one colon,
+    no hook carries an unterminated quote or a dangling function word.
+
 **Blog post structure:** Fill gaps in existing content. Each idea notes pillar, gap filled, and companion-post recommendation.
 
 **Output file:** `~/.hermes/research_outputs/linkedin-ideas_YYYY-MM-DD.md`
 
-See `references/linkedin-content-extraction.md` for content pillar details and `references/gmail-briefing-integration.md` for Gmail signal sourcing.
+**Curation is part of the phase:** read the generated file, rewrite the hooks in Haris's voice, and append a
+`# ✅ Curated by Pluto` section — the curated set is what gets delivered.
+
+See `references/linkedin-content-extraction.md` for content pillar details, `references/gmail-briefing-integration.md` for Gmail signal sourcing, and `references/linkedin-generator-defects.md` for the generator defect log.
 
 ### Phase 9: Email Delivery (NEW June 4, 2026 — Updated June 5, 2026)
 
