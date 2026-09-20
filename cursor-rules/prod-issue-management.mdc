@@ -14,3 +14,25 @@ Each defect document (`issue-NNN-<slug>.md`) must contain:
 4. **Fix & Prevention**: Code changes, regression tests added, and standing rules updated.
 5. **Verification Evidence**: Test commands and logs demonstrating resolution.
 
+## Long-running incidents: one doc, numbered sections — not a new file per check-in
+
+When an incident stays open across multiple sessions, keep it as **one file**
+and append dated, numbered sections (`## 10. ...`, `## 11. ...`)
+chronologically rather than opening a new issue doc per follow-up.
+
+## Diagnosing "the fix still isn't working" — stuck vs. slow vs. actually broken
+
+Before concluding a deployed fix is broken, check three things against the
+live system:
+1. **Does the source of truth already have the correct data?** If yes, the
+   fix's logic isn't the problem.
+2. **Is the process actually advancing?** Two point-in-time backlog/frontier
+   measurements a few minutes apart. Shrinking backlog = working, just not
+   finished. Flat backlog = actually stuck, a real bug.
+3. **What's the ETA from backlog ÷ throughput?** Give a concrete "clears in
+   ~N hours" answer, not "give it time" — and flag if the backlog is bigger
+   than the original bug report assumed.
+
+See the `prod-issue-management` skill for the full write-up and a worked
+example (`2026-09-20_extended_payload_race_recurrence.md`, portal_backend_lambda_eventbridge).
+
