@@ -66,6 +66,6 @@ you've done outcome 1, 2, or 3 above, not instead of doing one of them.
 Founding incident: `frontend/prod_issues/issue-246-turnstile-csp-block-and-lighthouse-perf-regression.md`
 verification section (where the error was first spotted and deferred) →
 `openspec/changes/396-homepage-performance-regression-round-2/tasks.md` (where it was actually
-investigated and fixed, same session, after this rule was created). Claude: this doc + `CLAUDE.md`.
+investigated and fixed, same session, after this rule was created). Claude: this doc + `AGENTS.md`.
 Cursor: `.cursor/rules/immediate-error-investigation.mdc`. Antigravity:
 `.agents/rules/immediate-error-investigation.md`. Codex: `AGENTS.md`.

@@ -16,7 +16,7 @@ after roughly a dozen tool calls. Neither is discoverable from the script itself
 | **Dev** | `mhqdympsyulawviycjmb` | local `backend/.env` (`SUPABASE_URL`, and `DATABASE_URL` → `aws-1-ap-southeast-2.pooler.supabase.com`) |
 | **Production** | `lktkqoocfzbsounguotk` | deployed app only — prod `SUPABASE_URL` + prod RDS `DATABASE_URL` (`yourapp-prod…rds.amazonaws.com`) |
 
-See `docs/context.md` ("Auth" row) for the authoritative statement of the split. A local
+See `AGENTS.md` ("Auth" row of its tech-stack table) for the authoritative statement of the split. A local
 `poetry run python scripts/…` therefore hits **dev Supabase Auth + the dev Supabase Postgres** —
 never production. That is usually the safe outcome, but it means a local run can silently do
 nothing for production while looking like it succeeded.
@@ -106,4 +106,4 @@ secret was pasted into the dev file.
   reconstruct
 - [cloudflare-r2-two-account-credential-trap.md](cloudflare-r2-two-account-credential-trap.md) —
   the same two-accounts-one-name failure shape, on Cloudflare
-- `docs/context.md` — authoritative dev/prod project refs and the post-cutover auth posture
+- `AGENTS.md` — authoritative dev/prod project refs and the post-cutover auth posture

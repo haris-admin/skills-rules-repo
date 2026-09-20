@@ -1,0 +1,36 @@
+# IAM/OIDC condition drift when access fails (all agents)
+
+When an IAM/OIDC role-assume, trust-policy condition, or scoped grant fails, never widen it to a
+wildcard or a looser condition to make the error go away. Capture the real claim/condition value
+that was actually presented and derive the narrow fix from that.
+
+## Why this exists
+
+This is the IAM/OIDC-domain instance of a pattern already seen in alarm tuning: when a mechanism
+built to be narrow starts producing false positives (or, here, false negatives — legitimate access
+denied), the fix is to correct the mechanism's own definition against the real observed value, not
+to make the mechanism less selective. Widening a `StringEquals` condition to a wildcard, or
+dropping a condition key entirely, "fixes" the immediate failure by removing the security property
+the condition existed to enforce — and it's easy to do under time pressure because it works
+immediately, while the narrow fix requires first finding out what claim/value the identity
+provider actually sent.
+
+## Rules
+
+1. **When an `AssumeRoleWithWebIdentity` or similar call fails on a condition check, get the real
+   claim value first** — from the error itself, from CloudTrail, or from decoding the OIDC token
+   presented — before touching the policy.
+2. **Fix the condition to match the real, narrow value**, not the wildcard that would have let the
+   original narrow value through along with everything else.
+3. **Never loosen a narrow condition as a stopgap "to unblock now, tighten later."** The
+   loosened version tends to become permanent, and it removes the specific protection the
+   condition was written for (repo scope, branch scope, environment scope).
+4. **If the real cause is unclear, treat it as an incident to investigate, not a policy to
+   relax** — the same posture the fleet already applies to a too-noisy CloudWatch alarm: fix the
+   definition against reality, don't widen the routing/acceptance criteria around it.
+
+## Related
+
+- AMLHive `docs/agent_rules/iam-condition-drift-when-access-fails.md` — the fuller source version.
+- `no-root-or-unbounded-credentials-for-agents.md` — the sibling rule against reaching for a
+  broader/unbounded credential when a scoped one is denied, same underlying failure shape.

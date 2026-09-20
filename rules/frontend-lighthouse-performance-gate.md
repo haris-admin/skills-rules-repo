@@ -58,7 +58,7 @@ posture the retention mandate takes ("in case of any ambiguity … we can't take
 
 None of these three requires the data to leave `ap-southeast-2` in a sovereignty-relevant sense —
 they're checking an already-public marketing page's load performance, not processing customer or
-compliance data; the pricing/data-sovereignty rule elsewhere in `CLAUDE.md`/`AGENTS.md` doesn't
+compliance data; the pricing/data-sovereignty rule elsewhere in `AGENTS.md` doesn't
 apply here.
 
 ## What this does not gate

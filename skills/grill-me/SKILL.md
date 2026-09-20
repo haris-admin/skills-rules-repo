@@ -1,6 +1,6 @@
 ---
 name: grill-me
-description: This skill should be used when the user runs "/grill-me", asks to "grill me", "quiz me", "test my knowledge", "prep me for the investor/AUSTRAC/customer call", or "ask me hard questions about the product". Runs an adaptive, one-question-at-a-time oral exam grounded in docs/context.md and docs/product-brief.md (with docs/current_progress.md for live status), grades each answer against the source, cites where the answer lives, and ends with a scorecard of weak areas.
+description: This skill should be used when the user runs "/grill-me", asks to "grill me", "quiz me", "test my knowledge", "prep me for the investor/AUSTRAC/customer call", or "ask me hard questions about the product". Runs an adaptive, one-question-at-a-time oral exam grounded in AGENTS.md and docs/product-brief.md (with docs/current_progress.md for live status), grades each answer against the source, cites where the answer lives, and ends with a scorecard of weak areas.
 ---
 
 # Grill Me — Product Knowledge Drill
@@ -15,7 +15,7 @@ guessing.
 
 1. `docs/product-brief.md` — MVP scope (in/out), 8 features, pricing/tiers, lifecycle, risk
    register (M/R/T/O/L/F), assumptions, competitors, roadmap phases, Definition of Done.
-2. `docs/context.md` — mandate, architecture, tech stack, integrations, env, OpenSpec+TDD rules,
+2. `AGENTS.md` — mandate, architecture, tech stack, integrations, env, OpenSpec+TDD rules,
    data-residency callouts, security/PII rules.
 3. `docs/current_progress.md` — live build status, change list, migration head, deploy backlog
    (use for "what's shipped / what's next" questions only).

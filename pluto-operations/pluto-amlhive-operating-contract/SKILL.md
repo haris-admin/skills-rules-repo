@@ -54,7 +54,7 @@ For release verification, Pluto must not deploy, publish, change DNS, change rob
 ## Required Source Of Truth
 At the start of every operating run, read in this order:
 1. `docs/current_progress.md`
-2. `docs/context.md`
+2. `AGENTS.md` (the retired `docs/context.md`'s content now lives in its "Project Context" section)
 3. `docs/product-brief.md`
 4. `docs/gpt_seo_geo_operating_plan.md`
 5. `docs/seo_geo_keyword_baseline_2026-07-15.md`

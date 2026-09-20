@@ -2,7 +2,7 @@
 
 **Scope:** every agent. **Always apply.** Mirrors: `.cursor/rules/incremental-local-commits.mdc`
 (Cursor), `.agents/rules/incremental-local-commits.md` (Antigravity). Summarised in `AGENTS.md`,
-`CLAUDE.md`, `GEMINI.md`. If a mirror drifts, this file wins.
+`AGENTS.md`, `GEMINI.md`. If a mirror drifts, this file wins.
 
 **Human decision recorded 22 Aug 2026 (the project lead, in-session):** *"create rules that llm to checkin
 the code after every task or small chunks. so that there is something to go back to."* This

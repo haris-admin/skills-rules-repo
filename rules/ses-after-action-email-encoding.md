@@ -44,4 +44,4 @@ The helper builds the SES JSON payload **once** with `json.dump` and calls
 
 - `.claude/skills/post-deploy-checklist/SKILL.md`
 - `.claude/skills/release-frontend/SKILL.md` Step 7
-- `CLAUDE.md` § Deployment after-action email
+- `AGENTS.md` § Deployment after-action email

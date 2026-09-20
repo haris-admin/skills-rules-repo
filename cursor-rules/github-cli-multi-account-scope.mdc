@@ -1,0 +1,37 @@
+---
+description: GitHub CLI multi-account scope trap (all agents)
+globs: *
+alwaysApply: false
+---
+
+# GitHub CLI multi-account scope trap (all agents)
+
+A `gh` command returning `404` or "not found" for a resource you know exists is often really the
+wrong **active account** logged into `gh`, not a missing resource — especially on a machine
+configured with more than one GitHub account.
+
+## Why this exists
+
+`gh`'s active account is per-machine session state, not per-repo. On a machine used across
+multiple organizations/companies, it is easy for `gh` to be authenticated as the wrong account for
+the repo currently being worked on, and the resulting error (`404`, "Could not resolve to a
+Repository", a PR/issue "not found") looks exactly like the resource genuinely doesn't exist —
+there's no explicit "wrong account" error message pointing at the real cause.
+
+## Rules
+
+1. **Before concluding a repo, PR, or issue doesn't exist or isn't accessible, run `gh auth
+   status`** and confirm the active account matches the one that actually owns/has access to the
+   target repo.
+2. **Switch explicitly** (`gh auth switch` or `gh auth login` for the correct account) rather than
+   troubleshooting the "missing" resource further under the wrong identity.
+3. If a script or automation invokes `gh` non-interactively, pin the account explicitly
+   (`GH_TOKEN`/`GITHUB_TOKEN` scoped to the right account, or `gh auth switch` as a preflight
+   step) rather than relying on whatever account happens to be active in the ambient shell.
+
+## Related
+
+- `aws-profile-and-secret-recovery.md` — the AWS-CLI analogue of this exact trap (a `default`
+  profile resolving to the wrong account).
+- `cloudflare-r2-two-account-credential-trap.md` — another instance of the same "silently wrong
+  account, looks like a different kind of failure" shape.

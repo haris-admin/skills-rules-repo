@@ -1,0 +1,43 @@
+# Admin/role route-guard consistency audit (all agents)
+
+An outlier `Depends(...)`-style role-restriction dependency in a route family — one route or
+module using a looser guard than every sibling in the same file or module — is presumptively a
+bug, not an intentional exception. So is the reverse: when the *majority* of a route family shares
+one loose guard and only a minority is stricter, the majority is the thing to question.
+
+## Why this exists
+
+Origin: AMLHive `amlhive1`, three incidents in close succession.
+
+- **issue-297** — one admin module used a looser `get_current_admin` dependency where all 19 other
+  admin modules used `require_admin_only`.
+- **issue-298** — 3 of 6 mutation routes in one file used bare `get_current_user` where the other 3
+  (and the file's own established pattern) used `require_agent_or_principal`.
+- **issue-302** — the majority itself turned out to be the bug: bare `get_current_user` with no
+  role check at all, across roughly 14 modules, silently admitting a read-only `AUDITOR` role into
+  mutation paths the role was never meant to reach.
+
+The common thread: nobody had looked at the *set* of guards across a route family side by side.
+Each individual route passed review on its own; the inconsistency only shows up in aggregate.
+
+## Rules
+
+1. **When reviewing or adding a role-guarded route, check every sibling route in the same
+   file/module for its guard dependency**, not just the one being touched. List them side by side.
+2. **A single outlier is presumptively a bug.** Fix it or get an explicit, written reason it's
+   intentional (a genuinely different access tier for that one endpoint) before shipping.
+3. **A near-tie "majority" is not automatically correct** — treat a majority pattern that admits a
+   broader-than-expected role as seriously as a minority outlier. Flag it for human review rather
+   than auto-trusting the more common pattern.
+4. **This is an audit, not an auto-fix.** Log a finding (issue tracker / prod-issue equivalent)
+   before implementing a fix, so the finding and the remediation are both visible in history.
+5. If a mechanical scanner exists for the target codebase (grep the route decorators + their
+   `Depends(...)` argument per file, diff against the file's dominant pattern), prefer running it
+   over eyeballing — it catches sibling files a manual review skips.
+
+## Related
+
+- AMLHive `docs/agent_rules/admin-route-guard-consistency.md` — the fuller source version, plus
+  the scanner script (`scripts/route_guard_consistency_audit.py`) and CI wiring notes.
+- `privilege-change-blast-radius-audit.md` — the sibling rule for *changing* which identity/role a
+  connection or session runs as, rather than which guard gates a route.

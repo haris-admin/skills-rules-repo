@@ -42,7 +42,7 @@ state the assumption. Do not omit the row.
 
 ## Why this exists
 
-CLAUDE.md's data-sovereignty rule ("Always store and process all application data ... in
+AGENTS.md's data-sovereignty rule ("Always store and process all application data ... in
 `ap-southeast-2`") is a single paragraph. It has now had to be applied, and re-derived largely
 from scratch, three separate times:
 
@@ -81,7 +81,7 @@ of re-deriving the pattern from C301 each time.
    Nemotron" is not the same authorization as "make live calls to NVIDIA's API." An agent should
    ask for this explicitly rather than assume synthetic data or small scale makes it moot.
 5. **Record the decision where the next reader will actually find it**, once the human has actually
-   made it in-session: a "Recorded exemption" note in CLAUDE.md's data-sovereignty section
+   made it in-session: a "Recorded exemption" note in AGENTS.md's data-sovereignty section
    (mirroring C301's) if it's a standing capability grant, plus the change's own `proposal.md`. Per
    `docs/agent_rules/no-fabricated-human-decisions.md`, never write the decision down before the
    human has actually made it — an open question stays an open question, flagged for the human, not

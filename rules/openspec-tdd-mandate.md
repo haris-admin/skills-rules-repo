@@ -2,7 +2,7 @@
 
 **Canonical rule.** Mirrors: `.cursor/rules/openspec-tdd-mandate.mdc` (Cursor),
 `.agents/rules/openspec-tdd-mandate.md` (Antigravity). Summarised in `AGENTS.md` (Codex),
-`CLAUDE.md` (Claude Code), `GEMINI.md` (Gemini). If mirrors drift, this file wins.
+`AGENTS.md` (Claude Code — native fallback, no `CLAUDE.md` needed), `GEMINI.md` (Gemini). If mirrors drift, this file wins.
 
 **Human decisions recorded 2026-07-16 (Harish, in-session):** hotfix carve-out is the only
 exception to spec-first; the approval gate applies to the plan, not to every step; ambiguity is

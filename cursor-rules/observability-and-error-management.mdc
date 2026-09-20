@@ -8,7 +8,7 @@ alwaysApply: false
 
 **Canonical rule.** Mirrors: `.cursor/rules/observability-and-error-management.mdc` (Cursor),
 `.agents/rules/observability-and-error-management.md` (Antigravity). Summarised in `AGENTS.md`
-(Codex), `CLAUDE.md` (Claude Code), `GEMINI.md` (Gemini). If mirrors drift, this file wins.
+(Codex), `AGENTS.md` (Claude Code — native fallback, no `CLAUDE.md` needed), `GEMINI.md` (Gemini). If mirrors drift, this file wins.
 
 **Why this rule exists:** issue-148 — nginx rejected customer requests with hard 400s for 3–4 days
 after the AWS migration with **zero** visibility (requests died before app code ran, so no Sentry

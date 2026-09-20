@@ -10,7 +10,7 @@ Any coding task: feature build, bug fix, test failure triage, Codex delegation, 
 
 ## Method
 
-1. **Read the handoff first**: `docs/current_progress.md` → `docs/context.md` → `docs/product-brief.md`. Never skip.
+1. **Read the handoff first**: `docs/current_progress.md` → `AGENTS.md` → `docs/product-brief.md`. Never skip.
 2. **TDD loop** (mandatory):
    - RED: write failing test that traces to the requirement
    - GREEN: implement to pass

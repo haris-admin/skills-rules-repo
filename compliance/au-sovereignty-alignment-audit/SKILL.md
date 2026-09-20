@@ -40,7 +40,7 @@ thing is already built and asks "has it drifted, and has the law moved under it"
 Per `verify-external-agent-reports` — read the live config, don't recall it.
 
 - **Data flows:** every place personal / sensitive / compliance data enters, moves, or leaves.
-  Source: OpenSpec specs, `docs/context.md`, route handlers, worker code, webhook receivers.
+  Source: OpenSpec specs, `AGENTS.md`, route handlers, worker code, webhook receivers.
 - **External providers & sub-processors:** every third-party API and the model/region behind it.
   Cross-check against `docs/agent_rules/new-vendor-and-model-data-sovereignty-check.md`'s tracked
   cases and any `context7_*` integration docs.
