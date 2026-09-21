@@ -275,6 +275,10 @@ assertions lives in `references/linkedin-generator-defects.md` — load it befor
     retires a candidate for good.
 12. Assert over the written file: every angle ends in terminal punctuation, no hook contains more than one colon,
     no hook carries an unterminated quote or a dangling function word.
+13. A CTA map keyed only on PILLAR prints one identical CTA on every post of a single-topic day — resolve
+    portfolio → pillar → public alternate through a day-level `seen` list. A tracked topic needs >=5
+    `BLOG_CANDIDATES`: when the day's OWN pillar returns one blog idea, the candidate list is at fault, not the
+    rotation (the FinTech block went 1 → 3 once the scam-liability and digital-asset-cliff candidates were added).
 
 **Blog post structure:** Fill gaps in existing content. Each idea notes pillar, gap filled, and companion-post recommendation.
 
