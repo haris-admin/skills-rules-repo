@@ -101,3 +101,10 @@ grep "\[pluto\]" ~/.hermes/research_outputs/feedback/from_gumby_*.json
 - **Action bridge patch idempotency:** The patch script checks for `push_honcho_message` function before patching. Safe to re-run.
 - **Signal length cap:** Messages truncated to 400 chars. Full content remains in the source files for Gumby's file pull.
 - **Honcho down:** Bridge fails gracefully — signals stay in files for next run. No data loss.
+- **Tier-count keys MUST match the full priority string ⚠️ (fixed 2026-09-21):** `push_honcho_message()` in `pluto_action_bridge.py` builds its counts from a `defaultdict` keyed by the **full** label (`"🔴 CRITICAL"`), not the bare emoji. The patch had passed `by_priority.get('🔴', 0)` etc., so every run since the patch landed pushed `CRITICAL:0 HIGH:0 MEDIUM:0` **while printing correct counts to stdout** — a silent zero-signal that looked like a quiet day. Now uses `_tier(emoji)` = sum of counts whose key `startswith(emoji)`. If you ever change `PRIORITY_RULES` labels, re-verify this.
+- **Read signals back at the destination, never trust stdout:** `print()` success is not delivery. Message history is a **POST**, not a GET (`GET` → `HTTP 405`):
+  ```bash
+  # POST /v3/workspaces/{ws}/sessions/pluto-signals-{YYYYMMDD}/messages/list  body {}
+  #   headers: Authorization: Bearer $HONCHO_REMOTE_API_KEY
+  ```
+  Confirm the last `... ACTIONS_FROM:pluto_action_bridge` line matches the counts just printed.
