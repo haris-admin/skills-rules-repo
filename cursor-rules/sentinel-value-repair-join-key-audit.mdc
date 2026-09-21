@@ -1,0 +1,32 @@
+---
+description: Sentinel-value data repairs must audit every table that stores or joins on the column, not just the one the symptom touched.
+globs: *
+alwaysApply: false
+---
+
+# Sentinel-value data repairs must audit every table that stores or joins on the column, not just the one the symptom touched
+
+A repair that clears a sentinel value (`'unknown'`, `NULL`, a placeholder ID) in one table but
+leaves it in a sibling table that joins on the same logical value silently breaks any later code
+that relies on that join matching — with no error, just permanent exclusion.
+
+## Core Directives
+
+1. Before writing a repair, grep every model/table for the same column name (or the same logical
+   value under a different column name) across the whole codebase — not just the table the bug
+   report happened to surface.
+2. Check what **joins or filters** on that column, not just what selects it. A stale value in a
+   `JOIN`/`WHERE` condition silently excludes rows with no error — often more dangerous than a
+   stale `SELECT` output.
+3. A newly-discovered gap from the same sentinel value is a by-product of the original incident,
+   not a new unrelated bug — cross-reference it.
+4. Re-measure the actual remaining backlog against the untouched table directly before assuming a
+   downstream job is clean; it's often bigger than the original fix's scope suggested.
+
+## Worked incident
+
+`portal_backend_lambda_eventbridge`, 2026-09-20/21: a `merchant_id_clover = 'unknown'` repair fixed
+`silver_transactions_payments` and `bronze_payments` but never `bronze_transactions`. A later
+reconciliation job joined on that column and silently excluded 9,743 historical rows for months,
+found only via an unrelated `card_mid` symptom. See the `prod-issue-management` skill and rule
+`sentinel-value-repair-join-key-audit.md` for the full write-up.

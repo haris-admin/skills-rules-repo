@@ -38,6 +38,7 @@ license: MIT
 - `references/rds-deep-dive-methodology.md` — 4-step tracing for RDS error patterns
 - `references/tapease-daily-export-patterns.md` — Full query templates, timezone handling, SSM escaping, and professional email template for the daily transaction export
 - `references/daily-transaction-export.md` — Quick-reference cron details (schedule, job ID, script, delivery) for the daily transaction export
+- `references/lambda-duration-spike-diagnosis.md` — How to diagnose a periodic Duration anomaly on `tapease-clover-sync-production`: confirm via CloudWatch metrics, recognize that `print()` survives any `LOG_LEVEL` but `logger.info()` doesn't (so a silent gap before the first `print()` line means the suppressed phase is where the time went), and how to safely raise `LOG_LEVEL` to `INFO` temporarily (and revert it) to capture per-endpoint timing. Includes the known root cause found this way and fixed in v0.8.13 (unparallelized `employee_shifts` sync).
 
 **Primary:** `~/.hermes/scripts/tapease_prod_monitor.py` (created Jul 8, 2026)
 
