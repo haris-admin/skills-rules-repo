@@ -127,14 +127,14 @@ board moves. Full table lives in `docs/market-intel/PARTNERS.md`. `[verify]` = t
    ecosystem crons `b642374bd49d` + `3a818ea08059`, no new crons), `CHANGELOG.md`, and
    `profiles/NN-<org>.md`. Deep dossiers are in `alexandria/vault/refined/stone-chalk-partner-onepagers/`.
 2. **Build source coverage** (see Sources below) and write the watch contract to
-   `~/.hermes/watches/buy-australian-ai-partnership.json` (targets, reps, source list, last
+   `~/.hermes/competitor-watches/stone-chalk-buy-australian-ai.json` (targets, reps, source list, last
    cutoff, repo path).
 3. **Schedule.** During the EOI/program window (through ~30 Nov 2026) run **twice weekly**
    (Mon + Thu); otherwise weekly (Mon), plus a monthly deep refresh on the 1st.
    ```
    cronjob(action="create",
            schedule="every monday and thursday 5:30am",
-           prompt="Load buy-australian-ai-partnership-watch and run the Sweep for the contract at ~/.hermes/watches/buy-australian-ai-partnership.json.",
+           prompt="Load buy-australian-ai-partnership-watch and run the Sweep for the contract at ~/.hermes/competitor-watches/stone-chalk-buy-australian-ai.json.",
            deliver=<user's destination>)
    ```
 
