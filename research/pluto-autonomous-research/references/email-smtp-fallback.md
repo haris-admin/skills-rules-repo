@@ -36,7 +36,7 @@ with smtplib.SMTP('smtp.gmail.com', 587) as server:
 ```
 
 ## Credentials
-- Gmail app password: `mlcbaeezdhquyewk` (in himalaya config at `~/.config/himalaya/config.toml` line 12 and 20)
+- Gmail app password: read from `GOOGLE_GMAIL_APP_PASSWORD_MACARTHUR` (present in `/mnt/c/Users/habib/.hermes/.env`); the local himalaya config also holds it. Never print or paste the value.
 - Also in Windows `.env` as `GOOGLE_GMAIL_APP_PASSWORD_MACARTHUR`
 - SMTP server: `smtp.gmail.com:587` with STARTTLS
 

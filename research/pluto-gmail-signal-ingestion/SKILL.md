@@ -172,7 +172,7 @@ deliver: local
 ## Deprecated: Himalaya Approach
 
 The old `gmail_briefing_ingestor.py` used himalaya CLI (`himalaya envelope list --output json`) to pull emails. This is **broken in the Hermes sandbox** because:
-- `auth.cmd = "echo mlcbaeezdhquyewk"` in himalaya config requires spawning a child process
+- `auth.cmd = "echo $$GOOGLE_GMAIL_APP_PASSWORD_MACARTHUR"` in himalaya config requires spawning a child process
 - The sandbox returns `No child process (os error 10)` for all `auth.cmd` invocations
 - The cron reported `last_status: ok` but produced ZERO results for weeks (confirmed June 7, 2026)
 

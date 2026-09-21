@@ -25,7 +25,7 @@ def send_email(to_addr, subject, body):
     
     with smtplib.SMTP('smtp.gmail.com', 587) as server:
         server.starttls()
-        server.login('macarthurgarments@gmail.com', 'mlcbaeezdhquyewk')
+        server.login("macarthurgarments@gmail.com", os.environ["GOOGLE_GMAIL_APP_PASSWORD_MACARTHUR"])
         server.send_message(msg)
 
 # Send to both recipients
@@ -41,7 +41,7 @@ Template variables: `{date_long}`, `{weekday}`, `{datetime}`, `{source_file}`, `
 
 ## Credential Location
 
-- Gmail app password: In `~/.config/himalaya/config.toml` as `auth.cmd = "echo mlcbaeezdhquyewk"`
+- Gmail app password: read from `GOOGLE_GMAIL_APP_PASSWORD_MACARTHUR` (env store: `/mnt/c/Users/habib/.hermes/.env`); the local himalaya config holds a copy as `auth.cmd = "echo $$GOOGLE_GMAIL_APP_PASSWORD_MACARTHUR"`. Never print the value.
 - Also in Windows `.env` as `GOOGLE_GMAIL_APP_PASSWORD_MACARTHUR`
 - SMTP: `smtp.gmail.com:587` with STARTTLS
 

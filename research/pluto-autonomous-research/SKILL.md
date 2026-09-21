@@ -319,12 +319,12 @@ def send_email(to_addr, subject, body, password):
         server.send_message(msg)
 
 # Gmail app password from himalaya config
-password = 'mlcbaeezdhquyewk'
+password = os.environ["GOOGLE_GMAIL_APP_PASSWORD_MACARTHUR"]
 for to in ['hhsiddiqui@gmail.com', 'admin@harishabib.au']:
     send_email(to, subject, body, password)
 ```
 
-**Gmail app password:** Hardcoded in `~/.config/himalaya/config.toml` as `auth.cmd = "echo mlcbaeezdhquyewk"`. Extract from there or use `GOOGLE_GMAIL_APP_PASSWORD_MACARTHUR` from Windows `.env`.
+**Gmail app password:** read from `GOOGLE_GMAIL_APP_PASSWORD_MACARTHUR` (env store: `/mnt/c/Users/habib/.hermes/.env` on Windows). The local himalaya config holds a copy as `auth.cmd = "echo $$GOOGLE_GMAIL_APP_PASSWORD_MACARTHUR"`; update BOTH when rotating. Never print the value.
 
 **Email format: Unified Briefing style (NEW June 5, 2026).** Haris prefers the clean, sectioned Gumby-style format. Use emoji markers (🔴🟡🟢) NOT text markers ([RED]/[YELLOW]/[GREEN]). Required sections in order:
 

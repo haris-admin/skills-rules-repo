@@ -10,7 +10,7 @@ import email
 from email.header import decode_header
 from datetime import datetime, timedelta
 
-APP_PASSWORD = "mlcbaeezdhquyewk"
+APP_PASSWORD = os.environ["GOOGLE_GMAIL_APP_PASSWORD_MACARTHUR"]
 USERNAME = "macarthurgarments@gmail.com"
 
 # Connect
@@ -64,4 +64,4 @@ def extract_body(msg):
 - **Message IDs are bytes:** Gmail returns them as `b'1234'`. Decode with `.decode()` before storing in JSON state.
 - **Subject headers need decode_header:** They may be encoded MIME words. Use `email.header.decode_header()`.
 - **Prefer text/plain over text/html:** Multipart emails often have both. Plain text is easier to parse.
-- **App password location:** The Gmail app password is currently `mlcbaeezdhquyewk` for `macarthurgarments@gmail.com`. If regenerated, update the script AND `/mnt/c/Users/habib/.hermes/.env`.
+- **App password location:** The Gmail app password comes from `GOOGLE_GMAIL_APP_PASSWORD_MACARTHUR` (env store: `/mnt/c/Users/habib/.hermes/.env`), used for `macarthurgarments@gmail.com`. If regenerated, update the script AND `/mnt/c/Users/habib/.hermes/.env`.

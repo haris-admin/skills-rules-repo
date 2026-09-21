@@ -7,7 +7,7 @@
 ## Credentials
 
 - **Email:** macarthurgarments@gmail.com
-- **App Password:** `mlcbaeezdhquyewk` (hardcoded in ingestor script)
+- **App Password:** read from `GOOGLE_GMAIL_APP_PASSWORD_MACARTHUR` (env store: `/mnt/c/Users/habib/.hermes/.env`). The ingestor resolves it at runtime — never hardcode or print the value.
 - **Ingestor script:** `~/.hermes/scripts/gmail_ingestor_imaplib.py`
 
 ## Briefing Sources
