@@ -110,6 +110,7 @@ trades a code exposure for a silent operational dependency nobody can discover l
 
 ## Pitfalls
 
+- **The exposure is often in DOCS while the code is already clean — and a public repo makes containment alone insufficient (Sep 22 2026).** A fleet sweep found a live Gmail app password in six *skill documents* (a code sample, plus prose lines quoting it) while every ingestion script already read `GOOGLE_GMAIL_APP_PASSWORD_MACARTHUR` from the env store — so the step-2 sweep over `<dir>/*.py` reported clean and the secret went unnoticed for months. Sweep the artefact set you are about to touch, not just the script directory: the pre-push `grep` on a skill-change is a legitimate place to find one. Two rules follow. (1) **Check repo visibility before grading severity** — `curl -H "Authorization: oauth2:$TOK" https://api.github.com/repos/<org>/<repo> | jq .visibility` — a private repo bounds the damage; a PUBLIC one means the value was readable by anyone and, because it stays in git history (`git log -S"$VALUE"` shows the import commit), replacing it in the working tree does NOT close the exposure. Rotation is the only real fix; say so explicitly rather than reporting the scrub as done. (2) **Report a placeholder-aware count, not a raw grep count** — 59 candidate matches in that repo resolved to 26 "looks real", of which 25 were shell-variable references (`$TOK`, `{PAT}`, `op://…`, `[PASSWORD]`). A placeholder/`$VAR` filter over each captured value (reject `<`, `>`, `YOUR`, `XXXX`, `${`, `op://`; treat a value equal to its own key name as a reference) is what separates one real credential from a false alarm across a 165-skill tree — and never print the value while doing it, only `file:line`, key name and a `len`/4-char-prefix shape.
 - **Never print, echo, diff or log a value** — not in the report, not in a pasted diff, not by quoting
   an error message. Refer to secrets by key name and line number; when a check would otherwise print
   matching lines, print `file:line` and a boolean instead.
@@ -120,6 +121,17 @@ trades a code exposure for a silent operational dependency nobody can discover l
 - **`os.environ.get("KEY")` returning `None` at a call site is not the fix.** The fix is the required
   form at the boundary plus the diagnostic; a silent `None` propagates into connection errors that read
   as an outage.
+- **A loader that reads a key from BOTH `os.environ` and a file must STRIP on both paths.** A CRLF
+  `.env` (this fleet's is) yields a clean value from the file branch but exports the value **with a
+  trailing `\r`** when a shell `source`s it — so a loader written as
+  `if os.environ.get(K): return os.environ[K]` ships an invisible corruption that the file branch never
+  reveals. Downstream it is not a "missing key": the value is present and wrong, so it surfaces as a
+  malformed-header/auth error far from the cause (an unstripped bearer token gives
+  `Invalid header value b'Bearer …\r'`), and a monitor consuming it renders a plausible zero instead of
+  failing. Normalise at the single point of return: `return os.environ[K].strip().strip('"').strip()`.
+  Sweep for the shape rather than fixing one instance — grep the loader helpers for the env branch
+  (`return os.environ[` / `return os.environ.get(`) and confirm each one strips. Verify by exporting a
+  deliberately CRLF-polluted value and proving the consumer still works.
 - **Do not rotate for the human, and do not paste a suggested new value.** Generation and rotation
   belong to the credential's owner.
 - **Verify the patched script one step further than "fails loudly": prove it RUNS.** A required-lookup
