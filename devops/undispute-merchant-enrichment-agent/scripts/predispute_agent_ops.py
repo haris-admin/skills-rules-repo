@@ -31,7 +31,18 @@ from datetime import datetime, timedelta, timezone
 ENV_FILE = pathlib.Path("/mnt/c/Users/habib/.hermes/.env")
 STATE_FILE = pathlib.Path("/home/habib/.hermes/cache/scratch/predispute_worker_state.json")
 BASE_PATH = "/api/v1/agent/merchant-enrichment"
+LOG_FILE = pathlib.Path("/home/habib/.hermes/state/predispute_worker_log.jsonl")  # append-only, feeds the 12h report
 KEY_NAMES = ("PLUTO_HERMES_PREDISPUTE_AGENT_API_KEY", "PREDISPUTE_AGENT_API_KEY", "HERMES_AGENT_API_KEY")
+
+
+def log_event(event: str, **fields) -> None:
+    """Append-only activity log that feeds the 12-hour report cron (state/ is not pruned)."""
+    try:
+        LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with LOG_FILE.open("a") as fh:
+            fh.write(json.dumps({"ts": datetime.now(timezone.utc).isoformat(), "event": event, **fields}) + "\n")
+    except Exception:
+        pass
 
 
 def load_env() -> dict[str, str]:
@@ -101,6 +112,7 @@ def main() -> int:
             rec["last_heartbeat_at"] = now.isoformat()
             rec["lease_expires_at"] = (now + timedelta(minutes=10)).isoformat()
             write_state(rec)
+            log_event("heartbeat", job_id=job_id)
     elif a.action == "fail":
         if not a.arg:
             sys.exit(json.dumps({"status": "error", "reason": "fail requires an error code"}))
@@ -109,6 +121,9 @@ def main() -> int:
         if status == 200:
             rec.update({"status": "closed", "outcome": f"FAILED({a.arg})", "closed_at": datetime.now(timezone.utc).isoformat()})
             write_state(rec)
+            log_event("failed", job_id=job_id, error_code=a.arg)
+        else:
+            log_event("fail_rejected", job_id=job_id, error_code=a.arg, http_status=status, detail=str(body)[:200])
     else:
         if not a.payload:
             sys.exit(json.dumps({"status": "error", "reason": "complete requires --payload <json file>"}))
@@ -118,6 +133,9 @@ def main() -> int:
         if status == 200:
             rec.update({"status": "closed", "outcome": "SUCCEEDED", "completed_at": datetime.now(timezone.utc).isoformat(), "completion_response": body[:500]})
             write_state(rec)
+            log_event("completed", job_id=job_id)
+        else:
+            log_event("complete_rejected", job_id=job_id, http_status=status, detail=str(body)[:200])
 
     print(json.dumps({"action": a.action, "job_id": job_id, "http_status": status, "response": body}))
     return 0 if status in (200, 204) else 1

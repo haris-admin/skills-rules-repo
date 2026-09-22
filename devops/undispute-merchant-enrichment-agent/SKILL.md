@@ -20,12 +20,15 @@ One job in flight at a time; the LLM only runs when there is something to do.
 |------|----|-------|
 | ☿ Pre-Dispute Claim Tick | `e3cc72366dd7` | `* * * * *`, **no_agent**, script `predispute_claim_tick.sh` -> `predispute_enrich_poll.py --quiet` |
 | ★ Pre-Dispute Enrichment Worker | `ff18d93e2d10` | `* * * * *`, agent, **monitor-gated** on `predispute_queue_state.py`, skills=[this skill], toolsets terminal/file/web/skills |
+| ☿ Pre-Dispute 12-Hour Report | `92e8ab1f5102` | `55 9,21 * * *`, **no_agent**, script `predispute_12h_report.py` -> rolls the window and delivers to the group |
 
 Scripts (all under `~/.hermes/scripts/`):
 
 - `predispute_enrich_poll.py` - claim only. Resolves key + base, refuses to claim while a live claim is held (one in flight), writes `~/.hermes/cache/scratch/predispute_worker_state.json`. `--quiet` = watchdog output for a no_agent cron (empty stdout means nothing is delivered). Exit 10 = claimed.
 - `predispute_queue_state.py` - the deterministic gate: prints `idle` / `working:<job_id>` / `stuck:<job_id>`. Never prints a timestamp (non-deterministic output would wake the agent every tick).
 - `predispute_agent_ops.py` - `state | heartbeat | fail <CODE> | complete --payload <file>`; refreshes the lease in the state file on heartbeat and closes it (`closed`) on success/failure.
+- `predispute_12h_report.py` - the 09:55/21:55 report: tick counts from `~/.hermes/cron/executions.db`, jobs claimed/completed/failed, open-claim leak check, endpoint health, 🟢/🔴 verdict. Always exits 0 (a non-zero exit would replace the report with a scheduler error alert).
+- `~/.hermes/state/predispute_worker_log.jsonl` - append-only event log written by the poll/ops scripts (`claimed`, `heartbeat`, `completed`, `failed`, `claim_failed`, `complete_rejected`, `fail_rejected`). It lives in `state/`, not `cache/scratch/` (scratch is pruned after 72h), and is the only history the report has — so log new terminal paths when adding them.
 
 Why two crons: the claim endpoint has **no GET**, so queue depth cannot be read. The no_agent tick makes the cheap claim, the monitor reads the state file, and the agent wakes only on a state change (or when a claim goes stale - `stuck:` fires once, 12 min after the last heartbeat).
 

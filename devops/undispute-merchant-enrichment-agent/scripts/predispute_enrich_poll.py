@@ -37,6 +37,7 @@ from datetime import datetime, timedelta, timezone
 
 ENV_FILE = pathlib.Path("/mnt/c/Users/habib/.hermes/.env")
 STATE_FILE = pathlib.Path("/home/habib/.hermes/cache/scratch/predispute_worker_state.json")
+LOG_FILE = pathlib.Path("/home/habib/.hermes/state/predispute_worker_log.jsonl")  # append-only, feeds the 12h report
 
 CLAIM_PATH = "/api/v1/agent/merchant-enrichment/claim"
 KEY_NAMES = ("PLUTO_HERMES_PREDISPUTE_AGENT_API_KEY", "PREDISPUTE_AGENT_API_KEY", "HERMES_AGENT_API_KEY")
@@ -116,6 +117,16 @@ def post(url: str, payload: dict, headers: dict) -> tuple[int | str, str]:
         return "ERR", repr(e)
 
 
+def log_event(event: str, **fields) -> None:
+    """Append-only activity log that feeds the 12-hour report cron (state/ is not pruned)."""
+    try:
+        LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with LOG_FILE.open("a") as fh:
+            fh.write(json.dumps({"ts": datetime.now(timezone.utc).isoformat(), "event": event, **fields}) + "\n")
+    except Exception:
+        pass
+
+
 def human(obj: dict) -> str:
     """Telegram-ready rendering for the no_agent cron (stdout is delivered verbatim)."""
     s = obj.get("status")
@@ -166,6 +177,7 @@ def main() -> int:
         return 0
     if status != 200:
         # 401 / 5xx / unreachable: report and stop. Never research or complete on a bad claim.
+        log_event("claim_failed", http_status=status, backend_base=base, detail=str(body)[:200])
         emit({"status": "claim_failed", "http_status": status, "detail": body, "backend_base": base, "backend_base_reachable": base_ok, "worker_run_id": worker_run_id}, always=True)
         return 0
 
@@ -187,6 +199,7 @@ def main() -> int:
     }
     STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
     STATE_FILE.write_text(json.dumps(record, indent=2))
+    log_event("claimed", job_id=job.get("job_id"), merchant_name=job.get("merchant_name"), abn=job.get("abn"), origin_case_id=job.get("origin_case_id"), worker_run_id=worker_run_id)
     emit({"status": "job_claimed", "job_id": job.get("job_id"), "merchant_name": job.get("merchant_name"), "abn": job.get("abn"), "origin_case_id": job.get("origin_case_id"), "worker_run_id": worker_run_id, "lease_expires_at": job.get("lease_expires_at"), "state_file": str(STATE_FILE)}, always=True)
     return 10
 
