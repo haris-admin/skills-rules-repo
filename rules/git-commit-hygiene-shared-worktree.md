@@ -84,6 +84,23 @@ edits this time, not your own).
    agent's `git diff` already satisfies `no-fabricated-human-decisions.md`; verify with the human
    whether they actually stated whatever's now recorded as their decision.
 
+## Same session, background subagents → the same hazard, not just separate tools
+
+Every incident above involves separate CLI tool sessions (Claude/Codex/Cursor/Antigravity)
+happening to share a checkout. The same hazard fires just as easily **within a single Claude Code
+session** that dispatches background subagents via the Agent/Task tool — those subagents run in
+the same working directory and share the same `.git/index` as the orchestrating session by
+default (unless `isolation: "worktree"` is used). Confirmed live 23 Sep 2026 (Simplifii-OS-Main):
+an orchestrating session ran a pathspec-restricted `git add <2 files>` for its own change, then a
+**bare** `git commit` — which swept up a concurrently-running background subagent's own
+already-staged-but-uncommitted files (a `package.json`/`package-lock.json`/5-file TipTap upgrade)
+into the orchestrator's commit, under a message describing only the orchestrator's change. Content
+was correct, just mislabeled — caught only because "N files changed" in the commit output didn't
+match the orchestrator's own 2-file `git add`. Same root cause and same fix as every incident
+above (Rules 1-4), but the mental model of "who else might be touching this working tree" needs to
+explicitly include your own dispatched subagents, not just other tools' sessions — it's easy to
+assume a background Task/Agent call is isolated when it usually is not.
+
 ## The shared-file case → its own rule
 
 Rule 3 above covers a file that is *entirely* another session's. For the harder case — **a file you
