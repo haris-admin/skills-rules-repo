@@ -87,3 +87,24 @@ that could never fire. Both failure classes are now forbidden by construction.
   deploy (the pipeline's test job blocks build/deploy on failure — never bypass it), and the
   monitoring tells us how the shipped code actually behaves. Both signals are required; neither
   substitutes for the other.
+
+## 5. Success signals count outcomes, not attempts
+
+Found in a 2026-09 reliability review of a compliance SaaS: three signals all reported "healthy"
+while the thing they stood for was not happening (a monthly batch lost all but its last item's
+evidence, and nothing noticed).
+
+- **A success metric must count persisted outcomes, not calls.** A metric emitted per call to the
+  per-item service stayed green while a `rollback()` in the shared batch session discarded every
+  item but the last. Emit the metric from rows actually committed, or reconcile expected vs
+  committed after the run, and alarm on the gap.
+- **A job's heartbeat and completion record must reflect item-level failure.** A cron that catches
+  per-item errors and returns normally is not a success when every item failed. Return
+  `(processed, failed)` and alarm on the failure ratio. A timeout (`CancelledError`) must still
+  write a terminal record.
+- **An outside-in probe must exercise the dependencies it claims to watch.** A canary on a
+  dependency-free `/health` stays green through a database outage. Probe the endpoint that fails
+  when the service is actually unusable (`/ready`: DB + cache).
+- **Tests that stub the unit under test cannot prove persistence.** A batch test that replaces the
+  per-item service with a stand-in proves the loop runs, not that N items produce N committed rows.
+  At least one test per batch path uses a real session and asserts committed rows.

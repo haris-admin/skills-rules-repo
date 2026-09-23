@@ -55,6 +55,12 @@ posture the retention mandate takes ("in case of any ambiguity … we can't take
    pre-deploy local changes (PSI fetches a live URL) — use it against a preview/staging deploy, or
    post-deploy as the live confirmation step a prod-issue fix needs anyway (same posture as
    issue-167's "verify live, not just locally").
+   **The keyless PSI quota is shared and often exhausted** (`Quota exceeded ... 'Queries per
+   day'` on the first call), and without an API key there is no CrUX field data either. Fallback:
+   `npx lighthouse <public-url>` (default mobile config) plus `--preset=desktop` with any local
+   Chrome, against the public URL. Record where it ran from: a run close to the origin region is a
+   best case, and PSI (US-hosted) will score lower on TTFB/FCP/LCP. Discard a cold-start first run
+   and cite the stable re-run.
 
 None of these three requires the data to leave `ap-southeast-2` in a sovereignty-relevant sense —
 they're checking an already-public marketing page's load performance, not processing customer or

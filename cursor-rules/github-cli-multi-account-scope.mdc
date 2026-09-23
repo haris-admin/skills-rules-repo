@@ -28,6 +28,11 @@ there's no explicit "wrong account" error message pointing at the real cause.
 3. If a script or automation invokes `gh` non-interactively, pin the account explicitly
    (`GH_TOKEN`/`GITHUB_TOKEN` scoped to the right account, or `gh auth switch` as a preflight
    step) rather than relying on whatever account happens to be active in the ambient shell.
+4. **Prefer a per-command token over a global switch.** `gh auth switch` changes the active
+   account for **every** session on the machine, including other agents working in the same
+   checkout at the same time. Scope the account to one command instead:
+   `GH_TOKEN=$(gh auth token --user <account>) gh <command>` (or `export` it inside a single shell
+   invocation). The token comes from the keyring; never echo or log it.
 
 ## Related
 
