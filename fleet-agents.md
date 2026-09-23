@@ -36,6 +36,14 @@ Checked in from the fleet (canonical: aurora profile):
 | `node-inspect-debugger` | software-development |
 | `python-debugpy` | software-development |
 | `simplify-code` | software-development |
+| `gemini-api-dev` | mlops |
+| `gemini-live-api-dev` | mlops |
+| `gemini-omni-flash-api` | mlops |
+
+The three `gemini-*` skills are vendored from `google-gemini/gemini-skills` (Apache-2.0,
+https://github.com/google-gemini/gemini-skills) on 23 Sep 2026: current Gemini model IDs, the
+Interactions API, Live API, and Omni Flash video. Keep them current with upstream — they exist
+precisely because model/training knowledge goes stale.
 
 Profile launch (Windows PowerShell, from hermes-agent dir):
 `powershell .\venv\Scripts\python.exe hermes -p <agent> chat -q`
