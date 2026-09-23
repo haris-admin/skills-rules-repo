@@ -18,6 +18,17 @@ description: Pluto's lightweight daily maintenance engine — 4-task health chec
 2. Check for stale references: old repo names (`ideas-*-au` → `ideas-*`), dead file paths, wrong cron times
 3. Patch minor issues immediately; flag severe staleness for Saturday
 4. Check for old pruned cron IDs referenced outside of `pipeline-orchestration` (historical documentation)
+5. **Fleet-mirror drift — the biggest silent gap (added 2026-09-23).** `daily_skill_scan.py` does NOT
+   compare skill CONTENT against the canonical repo, so a skill can be patched in WSL for weeks while
+   the copy every other agent reads stays old. Scan by normalised hash, not mtime (normalise CRLF on
+   BOTH sides or every `/mnt/c` file reads as changed), listing (a) skills absent from the repo and
+   (b) skills whose content differs. Classify: an ABSENT skill is a pure ADD — safe to copy straight
+   in (then run the frontmatter check and path-scoped `git add`/`git commit -m "..." -- <paths>`);
+   a DIFFERING skill needs a MERGE, because the repo side often carries sections the WSL side never
+   had (see the merge pitfall in `fleet-skill-governance`) — report those, never bulk-overwrite them
+   from a daily tick. Seen 2026-09-23: repo held 341 SKILL.md vs 246 local, 112 WSL-only (several
+   fleet-relevant, incl. `acma-dncr-live-washing`, `alexandria-vault-sync`, `git-working-tree-hygiene`,
+   and — circularly — `fleet-skill-governance` itself) and 104 differing.
 
 ### Task 2: Memory Grooming
 1. Check `~/.hermes/memories/MEMORY.md` for stale entries
