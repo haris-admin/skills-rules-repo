@@ -43,6 +43,21 @@ set looks mechanical — the SKILL.md holds the condensed rules.
 
 24. **One CTA per PILLAR means one CTA per DAY on a single-topic run — and a topic whose candidate list is thin degrades its own blog block (Sep 22 2026).** Two defects shipped together on a FinTech Regulation day. (a) `CTA_BY_PILLAR[pillar]` was the whole CTA strategy, and every research finding on a single-topic day resolves to the same pillar — so all six posts closed with the identical line ("If you're the reporting entity, the clock is already running…"). Add a `CTA_BY_PORTFOLIO` map (the portfolio is what the post actually sells), a public-facing `CTA_ALTERNATES` list, and a day-level `_pick_cta(pillar, portfolio, seen)` that resolves portfolio → pillar → alternate → generic while accumulating a `seen` list, so no CTA repeats verbatim. Two findings can share a portfolio (PayLicence AU appeared twice), which is exactly what the alternates tier is for. Do NOT let the third tier name an internal product ("Building this into AML Hive — what would it look like in your stack?" reads as internal shorthand on a public post). Also normalise `portfolio_hit` in the list shape, not just the string shape, before the lookup — the briefing improver's podcast path emits list-of-dicts. (b) `BLOG_CANDIDATES` held only three `Australian Fintech Regulation` entries, and on the day whose OWN topic pillar was fintech, the rotation gate and keyword gate suppressed two of them — leaving one blog idea and forcing hand-written padding. FinTech Regulation is a 5-day-cycle topic that recurs roughly weekly, so it needs at least five candidates covering DISTINCT published gaps. Added `spf-multiparty-liability` (Scams Prevention Framework / multi-party liability — Tapease) and `digital-asset-licence-cliff` (ASIC transitional-relief expiry — TokenPilot AU); the block went 1 → 3 ideas at 8 / 6 / 4 keyword hits. Check the candidate count for the day's OWN pillar whenever the blog block comes back short — the padding gate cannot rescue a topic with no candidates.
 
+25. **Near-duplicate CTAs survive exact-string dedupe (Sep 23 2026).** `_pick_cta` rejected a candidate only when `candidate not in seen`, so two *different* table entries that say the same thing both shipped: `CTA_BY_PILLAR['Australian Fintech Regulation']` ("If you're the reporting entity, the clock is already running — where does your evidence trail live today?") and `CTA_BY_PORTFOLIO['AML Hive']` ("If you run a reporting entity: when did you last test your evidence trail…?") closed posts 3 and 4 with the same sentence on an Agentic AI day where one finding pillared fintech (via its AML Hive `portfolio_hit` fallback) and another carried AML Hive outright. Add `_cta_fingerprint()` (lowercased words >3 chars minus `_CTA_STOPWORDS`) and `_cta_too_similar(candidate, seen, threshold=0.4)` comparing overlap over `min(len)` — order-insensitive, so reworded variants are caught — then fall through to the next tier. Reworded the AML Hive portfolio CTA to name the product outcome instead ("When AUSTRAC asks, the question is what your file shows and when it was created"). Verified: 6/6 CTAs distinct, 0 verbatim duplicates, max pairwise similarity 0.40 → 0.17. Note the pattern behind it — a pillar CTA and a portfolio CTA written for the *same* domain will collide unless one of them is product-specific; the portfolio line is the one that should name the product.
+
+26. **A hook stat must belong to the SAME SUBJECT as the finding, and a slice must not strand scaffolding or land mid-list (Sep 24 2026).** Two defects shipped together on a Startup & VC day. (a) `extract_headline_stat` quoted a number that was only the TAIL of a range: `~86–91%` matched `91%`, and the clause built around it — "September RBA hike is ~86- 91% priced by the ASX rate tracker and rateprobability" — became the hook for an **R&D tax-offset** finding, because it came from an unrelated macro sentence inside the same content blob. `_hook_stat_ok` waved it through (standalone clause, few title words, no dash splice, no bare-year lead). Skip any numeric match whose preceding character is a digit or `-–—/` and let the search fall through to the next match; on this finding the fallback ("CBA's 2-year fixed rate is already 6.82%") is itself rejected by the odd-apostrophe check, so the hook correctly degrades to the title. (b) The 100-char word-boundary slice in `_short_title` left a dangling scaffolding tail ("…data-centre clusters are already", "…built-in AI agent in five") or cut inside a coordination ("…R&D tax offset has founders" where the title reads on "…and scientists warning of offshore drift"). Pop trailing tokens while the last one is scaffolding (auxiliary / adverb / number / function word) and at least 4 words survive, and separately cut a `has|have|had|includes|include|involves|with` + ≤3-word tail when the ORIGINAL title continues with `and `/`or `. Do NOT cut a tail that carries its own content nouns — the naive version of this rule ("cut before the auxiliary") shipped three regressions in the same harness run ("…signals chief warns AI agents", "…investors are told a run", "…A$2M pre-seed"), which is why the scaffolding-pop form is the one to keep. Verify with a before/after harness that imports the old copy of the script and diffs every hook across the last ~9 days of `research_*.json`: expect only the intended changes and **zero** regressions (Sep 24 2026: 52 findings / 9 files → 3 hook changes, all improvements):
+
+```python
+def load(p, n):
+    s = importlib.util.spec_from_file_location(n, p); m = importlib.util.module_from_spec(s)
+    s.loader.exec_module(m); return m
+before, after = load('/tmp/lig_before.py', 'b'), load('~/.hermes/scripts/linkedin_ideas_generator.py', 'a')
+def render(m, t, c):
+    stat = m.extract_headline_stat(c); short = m._short_title(t)
+    return f"{stat}: {short}" if m._hook_stat_ok(stat, short) else short
+# diff render() per finding across research_2026-09-*.json; inspect EVERY diff before shipping
+```
+
 ## Verification recipes (run over the written file, not the in-memory objects)
 
 ```python
@@ -56,4 +71,13 @@ for h in hooks:
         pos = [m.end()-1 for m in re.finditer(r"(?:^|\s)"+re.escape(q)+r"(?=[A-Za-z0-9])", h)]
         assert not (pos and q not in h[pos[-1]+1:]), h
     assert h.split()[-1].lower().strip('.,;:()%$') not in DANGLE_TAIL, h
+
+# CTAs: no verbatim repeat AND no near-duplicate close (rule 25)
+ctas = re.findall(r'\*\*CTA:\*\* (.+)', txt)
+assert len(ctas) == len(set(ctas)), 'verbatim CTA repeat'
+fps = [frozenset(w for w in re.findall(r"[a-z']+", c.lower())
+                if len(w) > 3 and w not in _CTA_STOPWORDS) for c in ctas]
+worst = max((len(fps[i] & fps[j]) / min(len(fps[i]), len(fps[j]))
+             for i in range(len(fps)) for j in range(i+1, len(fps))), default=0)
+assert worst < 0.4, f'near-duplicate CTA pair (similarity {worst:.2f})'
 ```

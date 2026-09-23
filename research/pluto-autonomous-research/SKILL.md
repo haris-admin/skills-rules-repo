@@ -279,6 +279,14 @@ assertions lives in `references/linkedin-generator-defects.md` — load it befor
     portfolio → pillar → public alternate through a day-level `seen` list. A tracked topic needs >=5
     `BLOG_CANDIDATES`: when the day's OWN pillar returns one blog idea, the candidate list is at fault, not the
     rotation (the FinTech block went 1 → 3 once the scam-liability and digital-asset-cliff candidates were added).
+14. A hook stat must belong to the SAME SUBJECT as the finding: skip a numeric match whose preceding character is a
+    digit or `-–—/` (a range tail like `91%` inside `~86–91%` hooked an R&D tax finding with an unrelated RBA line).
+    And never let a slice strand scaffolding (`…clusters are already`, `…AI agent in five`) or cut inside a
+    coordination (`…tax offset has founders` where the title reads on `and scientists…`): pop trailing scaffolding
+    tokens, and cut a `has|have|had|includes|with` + <=3-word tail only when the original continues with `and `/`or `.
+    Cutting a tail that carries its own content nouns regresses hooks (`…warns AI agents`, `…told a run`) — verify with
+    a before/after harness (import the previous script, diff every hook across the last ~9 days of `research_*.json`;
+    expect intended changes and zero regressions).
 
 **Blog post structure:** Fill gaps in existing content. Each idea notes pillar, gap filled, and companion-post recommendation.
 
