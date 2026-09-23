@@ -45,3 +45,10 @@ Guidelines for building high-performance, robust, and maintainable backend servi
      accounts), and must never set a password on an identity the caller has not proven they
      control. "No row in the app's users table" does not mean "no account" when staff identities
      live in a separate table.
+
+8. **Shared Caches and Verbatim Provider Data**:
+   - When two code paths share one cache entry and one writer adds internal markers (e.g.
+     `_source_result_id`), every reader must strip them before persisting the payload as "the
+     provider's response". A reader that only strips the keys it knows about will store the other
+     writer's markers inside an immutable evidence row. Keep one shared strip-list constant and a
+     test per reader that seeds the cache with the other writer's shape.

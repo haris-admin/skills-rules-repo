@@ -83,6 +83,23 @@ that could never fire. Both failure classes are now forbidden by construction.
   `OK` state, verify its `Dimensions` in `aws cloudwatch describe-alarms` actually match a real
   emitted metric in `aws cloudwatch list-metrics --metric-name <name>` for the same namespace — an
   `OK` alarm with no matching metric is not evidence of health, it's evidence of nothing.
+- **Recurrence, and how to stop it for good** (2026-09-24, same app): the durable fix for the
+  falsely-`OK` disk alarms was logged as "pending sign-off" and never applied. Seven weeks later an
+  account-wide audit found four blind alarms, including a brand-new one shipped that night whose own
+  Terraform comment said "verify against a live `list-metrics` before applying" (nobody did, the
+  reviewing agent included). Rules:
+  - **Never pin a hardware-derived dimension.** CWAgent `disk_*` publishes `device` as the kernel
+    name, which on Nitro instances is `nvme0n1p1` / `nvme1n1`, not the `/dev/xvdf` you attached.
+    Set `"drop_device": true` in the agent's `disk` block and alarm on `InstanceId`+`path`+`fstype`.
+    `procstat_*` adds `process_name` (e.g. `gunicorn: worker [app.main:app]`) on top of `pattern`;
+    `procstat_lookup_*` carries `pid_finder`.
+  - **Verify dimension sets before apply and after every instance replacement**, with a scripted
+    audit: for every metric alarm, require a `list-metrics` series with an identical dimension set.
+    Event-count alarms (metric filters that only publish when the event happens) legitimately have
+    no series; list them explicitly and let anything else fail closed.
+  - **A test that pins a literal dimension value can enforce the wrong value.** Guard tests should
+    assert the rule (which keys, no hardware-derived keys), and the live audit proves the values.
+  - **A "durable fix pending sign-off" needs an owner and a date**, or it silently never happens.
 - Application quality is read from this monitoring plus the TDD suites: test runs gate every
   deploy (the pipeline's test job blocks build/deploy on failure — never bypass it), and the
   monitoring tells us how the shipped code actually behaves. Both signals are required; neither

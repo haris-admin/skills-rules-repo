@@ -48,6 +48,25 @@ full, untargeted `terraform plan`.
    addresses, needs `terraform state mv` per resource) — treat that as a proper OpenSpec change
    with a written plan, not something to do live during an incident.
 
+6. **A planned instance replacement is its own procedure, not a side effect** (2026-09-24). With
+   `user_data_replace_on_change = true`, any bootstrap edit replaces the instance. Before applying:
+   - **Ship the app first, then replace.** If the bootstrap boots a last-known-good image pointer,
+     deploy the new release on the old instance first so the pointer is current; a new instance
+     then boots the right image. If the replacement also grants the permission a deploy step needs
+     (e.g. writing the frontend pointer), run that deploy after the apply.
+   - **Detach data volumes cleanly.** An `aws_volume_attachment` on a running instance detaches a
+     mounted filesystem. Set `stop_instance_before_detaching = true`, or stop the instance first.
+   - **Silence instance-scoped alarm actions for the window** (`disable-alarm-actions`: status
+     checks, 5xx, process-absent, CPU-credit on `t3` unlimited, which starts new instances at 0
+     credits), keep security/IAM-change alarms enabled, and re-enable afterwards. One replacement
+     paged ~15 alarms otherwise.
+   - **Update everything that stored the old instance ID** (CI secrets used by SSM deploy steps)
+     immediately after, or the next deploy fails with `AccessDenied` on `ssm:SendCommand`.
+   - **Hand the human short commands.** Long pasted one-liners wrap in the terminal and split into
+     two commands (one ran `terraform apply` with no plan file and hit an approval prompt); a
+     relative `cd` fails when the shell's cwd is not the repo root. Use a script or `-chdir=` with
+     absolute paths.
+
 ## Quick check before any prod apply
 
 ```bash

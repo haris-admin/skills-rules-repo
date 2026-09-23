@@ -92,7 +92,8 @@ Combine metrics AND logs into ONE `amazon-cloudwatch-agent.json`. Do NOT use the
       "disk": {
         "measurement": [{"name": "disk_used_percent", "unit": "Percent"}],
         "metrics_collection_interval": 60,
-        "resources": ["/"]
+        "resources": ["/"],
+        "drop_device": true
       }
     },
     "append_dimensions": {
@@ -193,10 +194,16 @@ After deploying config:
 - [ ] `tail` of agent log shows `[logagent] piping log from` lines for expected files
 - [ ] CloudWatch `describe-log-streams` shows new streams with recent timestamps
 - [ ] CloudWatch metrics show `mem_used_percent`, `cpu_usage_idle`, `disk_used_percent` in CWAgent namespace with InstanceId dimension
+- [ ] For every alarm on a CWAgent metric, `list-metrics` returns a series whose dimension set is **identical** to the alarm's (an alarm with a subset or superset never receives a datapoint and can sit falsely `OK`)
 - [ ] No persistent `E!` errors in agent log (initial `W! Retried` on first stream creation is normal)
 
 ## Pitfalls
 
+- **Alarms go blind on extra dimensions.** `disk_*` metrics carry `path`, `fstype` and `device` in addition to `InstanceId`;
+  `procstat_*` carries `process_name` in addition to `pattern`; `procstat_lookup_*` carries `pid_finder`. An alarm must declare
+  the exact set. `device` is the kernel name, which on Nitro instances is `nvme0n1p1` / `nvme1n1`, not the `/dev/xvdf` used
+  when attaching, and it changes with the instance type. Use `"drop_device": true` and alarm on `InstanceId`+`path`+`fstype`.
+  Two falsely-`OK` disk alarms went unnoticed for about 11 weeks this way (2026-07 to 2026-09).
 - **`fetch-config -c file:<directory>` fails with "is a directory"** — must specify individual files. Use a single merged JSON instead of the `.d/` directory.
 - **Agent says `configured` but config is wrong** — `configstatus: configured` only means the agent read A config successfully, not that it's the RIGHT config.
 - **`/aws/ec2/*` log groups are not automatic** — these must be explicitly configured. They don't appear just because the agent is running.

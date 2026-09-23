@@ -35,3 +35,18 @@ Guidelines for infrastructure management, deployment automation, Docker containe
 4. **Monitoring & Health Checks**:
    - Expose lightweight `/healthz` or `/livez` endpoints for orchestrator probes.
    - Configure alert thresholds on CPU, memory, error rate spikes (5xx), and API response latency.
+
+5. **Releasing an Integration Branch Built by Several Agents**:
+   - Before deploying a branch tip, list what it carries since the last deployed commit and read
+     every open review finding for that range. Findings that write irreversible data (immutable
+     evidence rows, append-only tables) or break a public flow block the release; fix them first.
+     Findings no worse than what production already runs can ship, with a written "do not use X
+     until fixed" note (for example: do not send announcements while resend protection is open).
+   - Expect the release gate itself to find things local suites did not (see
+     `alembic-migration-hygiene` rule 7). A gate failure before build/deploy is the gate working.
+
+6. **Production Commands a Human Runs for the Agent**:
+   - When an agent's own push/apply is blocked by its permission policy, write the steps as short
+     scripts with absolute paths and hand over one short command per step. Long pasted commands
+     wrap in the terminal and split, and a relative `cd` fails when the shell is not at the repo
+     root. Each script prints a single SUCCESS/FAILED line plus the evidence the agent needs next.

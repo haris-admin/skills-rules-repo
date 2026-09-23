@@ -27,3 +27,14 @@ Guidelines for building fast, accessible, and scalable React and Next.js applica
 5. **Performance & Web Vitals**:
    - Optimize images using `next/image` with explicit width/height and responsive sizes.
    - Lazy load heavy client components with `next/dynamic` or React `Suspense`.
+
+6. **Switching a Call from Same-Origin to Cross-Origin**:
+   - Moving browser calls from a same-origin rewrite (`/api/...` proxied by the frontend server) to
+     the API host directly makes CORS apply. Before shipping, send an `OPTIONS` preflight with every
+     `Origin` a real visitor can have (apex, `www`, any alias host) and confirm
+     `access-control-allow-origin` comes back. CORS failures happen in the browser, so they never
+     reach server logs or error tracking.
+   - Fix a non-canonical host by redirecting it (301 to the canonical host, path and query kept),
+     not by widening the API's allowed origins. Found 2026-09-24: `www` served the full site while
+     the API allowed only the apex; signup, contact and consent forms would have failed for every
+     `www` visitor.
