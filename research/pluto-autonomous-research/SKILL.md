@@ -287,6 +287,13 @@ assertions lives in `references/linkedin-generator-defects.md` — load it befor
     Cutting a tail that carries its own content nouns regresses hooks (`…warns AI agents`, `…told a run`) — verify with
     a before/after harness (import the previous script, diff every hook across the last ~9 days of `research_*.json`;
     expect intended changes and zero regressions).
+15. A `BLOG_CANDIDATES` keyword list must be SUBJECT-BOUND. `fiig-penalty` fired on `asic`/`cyber`/`enforcement` and
+    reached the DELIVERED slate while `fiig` and `penalty` appeared ZERO times anywhere in the corpus — an unverifiable
+    A$2.5m framing nearly shipped as a blog idea. Never fix this class with a global anchor gate (`keywords[0] in
+    corpus`): tested and reverted the same run, it excluded the day's two best-fit candidates (`agent-incident-register`'s
+    anchor phrase `incident report` never appears — the corpus says "AI incidents") while still admitting others, trading
+    one bad slate for another. Fix the mis-specified candidate's keywords, and before delivering, grep the candidate's own
+    subject term across the day's inputs; zero hits means the candidate is ungrounded and must be dropped.
 
 **Blog post structure:** Fill gaps in existing content. Each idea notes pillar, gap filled, and companion-post recommendation.
 
