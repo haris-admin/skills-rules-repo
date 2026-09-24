@@ -81,3 +81,41 @@ worst = max((len(fps[i] & fps[j]) / min(len(fps[i]), len(fps[j]))
              for i in range(len(fps)) for j in range(i+1, len(fps))), default=0)
 assert worst < 0.4, f'near-duplicate CTA pair (similarity {worst:.2f})'
 ```
+
+## Rule 27 (Sep 25 2026): a blog candidate's keywords must be SUBJECT-BOUND, never regulator vocabulary
+
+`BLOG_CANDIDATES` matched on substrings of a signal corpus that spans several days
+(`get_signals_from_files()` reads every recent `mempalace-inputs/` file), so any keyword
+that appears on *every* regulatory day will fire regardless of the subject. The
+`fiig-penalty` candidate carried `["fiig", "penalty", "asic", "afsl", "cyber", "enforcement"]`
+and reached the **delivered** slate on an AI-Regulation day with 3 hits — while `fiig` and
+`penalty` occurred **zero** times anywhere in the corpus. Its A$2.5m framing was unverifiable
+to any source we could reach.
+
+- **Authoring rule:** a candidate's keyword list must contain only terms that identify its
+  own subject (`fiig`, `fiig securities`). Words such as `asic`, `afsl`, `cyber`,
+  `enforcement`, `penalty`, `regulator`, `compliance` describe *any* day's context and are
+  banned from keyword lists.
+- **Verification before delivering any blog idea:** count occurrences of the candidate's own
+  subject term in the corpus; if it is 0, the candidate is ungrounded — drop it.
+  `grep -ci '<subject>'` across `mempalace-inputs/*<date>*.md` + `research_<date>.json`.
+- **Do not fix this with a global anchor gate** (`if keywords[0] in corpus`). Tested and
+  reverted the same run: it excluded the day's two best-fit candidates
+  (`agent-incident-register` — its anchor phrase `incident report` never appears, the corpus
+  says "AI incidents" / "incident-reporting"; `autonomy-tiers` — anchor `autonomy` absent)
+  while still admitting others, so it traded one bad slate for another. Fix the mis-specified
+  candidate, not the matcher.
+- **Empirical probe** — run this before trusting the blog block on a new topic:
+
+```python
+import importlib.util, sys
+spec = importlib.util.spec_from_file_location('lig', '~/.hermes/scripts/linkedin_ideas_generator.py'.replace('~','/home/habib'))
+lig = importlib.util.module_from_spec(spec); sys.modules['lig'] = lig; spec.loader.exec_module(lig)
+research = lig.load_research(); corpus = " ".join(lig.get_signals_from_files()).lower()
+corpus += " " + " ".join(f.get("title","")+f.get("content","") for f in research["findings"]).lower()
+for key,title,pillar,gap,kws in lig.BLOG_CANDIDATES:
+    hits = [k for k in kws if k in corpus]
+    if hits: print(f"{key:32s} hits={len(hits)} {hits}")
+```
+
+A candidate ranking first on words that are not in its own title is a false positive.
