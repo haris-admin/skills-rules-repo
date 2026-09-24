@@ -182,6 +182,25 @@ When a Windows profile has a skill the repo lacks:
   a CRLF-dirty repo: clear it with `git restore .` first (see `git-working-tree-hygiene`), never
   by committing.
 
+- **A repo SKILL.md can be a deliberately CONDENSED variant — copying WSL over it is destructive by design.**
+  `research/pluto-autonomous-research` is the worked example: the repo copy keeps a short numbered rule list
+  and pushes detail into reference files that exist ONLY in the repo (`pitfalls-and-incident-log.md`,
+  `rss-research-extraction-patterns.md`, `post-run-phase-verification.md`, `audit-before-recommending.md`,
+  `weekly-digest-workflow.md`), while the WSL copy is a longer verbose variant. The two have intentionally
+  diverged, so `cp` WSL→repo deleted 80 lines of repo content including the `audit-before-recommending.md`
+  pointer (verified 2026-09-25; reverted in a follow-up commit). Before copying a SKILL.md, compare the two
+  reference DIRECTORIES — a repo-only reference file is the tell that the repo copy is canonical-but-condensed:
+
+  ```bash
+  diff <(ls "$REPO/<cat>/<skill>/references" 2>/dev/null) <(ls ~/.hermes/skills/<cat>/<skill>/references 2>/dev/null) | grep '^<'
+  ```
+
+  Any output means: do NOT copy the whole file. Edit the repo copy in place (add the new rule in the repo's
+  own format — its numbered list, not your WSL paragraph) and leave its structure and pointers intact. Keep the
+  WSL copy updated separately for its own verbose format; the divergence is acceptable, a deleted pointer is not.
+  Even when the diff looks additive, check `git diff --stat` for deletions BEFORE committing — a 7-line additive
+  edit and a 368-insertion/80-deletion overwrite look identical in the commit summary line you read back.
+
 ## Related
 
 - `pluto-skill-extraction` — daily discovery of new reusable patterns → proposed skills
