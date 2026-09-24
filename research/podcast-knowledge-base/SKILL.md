@@ -73,6 +73,12 @@ dbname = 'postgres'
 
 **pgvector version:** 0.8.0 (IVFFlat + HNSW access methods)
 
+**Reusable helper (added 2026-09-16):** `python3 ~/.hermes/scripts/podcast_kb_query.py <file.sql>` — runs SQL through the pooler with the password derived at runtime from `SUPABASE_OPERATOR_SPOOLER_DATABASE_URL` (never printed, never inlined, no shell pipes). Pass SQL as a file argument: piping into a Python interpreter trips the security scanner (`tirith:pipe_to_interpreter`).
+
+**⚠️ Live breakage (2026-09-16) — read before trusting ingestion freshness.** A 2026-09-15 de-hardcoding pass replaced hardcoded Supabase creds in `podcast_ingestor.py` (14:20) and `pluto_chamber_refresh.py` (15:03) with `_required_env("SUPABASE_HOST"|"SUPABASE_PORT"|"SUPABASE_USER"|"SUPABASE_PASS")`. **Those four keys do not exist in either Hermes `.env`** — only `SUPABASE_OPERATOR_DATABASE_URL` / `SUPABASE_OPERATOR_SPOOLER_DATABASE_URL`, and line 50 of the Windows `.env` is malformed (`SUPABASE_OPERATOR_SPOOLER_DATABASE_URL=="postgresql://…"`, double `=`), so the ingestor's naive `key=value` loader cannot recover them either. Result: the 2026-09-16 04:00 ingestion run (`d4d77c41f6c0`) died at import with `RuntimeError: Missing required environment variable: SUPABASE_HOST` (failure_streak=1) and wrote no `podcast_kb.ingest_log` row; the chamber refresh has the same defect. Remediation is either (a) add the four keys to `/mnt/c/Users/habib/.hermes/.env`, or (b) derive them in code from the pooler URL. Diagnostic tell: `podcast_kb.ingest_log` has no `daily_ingest` row for the day (query `SELECT * FROM podcast_kb.ingest_log ORDER BY id DESC LIMIT 5`), and `episodes.created_at` stops advancing.
+
+**✅ Fixed 2026-09-16 06:05 AEST (option b, code-side).** Both `podcast_ingestor.py` and `pluto_chamber_refresh.py` now resolve creds via a `_supabase_creds()` helper: it uses `SUPABASE_HOST|PORT|USER|PASS` if present, else derives host/port/user/password from `SUPABASE_OPERATOR_SPOOLER_DATABASE_URL` in the Hermes `.env` files (regex over the raw file text, so the double-`=` malformed line 50 no longer matters). Verified: `run_sql("SELECT count(*) FROM podcast_kb.episodes")` returns 1185 through both modules. **Any future de-hardcoding pass must keep a derive-from-DSN fallback** — adding `_required_env("SUPABASE_*")` alone will hard-fail every ingestion run because those four keys are not in either `.env`.
+
 ## Schema
 
 ### Tables
@@ -290,7 +296,21 @@ Queries Supabase for episodes from last 3 days, extracts key themes/frameworks/q
 
 **Portfolio mapping for the briefing:** Connection strings like `"FinAI/AI-gov - description"` are parsed and mapped to portfolio projects via keyword matching (FinAI→FinAI File AU, ExitLens→ExitLens AU, etc.). If you change the connection string format, update both the extractor AND `_map_podcast_connections()` in `briefing_improver.py`.
 
-**Full workflow documented at:** `references/insight-extractor-workflow.md` — includes extraction steps, portfolio-connection mapping table (7 projects), trend extraction methodology (8 macro trends), dual-consumer pattern (research + LinkedIn), and production track record.
+**Runner (current):** `python3 ~/.hermes/scripts/podcast_insights_daily.py` — Supabase window query →
+keyword-dense transcript sampling (~30k chars/ep) → parallel DeepSeek Flash extraction → verbatim quote
+verification against stored transcripts → md + json. `--publish` re-publishes from `/tmp/podcast_insights_raw.json`
+and re-verifies quotes (no LLM calls). Optional curation layer `/tmp/podcast_insights_overrides.json`
+(quote selection, project-label normalisation, rationale completion) is auto-applied at publish and archived
+per-day so it cannot bleed across runs. The `new_since_last_run` / 🆕 baseline resolves defensively
+(a publish timestamp from today is ignored → the raw snapshot's `prev_run_cutoff` on a same-day re-run →
+a rolling 24h cutoff), so a hand-edit or a re-run can no longer silently mark everything as "not new" —
+see `references/insight-extractor-workflow.md`.
+
+**Portfolio mapping for the briefing:** Connection strings like `"FinAI/AI-gov - description"` are parsed and mapped to portfolio projects via keyword matching (FinAI→FinAI File AU, ExitLens→ExitLens AU, etc.). If you change the connection string format, update both the extractor AND `_map_podcast_connections()` in `briefing_improver.py`.
+
+**Full workflow documented at:** `references/insight-extractor-workflow.md` — rewritten 2026-09-20: pipeline
+position with live cron timings, runner/CLI, curation-layer keys and rules, known extractor defects + fixes,
+post-run verification checklist, recent run metrics. (The older Claude-era steps in git history are historical.)
 
 **State tracking:** Store last run date in `~/.hermes/research_outputs/.podcast_monitor_state.json`:
 ```json
@@ -421,6 +441,6 @@ ON CONFLICT (name) DO UPDATE SET channel_id = EXCLUDED.channel_id, youtube_handl
 - `references/youtube-cookies-export.md` — How to export YouTube cookies from Chrome (June 2026)
 - `references/yt-dlp-android-transcript.md` — Android client workaround for n challenge bypass (June 8, 2026)
 - `references/aie-ingestion-log.md` — AI Engineer ingestion session log (June 8, 2026)
-- `references/insight-extractor-workflow.md` — Full podcast insight extractor workflow: extraction steps, 7-project portfolio mapping, 8-trend methodology, dual-consumer pattern, production track record
+- `references/insight-extractor-workflow.md` — Full podcast insight extractor workflow: extraction steps, 7-project portfolio mapping, dual-consumer pattern, production track record. (The June 2026 Claude-era draft — incl. the 8-macro-trend methodology — is archived as `insight-extractor-workflow-june2026.md`.)
 - `references/youtube-data-api-setup.md` — YouTube Data API v3 setup and quota reference
 - `references/youtube-sapisidhash-auth.md` — YouTube cookie + SAPISIDHASH auth workaround for transcript fetching
