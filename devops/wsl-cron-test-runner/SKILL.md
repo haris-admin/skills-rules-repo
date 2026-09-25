@@ -676,6 +676,22 @@ r = subprocess.run(["git", "pull", "--ff-only", auth_url], cwd=str(path), ...)
 
 Passing the auth URL as a `git pull <url>`/`git clone <url>` ARGUMENT keeps `remote.origin.url` clean — the PAT never lands in `.git/config`. The `--ff-only` flag avoids the "divergent branches" interactive prompt; on divergence the runner notes it and runs tests on local code.
 
+**⚠️ Do NOT sanitise your way out of embedded URLs piecemeal — 4 fleet scripts embed by DESIGN (2026-09-25).**
+`a2square_git_sync.py`, `a2square_test_runner.py`, `unified_git_sync.py` and `unified_weekly_report.py`
+each run `git remote set-url origin https://oauth2:<PAT>@github.com/...` and then
+`git -c credential.helper= ... fetch origin <branch>` — they deliberately DISABLE the credential helper and
+authenticate from the remote URL. Stripping the token out of `.git/config` therefore BREAKS every org whose
+PAT is not also in `~/.git-credentials`: measured, A2-Square-aus (5 repos) and amlhive-tech (7 repos) went
+from OK to `could not read from remote repository`, while the 25 haris-admin repos kept working because the
+store holds theirs. **Fix it per-script, never fleet-wide:** convert the script to explicit per-command auth
+(`git fetch <auth_url> <branch>`) and remember that fetching by URL does NOT update `origin/<branch>`, so
+target `+refs/heads/<branch>:refs/remotes/origin/<branch>` or the later `git merge origin/<branch>` reads a
+stale ref; only then sanitise the repos that script owns. Verify each org with
+`git ls-remote --heads origin` BEFORE and AFTER, and never re-embed one you just cleaned.
+**Classic PATs want the `x-access-token:` userinfo form, not `oauth2:`** — GitHub answers the `oauth2:` form
+with a literal `hi` greeting on the first packet, which is how this trail was found (the `hi` in the
+A2Square runner output is a symptom, not noise).
+
 **Sanitize an already-corrupted remote:**
 ```bash
 cd /path/to/repo
