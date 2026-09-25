@@ -115,6 +115,16 @@ As of late June 2026, the Cloud topic has shifted structurally. The original Jun
 
 The June 26 structural patterns continue: sovereign cloud dominance persists (Australia-specific queries produced 152 of 262 headlines), repatriation discourse is maturing from discourse to action (InfoWorld "hits its stride", BBC "rainy days", GEICO case study, Shopify repatriation guide), and the FinOps market is consolidating at $41.89B projected. The signal balance has tightened to 1:1 (3 pro-growth vs 3 caution/cost) — more balanced than June 26's 13:8. Cloud & Infrastructure is naturally self-balancing: the repatriation and cost-concern narratives are inherently strong enough that counter-sweeps are unnecessary. Key new signals since June 26: Australia's $73.3B green-powered 4-city AI DC project (Startup Daily), Oracle 30,000 layoffs to fund AI data centers, and Microsoft eliminating Azure egress fees in competitive response to repatriation pressure.
 
+**Tier-1 vs Tier-2 recency on THIS topic (Sep 26, 2026):** the 7 unsuffixed AU-locale angle queries returned 434 items but only **34 within 21 days**; the 6 broad `when:30d` queries returned 433 items of which **355 were within 21 days**. Always run Tier 2 as a separate parse and take your findings from it — on this topic the unsuffixed set is discovery breadth only. Queries that returned the freshest, highest-signal material:
+```bash
+cloud+computing+infrastructure+when:30d
+data+centre+Australia+when:30d
+AI+data+center+investment+when:30d
+hyperscaler+cloud+earnings+capex+when:30d
+sovereign+cloud+regulation+when:30d
+cloud+repatriation+when:30d          # thinnest (~26KB) but still usable
+```
+
 **Proven concise query set (June 26, 2026 — 5 queries, all AU locale):**
 ```bash
 cloud+repatriation+trends+AWS+datacenter+2026

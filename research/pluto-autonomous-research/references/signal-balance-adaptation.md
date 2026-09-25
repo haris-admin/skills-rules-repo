@@ -16,6 +16,8 @@ The Signal Balance Check (Phase 2, Step 1) requires adapting polarity dimensions
 - **Axis 3:** cloud-adoption-accelerating vs security-risk-slowing
 - **Sweep threshold:** 5:1 imbalance on any axis
 - **Example (May 31, 2026):** 8 pro-growth vs 12 caution = 0.67:1 — balanced, no sweep needed
+- **⚠️ The caution regex must include cost/debt/outage vocabulary or the ratio is a pure artifact (Sep 26, 2026):** a pro regex built from financial-reporting words (`raise|invest|deal|record|surge|expand|launch`) against a caution regex holding only policy/alarm words produced 124:21 = **5.90:1** and triggered a sweep that was not needed. Adding the ordinary cost/risk nouns that actually carry the caution narrative on this topic — `cost|spending|bill|debt|outage|threat|over(budget|spend)|delay|waste` — over the same corpus gives 212:132 = **1.61:1**. Count with both vocabularies before declaring a breach, and corroborate with the substantive count of your own findings (Sep 26 was 3 caution-coded : 3 growth-coded).
+- **Counter-sweep vocabulary that works on this topic:** `cloud+cost+concerns+enterprise+spending+when:30d`, `data+centre+community+opposition+Australia+when:30d`, `AI+bubble+risk+data+centre+investment+when:30d`, `data+centre+energy+constraints+electricity+prices+when:30d` (all 70–98KB). `cloud+repatriation+cost+savings+enterprise+when:30d` returns a thin shell (~6KB) — repatriation is already covered by the Tier-2 set, so do not spend a sweep slot on it.
 
 ### FinTech Regulation
 - **Axis 1:** pro-regulation/compliance-tightening vs anti-regulation/burden-reduction
