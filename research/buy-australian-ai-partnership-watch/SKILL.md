@@ -64,10 +64,19 @@ venture scoring (`pluto-portfolio-ideation`), or one-off company research (`web_
 | First intake | Financial services (banking, insurance, superannuation) |
 | Tracks | Digital (open) · **Accelerator (10 companies, 8 weeks)** — both free. Cohort cap = 10 confirmed on the S&C program page 9 Sep 2026. |
 | EOI opened | 27 Aug 2026 |
-| **EOI closes** | **24 Sep 2026 (hard deadline)** · cohort notified 30 Sep |
-| Accelerator runs | **Oct–Dec 2026 (~8 wks)** per the S&C program page — not "Oct–Nov"; showcase late in the program |
+| **AMLHive EOI** | **SUBMITTED 23 Sep 2026** by Haris via the S&C form (hard close 24 Sep) — that item is closed out |
+| Program dates (operator page, 17 Sep 2026 reschedule — re-verify each run) | EOI close 24 Sep 2026 · **ten companies notified 28 Sep 2026** · national digital track **12 Oct – 4 Dec 2026** · intensive accelerator **1 Feb – 25 Mar 2027 (~8 wks)** ⚠️ ai.gov.au still shows 30 Sep / 5 Oct–27 Nov — quote the operator page, treat Feb–Mar 2027 as provisional |
+| Program shape (S&C confirmation email, 23 Sep 2026) | **Runs across eight weeks**; activities = enterprise engagement · assurance and governance · commercial readiness · procurement navigation · implementation; final design + participation requirements confirmed with selected companies and partners |
 | **IAG is NOT a partner** | Insurance is represented by the Insurance Council of Australia (a body, not a carrier). Do not add carrier profiles unless the roster changes. |
 | Problem statements | Not published as at 9 Sep; S&C FAQ says released "during the EOI period" |
+
+## AMLHive as submitted (23 Sep 2026) — on the record, reuse it
+
+- **Offering:** Australian AI-enabled **compliance-evidence platform** for regulated organisations, initially Australian real-estate businesses under AML/CTF obligations — turns documents, beneficial-ownership analysis, screening results, rules/model outputs, exceptions and human approvals into a structured, reviewable **evidence dossier** (source evidence → extracted facts → decisions → exceptions → reviewer rationale → export).
+- **AI role:** document understanding, fact extraction, entity/BO analysis, screening, rule/model _context_, with task/input/output/**model-version provenance**; the human reviewer stays accountable; **no autonomous AUSTRAC filing**.
+- **Categories:** Identity management · AI guardrails and governance · Technical solution · Business solution (NOT cyber and threats · customer protection and harm prevention · social impact · other). **Stage:** Product expansion.
+- **Traction declared (first time on record):** **six external active paying customers · ~$972 MRR ≈ ~$11,664 ARR**, one internal test subscription excluded. This is AMLHive SaaS revenue (real-estate Tranche 2 workflow), **not** accelerator or pilot revenue — re-verify before quoting in a briefing.
+- Canonical record: `vault/refined/buy-australian-ai-eoi-submission-dossier-20260920.md` §Submission record · `vault/chambers/stone-chalk-partnership.md` 23 Sep 2026 entries · vault commit `2f446918`.
 
 ## Targets
 
@@ -158,6 +167,59 @@ board moves. Full table lives in `docs/market-intel/PARTNERS.md`. `[verify]` = t
 7. **Report** to the parent / deliver the digest: targets swept, what changed (🔴/🟡/🟢), what
    needs the human. If nothing material: one line in `CHANGELOG.md` + stay silent (or [SILENT]
    per cron rules).
+
+## Procedure — Weekly enterprise deep-dive (the five founding partners)
+
+A separate weekly cron owns a *deep* per-enterprise note across CBA · Westpac · NAB · ANZ · Cuscal
+(the daily sweep only tracks program events). Deliverables, in one run:
+
+1. **Research** each of the five for the trailing 7 days across: AI/compliance posture · financial-crime
+   and scam stance (losses, reimbursement, reported fraud) · regulatory exposure (APRA / AUSTRAC / ASIC
+   enforcement, licence conditions) · corporate actions (M&A, earnings, executive changes) · anything
+   bearing on AML/CTF, KYC/KYB, document-forgery / synthetic identity, or enterprise AI governance.
+2. **Date-quarantine every article before it enters the body.** Search results for these banks are
+   saturated with re-surfaced stories whose aggregator pages carry no date. Open the outlet that FIRST
+   published and read ITS date. Anything outside ~8 weeks goes to a **“Quarantined — stale, not news”**
+   section with the real date. Known offenders: Cuscal/Feedzai card-fraud (**Sep 2018**), ANZ “Economic
+   Pulse Plus”/Gemini (**Aug 2025**), ANZ record A$240m/A$250m ASIC penalty (**15 Sep 2025**), CBA agentic
+   anti-fraud launch (**Apr 2026**), Westpac real-time AI call assistant (**29 May 2025**), and the **"$1bn
+   CBA AI loan fraud" syndication wave** — the self-report is a real continuing thread, but the copies
+   circulating (shooterssupply.org, oneturbowash.com, internewscast.com, dailymail.com) carry **no usable
+   date** and are content-farm rewrites; cite the originals (AFR) only. Watch the
+   subtler trap too: a genuinely *new* bank publication can restate research first reported months
+   earlier — report both dates (event vs underlying finding) rather than presenting it as new.
+3. **Write** `vault/refined/stone-chalk-market-intel/weekly/YYYY-MM-DD-weekly-enterprise-research.md`
+   (date = today AEST, LF endings) with sections: (1) the three things that actually moved · (2) sector
+   scams/financial crime · (3) per-enterprise ×5 (current posture + what changed + **AMLHive read**) ·
+   (4) regulatory calendar · (5) actionables · (6) quarantined stale items · (7) sources + coverage gaps.
+4. **Append** a `## Week of YYYY-MM-DD` block to **each** of `profiles/01-cuscal.md` … `05-westpac.md`,
+   and a dated entry to the signal log at the **bottom** of `vault/chambers/stone-chalk-partnership.md`,
+   plus an entry at the **top** of the pack `CHANGELOG.md`. **These three file classes are CRLF** — write
+   them in Python bytes mode with explicit `\r\n` (the patch tool normalises line endings file-wide and a
+   small insertion then diffs as dozens of changed lines). The new weekly note itself is LF, like its
+   predecessors. The chamber's header pattern (`### YYYY-MM-DD · intel · …`) may already exist from that
+   day's daily sweep — key idempotency checks on the entry's own wording, not on the header.
+5. **Secret-scan, then commit and push** — `git add --` the eight paths explicitly (never `git add -A`;
+   `vault/reports/*` deletions in this clone are sparse-checkout phantoms, not real deletions), push
+   `origin main`, then copy the note to `alexandria-ops/insights/YYYY-MM-DD-weekly-enterprise-research.md`
+   and push there (scoped to `insights/`; that repo usually carries another writer's untracked `reports/`).
+   Verify with `git rev-parse HEAD == origin/main`, `git cat-file -e origin/main:<path>`, **and** confirm a
+   phantom reports path still exists upstream.
+
+**Source-availability quirks (verified Sep 2026).** `afca.org.au` is **Cloudflare-challenged** for scripted
+fetches — take AFCA consultation closing dates from the AFCA-adjacent legal analyses rather than the site.
+Cuscal's newsroom resolves at **`cuscal.com/newsroom`** (200) while the **`www.cuscal.com.au/newsroom`**
+variant **404s**, and its ASX-announcement feeds (`openbriefing.com`, `company-announcements.afr.com`)
+return **403** — so a missing Cuscal announcement is a **coverage gap, not "no news"**. ASIC's newsroom
+index is JS-rendered but **individual media-release URLs fetch fine**, so enumerate the index in a browser
+and extract the release URLs directly. `bankingday.com` is the highest-yield dated feed for partner
+conduct/pricing moves (its article sidebars list same-edition items **with timestamps** — use them to date
+items you find elsewhere). AFR is paywalled: headlines, standfirsts and search summaries only.
+
+**House rules for this deliverable.** All five are public reporting only — never imply a partnership,
+customer relationship or inside knowledge. **Never name ANZ as a partner, pilot site or reference for
+AML/CDD/onboarding** (APRA CEU perimeter). Never link harishabib.au with AMLHive. The AMLHive read in every
+per-enterprise section is the point of the note — a roster of news without it is a failed sweep.
 
 ## Sources
 
@@ -259,6 +321,14 @@ board moves. Full table lives in `docs/market-intel/PARTNERS.md`. `[verify]` = t
 - Rewriting whole profiles on a light sweep instead of appending to "Last 30–60 days."
 - Treating an unverified named title as fact — carry the `[verify]` flag until an official page
   or the person's own statement confirms it.
+- **Line endings: write these pack files as BYTES with explicit CRLF** (CHANGELOG, PARTNERS, WATCH,
+  chamber). Never round-trip them through `Path.read_text()/write_text()` — Python's universal-newline
+  translation silently rewrites CRLF as LF and the next commit diffs as the whole file (this is why the
+  CHANGELOG showed 21 CRLF / 196 LF after a sweep run). Read bytes, decode, edit, re-encode, set the ending.
+- **Never `git checkout --` a pack file to clear "uncommitted churn".** The day's sweep writes stay
+  uncommitted until the next sync, so a checkout silently destroys that day's CHANGELOG/chamber entry
+  (happened 23 Sep 2026; recovered from the sweep's own scratch script). Diff first — dirty usually
+  means the day's legitimate content.
 
 ## References
 
