@@ -485,6 +485,13 @@ Three rules now apply to every producer feeding the palace:
 episode, show, quote hash) is noise with good manners: pass `source_type`, `episode_id`, `show`,
 `quote_hash`, `verified` through the contract so a palace hit resolves to a file and an episode.
 
+4. **Dedup at INGEST, not afterwards.** Document ids are timestamp-based (`pluto_<timestamp>_<n>`), so
+   re-feeding the same file duplicates every item — the 2026-09-27 backfill ran twice and tripled
+   nothing but noise (1,070 docs where 530 were expected). Identity is `quote_hash` when the item has a
+   verbatim quote, otherwise the title: the feeder checks the target collection for that identity and
+   skips what is already there. `mempalace_dedup_podcast.py` cleans up a collection that predates the
+   rule. A re-run must be a no-op, not a doubling.
+
 `mempalace_sidecar_from_md.py` converts legacy bullet/section artefacts into the contract with a shape
 cascade (bullets → bold headings → whole document). Verify with `mempalace_reconcile.py`, which reports
 anything unlanded across queue → palace → Alexandria.
