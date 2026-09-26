@@ -8,7 +8,8 @@
 | 2 | a16z | @a16z | UC9cn0TuPq4dnbTY-CBsm8XA | AI, crypto, enterprise trends |
 | 3 | My First Million | @MyFirstMillionPod | UCyaN6mg5u8Cjy2ZI4ikWaug | Business ideas, side hustles |
 | 4 | Acquired | @AcquiredFM | UCyFqFYfTW2VoIQKylJ04Rtw | Company histories, strategy |
-| 5 | Moonshots | @moonshotsclips | UCCpNQKYvrnWQNjZprabMJlw | AI, geopolitics, future-of-work |
+| 5 | Moonshots (Peter Diamandis) | @peterdiamandis | UCvxm0qTrGN_1LMYgUaftWyQ | AI, geopolitics, future-of-work, the AMA episodes |
+| 5b | Moonshots Clips | @moonshotsclips | UCCpNQKYvrnWQNjZprabMJlw | clips only — its 43 held episodes stay attributed here |
 | 6 | AI Engineer | @aiDotEngineer | UCLKPca3kwwd-B59HNr-_lvA | AI engineering, agents, MCP, evals |
 
 ## Tier 1.5 — Lenny's Podcast (Credential-Required)
@@ -85,3 +86,42 @@ From The Investors Podcast "20 Best Business Podcasts":
 | Others | ⏳ Untested | TBD |
 
 For 404 channels, investigate yt-dlp or direct page scraping as fallback.
+
+## Added 2026-09-27 — the AI/futurism + startups/VC + payments set
+
+Every row below was **vetted live** (`survey_channels.sh`, then channel_id resolved by yt-dlp) and
+registered with an idempotent insert. The three high-volume AI-news reaction channels were deliberately
+**held back** (low novelty per episode); AUSTRAC/APRA/RBA have no YouTube presence at all.
+
+| # | Podcast | YouTube Handle | Channel ID | Best For |
+|---|---------|---------------|------------|----------|
+| 30 | Moonshots (Peter Diamandis) | @peterdiamandis | UCvxm0qTrGN_1LMYgUaftWyQ | exponential tech, AMA episodes |
+| 31 | Y Combinator | @ycombinator | UCcefcZRL2oaA_uBNeo5UOWg | startups, YC Paper Club, AI economics |
+| 32 | 20VC with Harry Stebbings | @20VC | UCf0PBRjhf0rF8fWBIxTuoWA | VC, valuations, funding markets |
+| 33 | Compliance Week | @ComplianceWeek | UCeovkFjqTg2xhTatbapZVNg | compliance ops, DOJ accountability |
+| 34 | Dwarkesh Podcast | @DwarkeshPatel | UCXl4i9dYBrFOabk0xGmbkRA | frontier AI research |
+| 35 | Every | @EveryInc | UCjIMtrzxYc0lblGhmOgC_CA | AI for professional work |
+| 36 | Fintech Brainfood | @FintechBrainfood | UCB103nqYBYdnJTtS-I6-SmA | payments × AI (highest AU-relevance) |
+| 37 | Fintech Insider (11:FS) | @11FS | UC3eVdgT1EHwIxG5ynO42XXg | banking/fintech reporting |
+| 38 | First Round Capital | @firstroundcapital | UC_oji6l_-xwhmZqCxRGuAXw | engineering leadership |
+| 39 | Latent Space | @LatentSpaceTV | UCvi5jNRoRVm436TVAXet1kQ | agent engineering, skills, evals |
+| 40 | Lex Fridman Podcast | @LexFridman | UCSHZKyawb77ixDdsGog4iWA | long-form AI/tech |
+| 41 | Machine Learning Street Talk | @MachineLearningStreetTalk | UCMLtBahI5DMrt0NPvDSoIRQ | deep AI research |
+| 42 | No Priors | @NoPriorsPodcast | UCSI7h9hydQ40K5MJHnCrQvw | AI infra, agentic finance, stablecoins |
+| 43 | Stripe | @stripe | UCM1guA1E-RHLO2OyfQPOkEQ | payments primary source |
+| 44 | The AI Daily Brief | @AIDailyBrief | UCKelCK4ZaO6HeEI1KQjqzWA | daily AI news |
+| 45 | The Neurodiversity Podcast | @NeurodiversityPodcast | UC0uqBiZ1DhZWdmq2y5w9_2g | neurodiversity, accessible learning (Simplifii) |
+
+**Idempotent insert (no sequence assumption — `id` has no working default):**
+```sql
+with base as (select coalesce(max(id),0) as m from podcast_kb.podcasts),
+vals(name,handle,cid,tier,cat,rel) as (values ('Podcast','@handle','UC...',1,'Category',0.55))
+insert into podcast_kb.podcasts (id,name,youtube_handle,channel_id,tier,category,relevance_au)
+select base.m + row_number() over (order by v.name), v.name, v.handle, v.cid, v.tier, v.cat, v.rel
+from vals v, base
+where not exists (select 1 from podcast_kb.podcasts p where p.youtube_handle = v.handle or p.channel_id = v.cid);
+```
+
+**A newly added row produces no episodes until transcripts are reachable** — say *registered, waiting on
+transcript access*, never *captured*; `podcast_new_channels_retry.sh` cycles every 25 min until the IP
+block lifts, and the nightly 04:00 ingest collects them thereafter.

@@ -12,6 +12,7 @@ allowed-tools: [terminal, file, read_file, write_file, execute_code, memory]
 - Debugging the yt-dlp + transcript pipeline
 - Querying the knowledge base for Australian-relevant podcast insights
 - Setting up monitoring crons for podcast ingestion
+- The user mentions an episode the KB does not have → **run the capture audit first** (`python3 ~/.hermes/scripts/podcast_capture_audit.py` — see "Capture-chain integrity"), then go to the source (`references/transcript-sources-and-fallback.md`). Never answer "the KB has nothing on that" without first reporting whether the episode is missing, un-chunked, or unread.
 
 ## Architecture
 
@@ -124,6 +125,12 @@ The daily ingestion script at `~/.hermes/scripts/podcast_ingestor.py` is designe
 - **Dynamic SINCE_DAYS=7** — only fetches episodes from the last week, computed as `(datetime.now() - timedelta(days=SINCE_DAYS))`
 - **15 videos per channel** max discovery (not 50) — keeps yt-dlp date-fetching fast
 
+**A 0-chars transcript is a BLOCK, never "thin data"** — `download_transcript()` returns an empty string
+rather than raising, so an IP block looks exactly like a short clip. Classify it: consecutive empty
+fetches (>=3) must be counted as BLOCKED and returned as **exit 3**, so the retry driver keeps cycling
+instead of declaring success. Without this, a newly registered channel reports `inserted=0, rc=0` and the
+retry stops — the row exists, no episodes ever arrive, and nothing looks wrong.
+
 This allows the 12:35 AM cron to complete within ~90 minutes and still have buffer before the 5:02 AM insight extractor.
 
 ### Two-Phase Video Discovery (CRITICAL)
@@ -153,7 +160,7 @@ Channel handles must be verified before ingestion. Wrong handles silently return
 - My First Million: `@MyFirstMillionPod`
 - Acquired: `@AcquiredFM`
 - Lenny's Podcast: `@lennyspodcast`
-- Moonshots: `@moonshotsclips`
+- Moonshots: **`@moonshotsclips` is the CLIPS channel, NOT the show** — pointing the row there silently stopped ingest while the main show kept publishing; see "A podcast row can silently watch the WRONG channel" and re-point it at the main handle before expecting new episodes.
 - **Silicon Valley Girl:** `@siliconvalleygirl` (added June 4, 2026)
 - **AI Engineer:** `@aiDotEngineer` (added June 6, 2026) — Channel ID `UCLKPca3kwwd-B59HNr-_lvA`. ~1 ep/day, 372 in 12-month window. Covers agents, MCP, LLM ops, evals, coding agents. Tier 1, relevance 0.85. Dedicated MemPalace `aie-podcast` chamber. **Ingestion started June 8: 14/372 captured before IP block.** Resume with yt-dlp android client + cookies.
 - **Sabrina Ramonov:** `@sabrina_ramonov` (added Aug 30, 2026) — Channel ID `UCiGWNa6QK6CiKPvv5-YPv8g`. 364K subs, 2.2K videos, daily uploads, top-5% AI-coding educator. Solo founder of Blotato (AI SaaS content repurposing). Traction/distribution playbook: solve own problem → validate via content → film MVP build → launch to audience → watch PostHog → copy proven hooks → one-day content engine. Tier 1, relevance 0.60.
@@ -224,7 +231,25 @@ Score = min(1.0, matches × 0.15). Episodes with score > 0.5 are flagged for AU 
 The chunking pipeline was built on June 8, 2026 to fix the "0 vector chunks" problem. The ingestion script stores full transcripts but never generated embeddings — meaning `hybrid_search()` could never return results.
 
 **Script:** `~/.hermes/scripts/podcast_chunker.py`
-**Cron:** `79c8ad5b9465` — **[PRUNED June 13, 2026]** Chunking pipeline removed. Was Daily 2:00 AM AEST (no_agent script). If chunking is needed again, create a new `no_agent: true` script with 900s+ timeout.
+**Cron:** `bc60994e5592` — Daily 04:30 AEST, `no_agent`, **fail-closed** (re-created 2026-09-26).
+History: `79c8ad5b9465` was PRUNED June 13, 2026 and **nothing downstream was adjusted for it — that is the single biggest capture defect in this pipeline.**
+
+**The 3.5-month outage was a HANG, not a prune (root-caused 2026-09-26).** `chunk_text()` ended with
+`start = end - overlap; if start >= len(text): break`. Once the remaining tail was <= the overlap,
+`end` pinned at `len(text)` and `start` oscillated at `len(text) - overlap` **forever** — the process
+spun, appending 200-char tail chunks, and never finished. Newest chunk ever written: **2026-06-08
+13:20 UTC**, matching the script's own mtime (Jun 8 23:23 AEST). So the producer died mid-run that
+night; the job was removed five days later for "stability", and the real defect was never seen.
+**Fix:** `if end >= len(text): break` before advancing, plus a belt-and-braces
+`new_start = max(end - overlap, start + (chunk_size - overlap))` so start can never fail to advance.
+Regression test: chunk lengths 100 … 120,000 chars must all terminate (50k → 29 chunks, 120k → 68).
+
+**The prune starved every reader.** The daily-learning cron draws episodes with `>= 8` chunks; with chunking gone, only the June-and-earlier episodes ever qualified, so the corpus that the reader can reach is a rounding error of the corpus that exists (measured: 22 of 1,364 episodes; 194 had any chunks at all; newest chunk written 8 June 2026). Symptoms look like a *content* problem, not a pipeline problem: the digest teaches something stale/off-topic and the user's own episode "is not in the KB".
+
+**Rules that keep this from recurring:**
+- Restoring chunking is a **prerequisite** for any other capture work — there is no point improving extraction while the reader cannot select the episode. To re-create the job: `no_agent: true` script running `podcast_chunker.py`, timeout >= 900s.
+- **Never prune a producer without checking its consumers.** Before removing any stage, grep what selects on its output (here: the daily-learning query's `>= 8` chunks filter, `hybrid_search()`, the insight extractor) and either re-satisfy them or change them in the same change.
+- Verify with the capture audit (`references/capture-chain-audit.md`) rather than assuming the prune was harmless.
 **Embedding model:** `openai/text-embedding-3-small` via OpenRouter (1536-dim, $0.02/1M tokens)
 **Chunking:** 2,000 chars per chunk + 200-char overlap, sentence-boundary aware
 
@@ -251,6 +276,278 @@ When a podcast channel merits its own MemPalace chamber (rather than mixing into
 
 Chambers created this way: `aie-podcast` (aiDotEngineer, 372 episodes, June 2026).
 Scripts: `/tmp/aie_chamber_ingest.py` (main ingestion, newest-first, `--limit` + `--dry-run` flags) and `/tmp/aie_continue.py` (offset-based resumption, accepts `OFFSET LIMIT` args, skips already-ingested episodes). Both auto-abort at 5 consecutive transcript failures.
+
+## Capture-chain integrity — measure each link before theorising
+
+The chain is `episode → transcript → chunks → insights → curated knowledge`. **A break anywhere
+produces the same symptom**: the KB "has nothing" on an episode the user heard, and the daily digest
+teaches something else. Absence of knowledge is not evidence of a bad summary — a summariser that
+never received the episode produces exactly the same result as one that summarised it badly.
+
+**Always run the audit before answering "the KB does not have it":**
+
+```bash
+python3 ~/.hermes/scripts/podcast_capture_audit.py                        # totals + capture gaps
+python3 ~/.hermes/scripts/podcast_capture_audit.py --by-podcast --ledger   # per show + last 60 days
+python3 ~/.hermes/scripts/podcast_capture_audit.py --json                  # machine-readable
+```
+
+Read-only, and **exits 1 whenever any episode is unreachable** — so it can be scheduled fail-closed.
+It reports, per link: episodes with a transcript, with any chunks, meeting the reader's `>= 8` chunk
+threshold, the newest chunk timestamp (proves whether the chunk writer is alive), false-green ingest
+runs, and the extractor's own window accounting (`episodes_in_window` vs `episodes_read`).
+
+**Read the newest-chunk timestamp first.** It is the fastest tell that a producer died: a chunk date
+months behind `episodes.created_at` means the reader has been blind since that date regardless of how
+healthy every cron's `last_status` looks.
+
+**Coverage queries (the audit's core):**
+
+```sql
+-- how much of the corpus can the reader actually select?
+select count(*) total,
+       count(*) filter (where exists (select 1 from podcast_kb.chunks c where c.episode_id=e.id)) chunked,
+       count(*) filter (where (select count(*) from podcast_kb.chunks c where c.episode_id=e.id) >= 8) selectable
+from podcast_kb.episodes e;
+
+-- did any producer claim success while producing nothing?
+select count(*) from podcast_kb.ingest_log where coalesce(chunks_created,0) = 0 and status = 'success';
+```
+
+### The gate set a repair must satisfy (implementation status varies — check before claiming done)
+
+| Gate | Must assert | Not yet built as of the last audit |
+|---|---|---|
+| P0 ingest | episode has a *real* transcript | **built** — `--min-chars 2000`, thin runs logged `skipped_thin` (not skipped silently) |
+| P1 raw leg | immutable per-episode capture record | **built** — `alexandria-ops/podcast-capture/<YYYY-MM>/episode-<id>.json` |
+| P2 chunks | chunks exist, coverage verified, `ch=0` is never success | **built** — chunker re-scheduled `bc60994e5592`; it re-counts rows in the DB and fails the episode if the write didn't land |
+| P3 extract | key points stored **per episode** with verbatim quotes | **built** — `jsonb` per episode in `podcast_kb.capture_ledger.key_points` |
+| P4 verify | independent pass re-reads the transcript, lists what the maker MISSED, then locks | **built** — `podcast_capture_verify.py` (job `4ef6e889e8d6`) |
+| P5 curate | only `locked` episodes reach the curated layer | **built** — `podcast_curated_export.py` (job `b0826b3b4123`) exports `locked` rows only into `mempalace-inputs` → the vault sync carries them to `alexandria`; everything else is reported as an explicit unverified count |
+
+Watchdog job `cc76c11d35d2` (daily 06:25) runs the capture audit and is **silent when healthy** —
+it speaks only when episodes cannot reach the reader, so the next silent outage announces itself.
+
+The maker must never be its own verifier (P4) — a self-check passes by construction. Use a different
+model family for the verify pass than for the extract pass, and keep the raw leg (P1) on
+`alexandria-ops` with the curated layer on `alexandria` so the two can be compared.
+
+### Pitfalls
+
+- **`status = 'success'` with zero output is a false green.** An ingest run that reports success while
+  writing 0 chunks hides a dead producer for months: assert the stage's own output count and fail
+  non-zero on zero. Any "N processed" line must carry the count of what it actually created.
+- **A rolling-window output is not storage.** A JSON/markdown that keeps only the last N days of
+  extracted key points discards everything older on every run. If the user expects to ask about an
+  episode weeks later, persist one durable record per episode keyed by episode id.
+- **Short "transcripts" are YouTube descriptions, not content.** Entries of ~400-1,700 chars are
+  shownotes/Shorts, not talk; they cannot yield chunks or key points. Flag them as `transcript_thin`
+  rather than counting them as captured.
+- **Never match short acronyms with bare substring `ILIKE`.** `transcript_text ILIKE '%AMA%'` matches
+  *Amazon* (and "drama", "Kamath"); an episode search that silently returns unrelated rows reads as
+  "no such episode". Anchor with a word-boundary regex (`~* '\mAMA\M'`) or search the title.
+- **Aggregate-in-`GROUP BY` fails in psql.** `to_char(created_at,'YYYY-MM') || count(*) ... GROUP BY 1`
+  errors with "aggregate functions are not allowed in GROUP BY"; bucket in a subquery and concatenate
+  outside it.
+
+### The maker/checker verifier (`podcast_capture_verify.py`)
+
+`python3 ~/.hermes/scripts/podcast_capture_verify.py [--episode-id N | --since DAYS | --limit N]`
+(runs daily at 05:35 via `podcast_capture_verify_daily.sh`, job `4ef6e889e8d6`).
+
+| Pass | Model | Job |
+|---|---|---|
+| MAKER | `deepseek-flash` (DeepSeek direct) | 6-14 key points, each with a **verbatim quote** + context |
+| CHECKER | `qwen/qwen3.8-flash` (OpenRouter, fallback `google/gemini-3.8-flash`) | per point: quote verbatim? claim supported? **plus the point of the whole exercise — what is MISSING** |
+| MAKER round 2 | `deepseek-flash` | returns **only the missing points** (ask for the merged list and the JSON comes back truncated) |
+| verdict | code | `locked` only if every point passes the token-window check AND no material point is missing; otherwise `needs_human` |
+
+Measured 2026-09-26 on a 24.6k-char episode: **$0.005-0.010 per episode**, ~2-4 min. Qwen is
+~8x cheaper than Gemini on output ($0.47 vs $3.75 per 1M); Gemini runs as the fallback because Qwen
+upstream rate-limits (HTTP 429) intermittently. The model actually used is stored per episode
+(`checker_model`), so verification provenance is never ambiguous.
+
+**Why the vendor split matters — with the receipt.** On the first full run the DeepSeek maker produced
+14 points; the independent checker accepted all 14 quotes and then listed **3 material points the maker
+had missed** (Iger's crisis-leadership posture, autocrat/democrat decision balance, quality-vs-volume).
+A self-check would have passed by construction.
+
+**Pitfalls that cost real debugging time:**
+
+- **DeepSeek spends the budget on `reasoning_content` first.** With `max_tokens` too small the call
+  returns an **empty `content`** and `finish_reason=length` — which reads as "the model said nothing".
+  Allow 3 attempts with 8k → 16k → 32k, and treat empty content as retryable, not as an answer.
+- **`str.format()` on a prompt containing JSON braces raises `KeyError: '"points"'`.** Use
+  `.replace("{transcript}", ...)` instead of `.format()`.
+- **`podcast_kb_query.run_sql()` returns the raw stdout TEXT, not rows.** The splitting version lives in
+  `podcast_chunker.py`. Iterating the helper's return value walks the string one CHARACTER at a time and
+  silently yields digit-characters as "rows" (it reported *54 episodes* for a single-episode query).
+  Wrap it: `[line.split("|||") for line in raw.strip().splitlines()]`.
+- **A character-exact verbatim check cries wolf.** Models normalise curly quotes/dashes and YouTube
+  captions carry speaker labels mid-quote, so compare **word-token windows** (a contiguous 12-word
+  window must appear in the transcript) after folding typography to ASCII. A char comparison rejected 6
+  genuinely-verbatim quotes out of 14.
+- **`\copy ... from stdin` swallows every SQL statement after it** in the same psql session, and a TEMP
+  staging table dies with the session. Stage into a permanent table and `\copy` from a FILE.
+- **Transcripts contain newlines** (154 episodes do). A `|`-delimited or line-per-row psql read breaks on
+  them: transfer `json_build_object(...)::text` (escapes newlines) and split rows on the separator only.
+- **Sub-$0.01 is the right order of magnitude for embeddings too:** `text-embedding-3-small` is $0.02/1M
+  tokens; a 50k-char episode was 13,354 tokens ≈ $0.00027. A 1,169-episode backfill is pennies.
+
+### Transcript integrity: a transcript can exist and still be a fragment
+
+`scripts/podcast_transcript_integrity.py` fetches each video's real duration and compares the stored text
+against this corpus's own speech rate (**~1,100 chars per minute**; measured 981-1,225 across complete
+episodes). Classes: `ok` · `clip` (video < 180s — a short transcript is CORRECT, not a loss) ·
+`LOSS` (fragment) · `nodef` (couldn't judge — never counted as OK).
+
+Found on first run: **165 fragments, all in episode ids 1-508** (an older ingest era) — e.g. a 2h48m
+episode holding 5,000 chars (2.7%), a 77-minute episode holding 1,784 chars. Damage is confined to the
+early ids, so check ids first before assuming the current path is broken.
+
+**Repair (`podcast_transcript_repair.py`, driven by `podcast_repair_retry.sh`):** re-fetch the best
+English track (manual before auto-generated), accept ONLY if the new text is >= 1.5x stored and >= 2,000
+chars, then **clear that episode's chunks** so the chunker rebuilds them — the chunker selects chunkless
+rows only, so stale chunks from the fragment would otherwise survive forever. Never overwrite with a
+shorter text: leave it and log it, so the fragment stays visible.
+
+**NEVER parallelise YouTube scraping.** Six concurrent shards earned **HTTP 429** on the watch page and
+`IpBlocked` on the transcript endpoint, plus yt-dlp's "Sign in to confirm you're not a bot" — 143 rows
+got poisoned as `unrecoverable` before this was caught. Cap concurrency at 1-2, pace with a delay, and
+treat `IpBlocked` / 429 / "Sign in" as **retry later** (abort the run after 3 consecutive strikes) —
+never as "no transcript available". A blocked IP also breaks the nightly ingest fallback (yt-dlp), so
+re-check access before the 4:00 AM job.
+
+### A podcast row can silently watch the WRONG channel
+
+`podcast_kb.podcasts` id=5 was named **"Moonshots Podcast"** while its handle was **`@moonshotsclips`** —
+a clips channel (last upload 2026-08-05) rather than the main show, so ingest stopped while the podcast
+kept publishing. This is why the AMA material never arrived at all.
+
+**Check when a show goes quiet:** compare the newest episode's **duration** against what that show normally
+publishes. 8-15 minute "episodes" from a 60-90 minute show means you are watching its clips channel.
+Verify `youtube_handle` identity, not just the display name.
+
+**Resolve handle → channel_id without the watch page** (the watch page is the first thing a rate limit
+kills; the listing path keeps working):
+
+```bash
+/tmp/podcast_venv/bin/yt-dlp --flat-playlist --playlist-end 1 --no-warnings \
+  --print '%(channel_id)s|%(title).60s' "https://www.youtube.com/@HANDLE/videos"
+```
+
+`scripts/survey_channels.sh HANDLE...` does this for a list of candidates and prints the newest three
+titles per handle — use it before inserting a row, so the handle is confirmed to be the SHOW and not a
+clips/archive/namesake channel.
+
+**Repointing vs replacing — a data-integrity decision, not a rename.** When a row turns out to watch a
+clips channel, do NOT repoint that row at the main channel: the row already owns episodes that were
+*correctly* captured as clips, and repointing retro-labels them as full episodes and breaks the
+attribution of anything already verified from them. Instead **rename the row to what it actually is**
+(e.g. `Moonshots Clips`) and **INSERT a new row** for the real show. Both stay in the table; the audit's
+per-show view then reads honestly. Generalise: a row's `name` is provenance — changing what a row points
+at invalidates every episode already attached to it.
+
+### Curation gate: only `locked` reaches Alexandria
+
+`scripts/podcast_curated_export.py` (job `b0826b3b4123`, 06:10) reads `podcast_kb.capture_ledger` and
+publishes **only `status='locked'` rows** into `~/.hermes/mempalace-inputs/`, which the 06:15 vault sync
+carries into `alexandria/vault/inputs`. It always states the unverified count, so a gap reads as
+*unverified: N*, never as "nothing important in that episode". Silent when it curated nothing.
+
+### Verifying the corpus without wasting money
+
+`scripts/podcast_verify_backfill.sh WORKERS LIMIT SINCE_DAYS` runs the maker/checker across many episodes in
+parallel; it uses `--list-pending --clean-only`, which **excludes fragments and unjudged rows**, so money is
+never spent verifying a transcript that is about to be re-fetched (a fragment would be verified, marked
+needs_human, and then invalidated by the repair anyway). Measured: ~$0.005-0.010 and 2-4 min per episode.
+
+### Chamber router — BUILT, measured, and in calibration
+
+`scripts/podcast_three_filters.py` reads each **locked** episode and routes its material into three
+chambers, verbatim and attributed; `scripts/podcast_filters_report.py` aggregates the run's JSONL into
+one markdown file per lens under `~/.hermes/mempalace-inputs/` for the vault sync to carry to Alexandria.
+
+It routes from the **stored** transcript, so a YouTube block does not block it (only ingest/repair are
+blocked) — do not park routing work behind a transcript-access problem. Measured over 41 episodes:
+**0 failures, $0.00069 per episode**, ~12 chamber-1 items each, i.e. the entire 1,364-episode corpus
+routes for about a dollar. Cost is not a reason to ration routing; **relevance calibration is the real
+problem** (see the calibration rules below).
+
+1. **Chamber 1 — noteworthy, verbatim**: frameworks, numbers, predictions, contrarian claims, tactics,
+   lessons. The quote is copied exactly and carries a short context label.
+2. **Chamber 2 — Australian relevance**: geography, regulation, payments rails/schemes, local industry,
+   sovereignty, workforce — each with a short `why_australia` line.
+3. **Chamber 3 — project lenses**, one file per lens rather than one mixed bucket (retrieval and dedup
+   stay clean):
+   - `simplifii` — neurodivergent/accessible learning, EdTech, students, study support
+   - `predispute` — pre-chargeback reconciliation and recovery, merchant/customer disputes, chargebacks
+   - `tapease` — card-present POS, transport ticketing, taxi, forecourt, in-person payments
+   - `amlhive` — AML/CTF compliance, AUSTRAC, RegTech, reporting obligations
+   - `haris` — the operator's own public positioning: AI adoption and safe agent rollouts in regulated
+     environments, agent architecture and governance, payments architecture, cloud/resilience,
+     engineering operating models, regulated delivery (APRA CPS 230, AUSTRAC Tranche 2, Privacy Act,
+     Essential Eight). Source of truth for this lens is harishabib.au — re-read it when the lens
+     looks stale rather than inventing themes.
+
+**Hard rules — each one earned by a failure earlier in this chain:**
+
+- **Only `locked` episodes feed the router.** The P5 gate is the router's input filter, never its job.
+- **Verify quotes in code** with the token-window check and drop (counting) anything that fails. A model
+  claiming it quoted verbatim is not evidence; some cheap models paraphrase silently.
+- **Provenance per item**: episode id, show, published date, transcript sha, router model, run timestamp.
+- **Dedup across episodes** — the same idea from N episodes is one entry citing N sources, not N lines.
+- **A lens with nothing says so** ("0 items from N locked episodes"). An empty chamber must never be
+  indistinguishable from a chamber nothing was routed into.
+- **Idempotent and resumable**, keyed by (episode id, lens, quote hash), so re-runs and corpus backfills
+  cannot duplicate entries.
+- **Choose the model by measurement, not reputation** — route that decision through `llm-cost-routing`
+  ("Value bake-off: reference-scored, and per JOB SHAPE"): benchmark against a named reference on the
+  router's OWN output shape (many items with quotes), and project corpus cost from measured tokens.
+- **Router ladder as measured (2026-09-27)** — ordered by *completion reliability first*, then value:
+  1. `deepseek/deepseek-v4-flash` — completes long structured output, quotes verify, ~$0.0007/episode
+  2. `z-ai/glm-5.3-flash` — highest recall (82% vs the Qwen 3.8 reference) and 16/16 verbatim, **but only
+     with `reasoning: {enabled: false}`**: left on, it spends the whole output budget on hidden reasoning
+     and returns an empty `content` (same trap that killed both Nemotrons and starves DeepSeek at low
+     `max_tokens`). Reasoning-heavy models must have reasoning turned OFF for extraction work.
+  3. `deepseek/deepseek-v4.1-flash` — fallback, 73% recall
+  4. `qwen/qwen3.8-flash` — last resort: proven checker, verbose router (truncated at 7k output tokens)
+- **Do not park routing behind transcript access.** The router reads the STORED transcript, so a YouTube
+  block stops ingest and repair but not routing — run the filters over what is already captured.
+
+**Calibration — a lens LABEL is not evidence that an item belongs in that lens.** The first real run
+produced three failure modes worth guarding against in any filter/router prompt:
+
+- **A free-text relevance field invites post-hoc rationalisation.** Asked *why* an item matters to a
+  lens, the model will invent a link: a sports/business episode yielded an item claiming it "touches
+  fintech and RegTech". Require an **explicit anchor** — the item must name the regulation, rail,
+  jurisdiction or entity it connects to — and drop items that only assert generic relevance. A single
+  "relevance" field with no anchor requirement manufactures plausible noise at scale.
+- **A broad lens becomes a catch-all.** The self-positioning lens absorbed generic AI-infrastructure
+  minutiae while the specific project lenses returned zero — including an episode squarely about
+  education scoring zero for the education lens. Define every lens by **explicit triggers** (see the
+  trigger table in `references/chamber-router.md`) and **score each item's relevance in code** with a
+  threshold, rather than trusting which bucket the model chose.
+- **Chamber 1 runs ~12 items per episode**, so 40 episodes produced 500+ items. Dedup by normalised
+  quote hash across episodes (the same idea from N episodes is ONE entry citing N sources), and expect
+  chamber 1 to need theme-level curation on top of quote-level dedup.
+
+**Run mechanics for any multi-episode model pass:** a tool call cannot hold a run of this length (the
+`execute_code` cell caps out around five minutes), so launch it **detached** (`tmux new-session -d`),
+shard the episode list across 2-3 workers, and have the script **append each episode's result to a
+JSONL the moment it lands** — then poll the log with a bounded loop. Partial evidence must survive an
+interrupt, and a run must never hold the only copy of its own results in memory.
+
+Sequencing: repair fragments → re-chunk → verify to `locked` → route. Never route ahead of the gate.
+
+**Scheduled:** `scripts/podcast_three_filters_daily.sh` runs 06:45 daily (cron `a2ff28e23482`, `no_agent`
+script, `deliver: local`, failures routed to the origin chat). A **2-day window** catches late-ingested
+episodes; the router's quote-hash dedup makes re-runs a no-op. It sits at the end of the chain
+(04:00 ingest → 04:30 chunk → 05:35 verify → 06:10 curate → 06:25 watchdog → 06:45 route) so it can only
+ever route what is already captured and verified.
+
+Full detail, decisions and the gate rationale: `references/capture-chain-audit.md`.
+Router prompt contract, lens trigger table and the calibration fixes: `references/chamber-router.md`.
 
 ## Lenny's Podcast — Credential Integration
 
@@ -418,9 +715,30 @@ The YouTube Data API v3 wrapper (`scripts/youtube_api_wrapper.py`) is **live wit
 
 ## Adding a New Podcast
 
+**Answer requests for "what else covers this?" with VERIFIED candidates, not a list of names.** Survey
+them live and report only the handles that answered, each with what it actually publishes:
+
+```bash
+bash ~/.hermes/skills/research/podcast-knowledge-base/scripts/survey_channels.sh HANDLE1 HANDLE2 ...
+```
+
+Group the findings by which lens they feed (frontier AI / startups-VC / payments-fintech / the
+portfolio's own domains), and **state the marginal cost before adding any of them**: each new show is
+roughly its upload rate per day, and every episode carries the measured verify+route cost. A fleet of
+candidate channels is a recurring-bill decision, so offer a tiered recommendation (a small high-signal
+core set vs the high-volume reaction channels) and let the user pick.
+
+**Not every domain has a YouTube presence — check before inventing a row.** Australian regulators
+(AUSTRAC, APRA, the RBA) publish on their own websites/PDFs and have no channel to watch. For a lens
+whose sources are documents, the answer is the web/regulatory ingestion path, not a podcast row; say so
+explicitly rather than adding a row that will never produce an episode.
+
 1. Find the YouTube channel handle and ID:
 ```bash
 curl -sL -A "Mozilla/5.0" "https://www.youtube.com/@HANDLE" | grep -oP 'channel_id=([a-zA-Z0-9_-]+)' | head -1
+# preferred — works even while the watch page is rate-limited:
+/tmp/podcast_venv/bin/yt-dlp --flat-playlist --playlist-end 1 --no-warnings \
+  --print '%(channel_id)s' "https://www.youtube.com/@HANDLE/videos"
 ```
 
 2. Register in Supabase (unique constraint is on `name`, not `youtube_handle`):
@@ -435,12 +753,26 @@ ON CONFLICT (name) DO UPDATE SET channel_id = EXCLUDED.channel_id, youtube_handl
 /tmp/podcast_venv/bin/python3 /home/habib/.hermes/scripts/podcast_ingestor.py
 ```
 
+To backfill just the sources you added, use the targeted per-channel ingest
+(`podcast_ingest_channels.py <handle>...`) instead of a full-corpus sweep — it retries until transcripts
+unblock. **A newly-added row produces NO episodes until transcripts are reachable**: if `IpBlocked`/429
+is active (see "Transcript integrity"), the row is registered and waiting, so say *registered, waiting on
+transcript access* rather than reporting the channel as captured; the nightly 04:00 ingest collects it
+automatically once access returns.
+
+**Give every ingest/repair CLI an argparse with `--dry-run`.** A script that reads source names as bare
+positional args treats an unrecognised flag (`--help`, `--limit`) as a source name and **starts the
+work** — you get a live ingest instead of usage text.
+
 ## Reference Files
+- `scripts/survey_channels.sh` — live vetting of candidate channels before adding a row (prints each handle's channel_id + 3 newest titles, or NOT FOUND)
 - `references/supabase-schema.md` — Complete DDL for the podcast_kb schema (all 6 tables, indexes, hybrid_search function)
 - `references/podcast-directory-full.md` — All 31 tracked podcasts with YouTube handles, channel IDs, tiers, and RSS feed status
 - `references/youtube-cookies-export.md` — How to export YouTube cookies from Chrome (June 2026)
 - `references/yt-dlp-android-transcript.md` — Android client workaround for n challenge bypass (June 8, 2026)
 - `references/aie-ingestion-log.md` — AI Engineer ingestion session log (June 8, 2026)
+- `references/capture-chain-audit.md` — the capture chain (episode → transcript → chunks → insights → curated), the coverage queries, the audit script's output fields, and the gate set a repair must satisfy
 - `references/insight-extractor-workflow.md` — Full podcast insight extractor workflow: extraction steps, 7-project portfolio mapping, dual-consumer pattern, production track record. (The June 2026 Claude-era draft — incl. the 8-macro-trend methodology — is archived as `insight-extractor-workflow-june2026.md`.)
 - `references/youtube-data-api-setup.md` — YouTube Data API v3 setup and quota reference
 - `references/youtube-sapisidhash-auth.md` — YouTube cookie + SAPISIDHASH auth workaround for transcript fetching
+- `references/transcript-sources-and-fallback.md` — where to get a transcript or summary when the KB is stale (podscripts.co / finance.biggo.com / Apple-Podbean), the freshness query to run first, and the quote-attribution rules (confirm the speaker; check the on-record wording before repeating a paraphrase)
