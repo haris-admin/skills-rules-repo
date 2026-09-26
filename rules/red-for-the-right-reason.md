@@ -65,6 +65,24 @@ Two things must hold, not one:
 Record the deliberate-failure check in the change's `tasks.md` completion log. A guard nobody has
 watched fail is not known to work.
 
+### Rule 2b. Data written before its test, and assertions on the wrong shape
+
+Two more ways a green test proves nothing (Simplifii-OS, 26 Sep 2026):
+
+- **The fixture came first.** When the data file (an eval case set, a golden file) is written before
+  the test that checks it, the test is green on its first run and Red was never seen. Break the data
+  on purpose (flip one expected value, reword one case past the detector), watch the named test go
+  red, then restore it. Record the check in the commit body.
+- **The assertion reads the wrong shape.** A Guardian test did `String(captured.system)` on a prompt
+  sent as a list of blocks, so it compared against `"[object Object],[object Object]"` and could never
+  fail. The same request was also refused (400) before any prompt was built. Assert on what the code
+  actually sends (join the blocks), and check the call happened (`calls === 1`) before asserting on
+  its content.
+- **An outcome test cannot catch a redundant guard.** When two mechanisms produce the same outcome
+  (a task mode builds a separate prompt, so a `taskMode ? '' : block` guard is belt and braces),
+  deleting the guard leaves the outcome test green. Say so in the test comment rather than claiming
+  the test pins the guard.
+
 ## Rule 3 — Source-text inspection is not a behaviour test
 
 Added 7 Sep 2026 (C476, C473 — found in the C472–C489 validation batch). A test that greps a

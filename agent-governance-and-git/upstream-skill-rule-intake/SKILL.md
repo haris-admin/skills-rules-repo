@@ -76,6 +76,15 @@ git add README.md <path-to-imported-skill-or-rule>
 git commit -m "feat(skills): add <skill-name> from <repo-name>"
 ```
 
+### Step 5b: Importing a Whole Upstream Plugin, and Installing It
+
+For a multi-skill upstream plugin (for example EveryInc's compound-engineering, imported 26 Sep 2026 as `compound-engineering/`):
+- Import it as its own category folder with the upstream `LICENSE` and a `PROVENANCE.md` (release tag, commit, local changes, the security review done at import).
+- Security-review before import: scan for secrets, pipe-to-shell installs, force pushes, destructive commands and network calls, and read the core skills in full. Note in `PROVENANCE.md` any skill that pushes or deploys on its own.
+- Rewrite plugin-namespaced invocations (`plugin:skill`) to the plain skill name, since the skills run standalone. Record that as the only local change.
+- Install only that category (copy each new folder into `~/.claude/skills`, skipping names that already exist). Do not run `./sync.sh --global` for one import: it overwrites every skill in `~/.claude`, `~/.Codex` and `~/.gemini` with the repo copy.
+- A project mirror of third-party docs may need `--no-verify` if the project's style hook rejects upstream prose (for example em dashes). Say so in the commit and to the user.
+
 ### Step 6: Prevent Post-Import Drift (ongoing, not one-time)
 
 Once a skill exists in both `skills-rules-repo` (canonical) and its originating project (local

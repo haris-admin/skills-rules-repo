@@ -70,6 +70,14 @@ The *when* is this file. The *how* is unchanged:
   the evidence (the test command and pass count for **this** task).
 - After committing, re-run `git status --short` and confirm other sessions' files are untouched.
 
+- **Confirm the commit landed.** A pre-commit hook that blocks the commit can print pages of
+  output that look like success. After every commit run `git log -1 --oneline` and check the
+  subject is yours; if the old subject is still there, read the hook's message and fix it.
+- **Pass file lists as arrays in zsh.** zsh does not word-split a scalar: `F="a b"; git add $F`
+  hands git one path named `a b`, and `node scripts/check-style.js $F` silently checks nothing.
+  Use `F=(a b); git add "${F[@]}"` (Simplifii-OS, 26 Sep 2026: a style check and a commit both
+  no-opped this way).
+
 ## Do not
 
 - **Do not push.** A local restore point is not a push and does not imply one.
