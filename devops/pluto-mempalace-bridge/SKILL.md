@@ -461,6 +461,34 @@ python3 ~/.hermes/scripts/mempalace_watcher.py
 
 If files from days/weeks ago are still sitting unprocessed, the watcher cron needs investigation — run it manually first, then check `cronjob list` for the cron's `last_status`.
 
+## The contract and the fail-closed bridge (2026-09-27)
+
+The bridge parses markdown by scraping `## Finding` headings — which means any producer that writes a
+different shape parses to ZERO findings. Worse, zero findings used to be written off as a deliberate
+skip (`skipped_reason: No findings parsed`), so a 244 KB three-filter run of podcast knowledge was
+discarded while the queue looked clean. A markdown parser is a silent filter: it cannot tell "nothing to
+say" from "shape I do not understand".
+
+Three rules now apply to every producer feeding the palace:
+
+1. **Emit the contract sidecar** `<name>.md.findings.json` (`scripts/mempalace_contract.py`) next to the
+   human markdown. The sidecar is authoritative; prose is never scraped for structure.
+2. **Zero findings from a substantial file FAILS** — no done-marker, a reported error naming the missing
+   sidecar. Only files under 400 bytes, or files carrying an explicit gap statement
+   ("0 items …", "unverified total …"), may be skipped. An explicit empty result is complete; a parse
+   failure is not.
+3. **Read back what you wrote.** `add()` returning without error proves nothing: the feeder re-reads the
+   ids it just wrote and reports `findings_stored` and `verified`, and the bridge only writes `.done`
+   when they match.
+
+**Provenance is mandatory for knowledge.** A document that cannot be traced to its source (podcast
+episode, show, quote hash) is noise with good manners: pass `source_type`, `episode_id`, `show`,
+`quote_hash`, `verified` through the contract so a palace hit resolves to a file and an episode.
+
+`mempalace_sidecar_from_md.py` converts legacy bullet/section artefacts into the contract with a shape
+cascade (bullets → bold headings → whole document). Verify with `mempalace_reconcile.py`, which reports
+anything unlanded across queue → palace → Alexandria.
+
 ## Pitfalls
 
 - **Interactive/ad-hoc research is invisible to both ingestion pipelines.** Files saved to `research_outputs/` during interactive Telegram sessions (e.g., `2026-06-18-aml-hive-internal-plan-playbook-query.md`) are NOT picked up by: (a) the mempalace watcher (only monitors `mempalace-inputs/`), or (b) the Honcho bridge (only pushes pipeline-standard `research_*.json`, `synthesis_*.json`, etc.). After any interactive research session, manually copy the file to `mempalace-inputs/` or feed directly via the feeder script. See the "Feeding Interactive/Ad-Hoc Research" section above for step-by-step.
