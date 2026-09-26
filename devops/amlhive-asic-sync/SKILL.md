@@ -81,7 +81,19 @@ UNCHANGED → every subsequent probe re-triggers the full sync → infinite loop
 **Real fix (backend/infra, main-agent scope):** sync is too memory-hungry for
 t3.medium — chunk the upsert, add swap/memory limit, or resize the instance.
 
-## acnc-charities HTTP 500 — PERSISTENT backend fault (Sep 2026, UNRESOLVED)
+## acnc-charities HTTP 500 — RESOLVED 2026-09-24 (was: PERSISTENT Sep 2026 fault)
+
+**STATUS: CLOSED — do NOT re-open or re-escalate.** The endpoint returned to service on the
+**2026-09-24 03:15 run** with a real sync (`✅ Synced: 65,758 rows (before 65,699, Δ+59)`), and has
+been `✅ PASS` on every run since (09-24 sync, then 09-25 / 09-26 `NO_CHANGE · 65,758 rows`).
+`OVERALL: ✅ PASS` on `937bb914c497`.
+**Streak that ended: 9 consecutive red runs, 2026-09-15 → 2026-09-23** (bare
+`❌ HTTP 500 — {"detail":"Internal Server Error"}` every morning, dataset frozen at its pre-09-15
+fingerprint). The fix was app-side; nothing changed in the sync script or credentials.
+**If this signature reappears** (bare 500, no body detail) treat it as a NEW occurrence of the old
+fault class, not as the same incident — the historical triage below still applies.
+
+### Historical triage (kept for the next occurrence)
 
 **Symptom:** `POST https://api.amlhive.com.au/internal/sync/acnc-charities` →
 `❌ HTTP 500 — {"detail":"Internal Server Error"}` → `OVERALL: ❌ ALERT`, script exit 1. The other
@@ -91,15 +103,9 @@ four datasets behave correctly in the same run (`asic-companies` and `asic-busin
 
 **Signature:** a **bare** 500 with no body detail — different from the OOM class above (which
 shows `502`/`503`/`database is locked`) and different from the ACNC NO_CHANGE skip (which is a
-pass). Do not diagnose it as either.
-
-**Duration:** first seen 2026-09-15 03:15 and red on every daily run since (09-15 → 09-19) — **5
-consecutive runs, no recovery**. `acnc-charities` cannot advance its fingerprint until it succeeds,
-so the dataset is frozen at its pre-09-15 revision. Reported on `cron/output/937bb914c497/` and
-re-flagged by the daily maintenance engine on 09-16 (escalated), 09-18 (persistent) and 09-19
-(standing). **Treat it as ONE known app-side fault, not a new finding each morning** — report the
-streak length and move on; only a change in the signature (401/403, `database is locked`, a body
-detail) is new information.
+pass). Do not diagnose it as either. **Treat a streak as ONE known app-side fault, not a new
+finding each morning** — report the streak length and move on; only a change in the signature
+(401/403, `database is locked`, a body detail) is new information.
 
 **Where the fault is NOT:** not the sync script (health check HTTP 200, other datasets fine), not
 credentials, not the source URL. It is the AMLHive backend endpoint / its Nector sync worker.
