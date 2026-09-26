@@ -1,0 +1,20 @@
+---
+description: Agent-legible website (markdown twins, llms files, content negotiation, read-only agent surface)
+globs: *
+alwaysApply: false
+---
+
+# Agent-legible website (markdown twins, llms files, content negotiation)
+
+Canonical: `rules/agent-legible-website.md`
+
+1. Prove every route in the real build; `_`-prefixed App Router folders never route, and unit tests importing `GET` cannot catch it.
+2. Every fact a human sees, including client-state-only content, is in the markdown twin or llms files.
+3. Agent-surface caches clear on the same event as the human page; never cache non-200, redirects or maintenance pages.
+4. `Vary: Accept` on negotiable URLs; parse q-values; prefer `.md` URLs for shared caches.
+5. Convert content, not controls, with a real HTML parser; keep consent, legal text, step numbers, FAQs, tables.
+6. Add footer disclaimers to every twin header.
+7. Twins: not in sitemap, `X-Robots-Tag: noindex`, `Link rel=canonical`.
+8. Backend errors return 503, never 404 or an empty 200.
+9. Self-fetch via `127.0.0.1`, no redirect following, timeout, de-duplicated misses.
+10. Read-only agent surface; in regulated products a person accepts terms and starts the trial.

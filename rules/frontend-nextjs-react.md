@@ -8,6 +8,7 @@ Guidelines for building fast, accessible, and scalable React and Next.js applica
    - Default to Server Components (`RSC`). Only add `'use client'` when state, effects, or browser APIs are necessary.
    - Keep Client Component boundaries as deep down the component tree as possible.
    - Use Server Actions or Route Handlers for server-side mutations.
+   - Never put a route handler or rewrite target in an `_`-prefixed folder: private folders (and all their subfolders) are excluded from routing. A unit test that imports `GET` will still pass, so prove a new route exists in the built route manifest or against `next start`.
 
 2. **TypeScript & Types**:
    - Maintain strict typing: avoid `any` and unvalidated type assertions (`as Type`).
