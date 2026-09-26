@@ -158,6 +158,32 @@ file (`Output:` line + mtime).
 
 ---
 
+## Rule 31 (Sep 27 2026) — run the recipes against the DELIVERED block, not the whole file
+
+A curated section supersedes the auto-generated posts, but both blocks stay in the same
+file, so a whole-file CTA scan compares 6 auto closes against 5 curated ones and reports a
+false near-duplicate: the curated post 4 close ("If you are mid-licence-application or working
+through the card-scheme and PSP changes this creates…") scored **0.70** against the auto post 4
+close it replaced — the same sentence, once. Scope every recipe to the block that will ship:
+
+```python
+curated = txt.split('# ✅ Curated by Pluto', 1)[1]
+ctas = re.findall(r'\*\*CTA:\*\* (.+)', curated)
+fps = [frozenset(w for w in re.findall(r"[a-z']+", c.lower())
+                 if len(w) > 3 and w not in _CTA_STOPWORDS) for c in ctas]
+assert len(ctas) == len(set(ctas))
+assert max((len(fps[i] & fps[j]) / min(len(fps[i]), len(fps[j]))
+            for i in range(len(fps)) for j in range(i+1, len(fps))), default=0) < 0.4
+```
+
+This run: auto block 6/6 distinct, curated block 5/5 distinct, max curated pairwise 0.10.
+The false flag was still worth chasing — reading it is what surfaced that the curated CTA had
+been copied from the engine's line instead of written fresh, so the delivered post answered its
+predecessor rather than the reader. **A false-positive recipe hit on a human-edited block is a
+prompt to rewrite the line, not to widen the threshold.**
+
+---
+
 ## Verification recipes (run over the written file, not the in-memory objects)
 
 ```python
