@@ -164,13 +164,29 @@ When you see `last_status: error` on a cron, classify before escalating:
 - **Biweekly crons (Mon+Fri)**: Same pattern — error from Monday persists until Friday.
 
 ### Real-but-external (the monitor is fine, its UPSTREAM is down)
-- **`acnc-charities` HTTP 500 on `937bb914c497` (Pluto ASIC / Ref-DB Sync, 03:15 daily)**: a bare 500
-  from `api.amlhive.com.au/internal/sync/acnc-charities` forces `OVERALL: ❌ ALERT` every morning
-  while the other four datasets behave correctly in the SAME run. **Known persistent backend fault
-  since 2026-09-15, UNRESOLVED, app-side owner (AMLHive backend / Nector sync worker).** Classified
-  REAL but STANDING: report the streak, do NOT re-open it as a new finding every day. Re-check the
-  OTHER datasets each run — if they also go `NO_CHANGE` with a stale `last_synced_at`, that IS new
-  and means the whole sync pipeline has stalled. CloudWatch triage: `amlhive-asic-sync` skill.
+- **RE-CHECK EVERY STANDING FAULT RECORD AGAINST THE JOB'S OWN RECENT OUTPUT — do not copy it forward.**
+  A "known persistent fault" note in this skill or in `environment.md` is a snapshot from the day it was
+  written; the upstream can clear without anyone updating the note. Before reporting any standing fault,
+  reconstruct its recent history from the job's own outputs:
+  ```bash
+  cd ~/.hermes/cron/output/<job-id>
+  for f in $(ls -t | head -14); do echo "$f | $(grep 'OVERALL' "$f") | $(grep -A3 '<dataset> ━' "$f" | tail -2 | tr '\n' ' ')"; done
+  ```
+  That one loop shows the exact streak start/end and the recovery row. Seen 2026-09-26: `acnc-charities`
+  had been recorded as UNRESOLVED for **two extra days** after it recovered on 2026-09-24 (9-day streak
+  09-15→09-23, then a real `✅ Synced: 65,758 rows, Δ+59`). The record had been **copied forward** by
+  successive maintenance runs instead of re-verified. Cost of the miss: two daily reports carried a
+  false fault line and the skill actively told future agents not to look at it.
+  **When you find a stale record: patch the skill, correct `environment.md`, and mirror the skill.** A
+  fault record is only trustworthy on the run that re-derived it.
+- **`acnc-charities` HTTP 500 — ✅ RESOLVED 2026-09-24, INCIDENT CLOSED (do NOT re-open; historical only).**
+  Ran 2026-09-15 → 2026-09-23 (9 consecutive red runs), then recovered with a real sync. `937bb914c497`
+  has been `OVERALL: ✅ PASS` on 09-24/09-25/09-26 (`NO_CHANGE · 65,758 rows`). The old signature was a
+  bare 500 with no body detail, from an app-side fault (backend `/internal/sync/acnc-charities` handler
+  or its Nector worker) — not the script, creds or source URL. **If a bare 500 reappears, treat it as a
+  NEW occurrence of that fault class**, not as this incident continuing. Full triage: `amlhive-asic-sync`
+  skill. Re-check the OTHER datasets each run — if they also go `NO_CHANGE` with a stale `last_synced_at`,
+  that IS new and means the whole sync pipeline has stalled. CloudWatch triage: `amlhive-asic-sync` skill.
 - **`🔴 dashboard /api/status unreachable on http://127.0.0.1:3009` (`4c28178fad0f`, CMDB Cost
   Monitor, 07:20 daily, `deliver: origin`)**: the monitor exits 1 because the Notion-CMDB dashboard
   plugin it reads is not running — `hermes dashboard --status` reports "No hermes dashboard or serve
