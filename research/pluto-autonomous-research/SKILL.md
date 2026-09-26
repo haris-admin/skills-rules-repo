@@ -271,8 +271,10 @@ assertions lives in `references/linkedin-generator-defects.md` — load it befor
 9. Pad the blog quota ONLY with candidates whose pillar is already in play (`day_pillars()`) — two relevant ideas
    beat three — and apply that same pillar gate to MATCHED candidates, not just the padding slot.
 10. A re-run must re-append everything from the `# ✅ Curated by Pluto` marker — never discard hand curation.
-11. The rotation window (4 days) must stay shorter than the research topic cycle (5 days); `KNOWN_BLOGS` is what
-    retires a candidate for good.
+11. The rotation window (4 days) must stay shorter than the research topic cycle (5 days) — but that is exactly
+    why a same-topic day resurfaces the identical slate, so a repeat must LOSE rather than disappear: mark
+    anything proposed within 10 days with `_repeat(title)` and sort `(repeat, -hits, pillar_penalty, key)`
+    (suppressing instead of ranking starves the day's own pillar). `KNOWN_BLOGS` is what retires a candidate for good.
 12. Assert over the written file: every angle ends in terminal punctuation, no hook contains more than one colon,
     no hook carries an unterminated quote or a dangling function word.
 13. A CTA map keyed only on PILLAR prints one identical CTA on every post of a single-topic day — resolve
@@ -294,6 +296,28 @@ assertions lives in `references/linkedin-generator-defects.md` — load it befor
     anchor phrase `incident report` never appears — the corpus says "AI incidents") while still admitting others, trading
     one bad slate for another. Fix the mis-specified candidate's keywords, and before delivering, grep the candidate's own
     subject term across the day's inputs; zero hits means the candidate is ungrounded and must be dropped.
+16. Padding must be GROUNDED, not merely same-pillar (on a Cloud day every Cloud candidate passes `pillar in
+    wanted`, so a zero-hit FIIG idea rode the padding slot to the delivered slate at `signal matches: 0`) — accept
+    a two-idea slate. And the terminal CTA branch must obey `seen`: pick from a `CTA_FALLBACKS` pool by least-used
+    count, then assert 0 exact duplicates and 0 fingerprint pairs >= 0.4 on every run (five posts on one
+    single-pillar day exhausted the portfolio, pillar and three alternate CTAs and closed two of them identically).
+17. Keyword matching must be word-boundary (with plural tolerance), never plain substring: `rce` matched inside
+    "source"/"force", `log` inside "technology", `aisi` inside "raising", and each phantom put an ungrounded
+    candidate on the slate. On top of that, a candidate needs at least one SUBJECT-bound hit
+    (`_subject_kw_hits()`) against a deliberately SHORT `GENERIC_BLOG_KEYWORDS` — `nhi-agent-identity` shipped on
+    the single word "identity" while "nhi"/"nist"/"agent identity" appeared zero times. Keep the list short: a
+    wider one (payments, licensing, rba, cloud, record, consultation, carve-out, nsw) ate real subject words —
+    `psp-regulated-software` IS about payments licensing — trading one bad slate for another.
+18. A stat-prefixed hook needs balanced brackets, and the clause may not open on a proper-noun subject the title
+    never names WITH a copula/reporting verb in positions 1–2 — that is another actor's sentence
+    (`Transport has assessed that its 5% maximum non-cash taxi fare surcharge is unaffected and continues: …`
+    prefixed South Australia's cap onto an RBA-ban title; `Dabble was hit with more than $1m … (16 September`
+    prefixed a subsidiary operator's fine onto a Star licence story, unclosed bracket included). Require a shared
+    content word with the title too (`if sw and not (sw & tw): reject`). Verify with the hook harness: expect only
+    removals, zero regressions.
+19. Any external command inside a generator is best-effort and must degrade, not kill the run: an unhandled
+    himalaya `TimeoutExpired` aborted a run with NO output file written at all, so `get_signals_from_files()`
+    never got its turn. Wrap it and return "" — the caller already reads empty output as "use the fallback".
 
 **Blog post structure:** Fill gaps in existing content. Each idea notes pillar, gap filled, and companion-post recommendation.
 

@@ -58,6 +58,106 @@ def render(m, t, c):
 # diff render() per finding across research_2026-09-*.json; inspect EVERY diff before shipping
 ```
 
+## Rule 29 (Sep 27 2026) — five defects on one FinTech day, all in the hook/grounding gates
+
+A six-post FinTech day shipped two broken hooks and three blog candidates that had all been
+delivered 5–7 days earlier, one of them ungrounded. Every defect below was found by probe
+before delivery, and the fixes were verified with two harnesses (hook before/after over the
+last 9 `research_*.json`; blog candidate replay over the last 9 days).
+
+**29a. `_hook_clause` can still emit an unclosed parenthetical.** Hook shipped:
+`Dabble was hit with more than $1m in penalties for self-exclusion deficiencies (16 September: …`
+— the `(` arrived inside the appended tail, so the "drop an unterminated parenthetical tail"
+step (which ran before the tail was joined) never saw it. Gate in `_hook_stat_ok`:
+`if stat.count("(") != stat.count(")"): return False`.
+
+**29b. A stat clause opening on a third-party subject is not this finding's stat.** Hook
+shipped: `Transport has assessed that its 5% maximum non-cash taxi fare surcharge is
+unaffected and continues: Card surcharge ban starts 1 October…` — the 5% is South
+Australia's cap (a cited source document), not the finding's subject (the RBA ban). Rule 26(a)
+caught this class by hand; this gate catches it mechanically: if the clause opens on a
+proper-noun token the (short) title never names **and** a copula/reporting verb appears in
+positions 1–2 of the clause, reject — the sentence belongs to another actor. `_REPORT_VERBS`
+holds the verb set; the auxiliary requirement is what keeps `Australian startups raised
+A$3.5bn…` (no auxiliary) hookable while killing `Transport has assessed…` and `Dabble was hit…`.
+
+**29c. A stat sharing ZERO content words with the title is about something else.**
+`if sw and not (sw & tw): return False` — the one-line generalisation of Rule 26(a), where a
+macro rate-hike clause (`September RBA hike is ~86-91% priced…`) hooked an R&D tax finding.
+Both 29b and 29c reject into the safe fallback (title-only hook), so a false positive costs a
+weaker hook, never a broken one.
+
+**29d. The 4-day blog rotation is shorter than the 5-day topic cycle, so a same-topic day
+always resurfaces the identical slate.** Today's three delivered ideas had all shipped on
+20/22 Sep. Widening the window to suppress is NOT the fix (Rule 18 starved the day's own
+pillar that way), so a repeat now LOSES instead of disappearing: `recently_proposed_blog_
+titles(days=10)` feeds a `_repeat(title)` flag, and the sort key becomes
+`(repeat, -hits, pillar_penalty, key)` — freshness first, grounding second. A repeat still
+reaches the slate when nothing fresh and grounded exists for the day's pillar (today's third
+idea did exactly that, and curation held it).
+
+**29e. Keyword matching was plain substring AND half the candidates carried only context
+vocabulary.** `rce` matched inside "source"/"force", `log` inside "technology", `aisi`
+inside "raising" (verified: 2 substring hits, 0 word-boundary hits). Fix: `_kw_present()`
+uses word boundaries (with plural tolerance — `guardrail` must match "guardrails") for
+single-token keywords and substring only for phrases. Then require at least one
+SUBJECT-bound hit via `_subject_kw_hits()`, which drops `GENERIC_BLOG_KEYWORDS`
+(`governance`, `control`, `regulator`, `transparency`, `log`, `identity`, `credential`,
+`accountability`): the padding slot's `nhi-agent-identity` idea shipped on a FinTech day whose
+corpus contained "non-human identity", "nhi", "nist", "agent identity" ZERO times, firing on
+the single word "identity" from the Quest ID-compromise item. Likewise `tranche2-property`
+fired on `austrac`/`tranche 2`/`real estate`/`aml` with "western union" absent (now
+subject-bound), and `spf-multiparty-liability` fired on `accc` (now subject-bound).
+**Keep the generic list SHORT.** A wider list (payments, licensing, rba, cloud, record,
+consultation, carve-out, nsw, concentration, acquisition) was tested against the 9-day replay
+and cut back: those words are the SUBJECT vocabulary of specific candidates
+(`psp-regulated-software` is about payments licensing; `aml-data-residency-cloud` is about
+cloud records), so a global blocklist removed legitimate candidates from their own day — the
+"one bad slate traded for another" failure Rule 27 warns about. Only add a word that is
+context for EVERY candidate.
+
+**Verification (both harnesses, run every time these gates change):**
+
+```python
+# hook harness — expect only intended removals, 0 regressions
+h_before, h_after = render(before, t, c), render(after, t, c)   # over every research_*.json
+# blog replay — no candidate that shipped historically may become unfireable on its own day
+old = [k for k in kws if k in corpus]; new = _subject_kw_hits(kws, corpus)
+```
+
+The replay reports a candidate as a REGRESSION whenever `old and not new`; classify each hit
+by hand before "fixing" it, because two of the three hits on this run were CORRECT drops
+(`cross-org-agent-accountability` fired only on the `aisi`→"raising" phantom plus the generic
+word `accountability`; `nhi-agent-identity`'s subject terms were absent). Expect
+`psp-regulated-software` to be the canary whenever the generic list grows — if it stops firing
+on a payments-licensing day, the list has eaten a real subject word.
+
+---
+
+## Rule 30 (Sep 27 2026) — a best-effort signal source must degrade, not kill the run
+
+`himalaya()` ran `subprocess.run(..., timeout=30)` with no exception handling. `envelope list`
+hung, and the `TimeoutExpired` propagated out of `main()`: **no output file was written at all**
+— `get_signals_from_files()` never got its turn, so a transient himalaya stall silently
+produces nothing rather than the file-based slate the fallback exists to provide. Wrap the
+helper and return `""`; both callers already read empty output as "use the fallback".
+
+```python
+try:
+    result = subprocess.run(["himalaya"] + list(args), capture_output=True, text=True, timeout=30)
+    return result.stdout
+except Exception as exc:   # any failure means "no signals here"
+    print(f"  ⚠️  himalaya {args[0] if args else ''} unavailable: {type(exc).__name__}")
+    return ""
+```
+
+The general rule: **any external command inside a generator is best-effort — an exception in it
+must fall through to the offline source, because a generator that dies before writing is
+indistinguishable from a cron that never ran.** Confirm a re-run after such a fix produces the
+file (`Output:` line + mtime).
+
+---
+
 ## Verification recipes (run over the written file, not the in-memory objects)
 
 ```python
@@ -80,6 +180,12 @@ fps = [frozenset(w for w in re.findall(r"[a-z']+", c.lower())
 worst = max((len(fps[i] & fps[j]) / min(len(fps[i]), len(fps[j]))
              for i in range(len(fps)) for j in range(i+1, len(fps))), default=0)
 assert worst < 0.4, f'near-duplicate CTA pair (similarity {worst:.2f})'
+
+# rule 29a: no unbalanced bracket in a stat-prefixed hook
+assert all(h.count('(') == h.count(')') for h in hooks), [h for h in hooks if h.count('(') != h.count(')')]
+# rule 28a/29e: every delivered blog idea is grounded (matches >= 1)
+for m in re.finditer(r'\*\*Gap filled:\*\* .*?\(signal matches: (\d+)\)', txt):
+    assert int(m.group(1)) >= 1, m.group(0)
 ```
 
 ## Rule 27 (Sep 25 2026): a blog candidate's keywords must be SUBJECT-BOUND, never regulator vocabulary
@@ -119,3 +225,69 @@ for key,title,pillar,gap,kws in lig.BLOG_CANDIDATES:
 ```
 
 A candidate ranking first on words that are not in its own title is a false positive.
+
+---
+
+## Rule 28 (Sep 26 2026) — three defects, all in the delivery path
+
+**28a. Blog padding must be GROUNDED, not just same-pillar.** Rule 13 gated the padding
+slot on `day_pillars()`, and Rule 27 made the FIIG candidate's keyword list
+subject-bound (`["fiig", "fiig securities", …]`). The FIIG idea still reached the
+delivered slate: on a Cloud & Infrastructure day *every* Cloud candidate satisfies
+`pillar in wanted`, so the padding loop (which had no hit requirement) filled the third
+slot with a zero-hit candidate. Verified by probe: FIIG scored **0 hits** (`grep -i fiig`
+across `research_2026-09-26.json` + the signal corpus returned nothing) while
+`datacentre-energy-grid` (5) and `cloud-waste-finops` (1) were the only grounded Cloud
+candidates that day — so the correct slate is **two** ideas, and the engine's own comment
+("two well-matched ideas beat three") already said so.
+
+Fix — a padding candidate needs at least one term of its own in the corpus:
+
+```python
+for key, title, pillar, gap, keywords in BLOG_CANDIDATES:
+    if key in chosen or not _fresh(key, title) or pillar not in wanted:
+        continue
+    if not any(kw in corpus for kw in keywords):
+        continue
+```
+
+Assertion: every delivered blog idea reports `signal matches >= 1`; the slate may be two
+long. Do NOT reintroduce a global anchor gate (`keywords[0] in corpus`) to solve this —
+Rule 27 tested and reverted that, because it excludes good candidates whose anchor phrase
+is worded differently in the corpus.
+
+**28b. The terminal CTA branch ignored `seen` and reprinted one line.** `_pick_cta`'s
+final fallback was hardcoded: it appended `"What would this look like in your stack?"` to
+`seen` and returned it *unconditionally*, so when the portfolio CTA, pillar CTA and all
+three `CTA_ALTERNATES` were spent (six same-pillar posts on a single-topic day), posts 5
+and 6 closed with the identical sentence. Fix: add `CTA_FALLBACKS` (four closes with no
+shared content words) and pick the least-used one, tie-broken by index:
+
+```python
+counts = {c: seen.count(c) for c in CTA_FALLBACKS}
+pick = min(CTA_FALLBACKS, key=lambda c: (counts[c], CTA_FALLBACKS.index(c)))
+seen.append(pick); return pick
+```
+
+Assertion (run every time): parse `**CTA:**` lines from the output md, then check
+(a) no exact duplicates and (b) no pair whose `_cta_fingerprint` overlap is `>= 0.4`.
+This run: 6/6 distinct, 0 pairs flagged.
+
+**28c. `_balance_fragment` strips terminal full stops — re-terminate after balancing.**
+Wiring `_balance_fragment` into `_trim_angle` (to drop the unclosed `(` on the Oracle
+angle) silently removed the full stop from the sentence-end cut, shipping four angle
+fragments with no terminal punctuation (`…across the markets the RBA covers`,
+`…approaching US$6.2tn`) — a Rule 20 regression. Fix: a `_ensure_terminal()` wrapper
+applied on every `_trim_angle` return path:
+
+```python
+def _ensure_terminal(s):
+    s = (s or "").rstrip()
+    return s if s.endswith((".", "!", "?", "…")) else s + "."
+```
+
+Assertion: every `**Angle:**` line ends in `.!?…` and has `count("(") == count(")")`.
+The general lesson — **any helper that strips trailing punctuation must be paired with a
+re-termination step at the boundary where punctuation is a contract** — applies to
+`_short_title`/hook paths too, not just angles.
+
