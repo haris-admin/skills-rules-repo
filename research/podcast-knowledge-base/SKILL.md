@@ -554,6 +554,13 @@ episodes; the router's quote-hash dedup makes re-runs a no-op. It sits at the en
 (04:00 ingest → 04:30 chunk → 05:35 verify → 06:10 curate → 06:25 watchdog → 06:45 route) so it can only
 ever route what is already captured and verified.
 
+**The 06:25 watchdog going RED is the DESIGNED signal while one upstream fault stands — do not read it
+as a second, independent failure.** It exits 1 whenever episodes cannot reach the reader, so a red
+`cc76c11d35d2` next to a 04:00 ingest reporting "success" with 0 new episodes is ONE fault (transcript
+fetches returning 0 chars / `IpBlocked`), reported twice. Before escalating, check the pair: if the ingest
+log shows `consecutive transcript failures` or a 0-episode run, the remedy is source access (cookies), and
+neither job is broken.
+
 **🔴 Writing markdown into `mempalace-inputs/` is NOT the same as getting knowledge into the palace.**
 The watcher parses one shape only — `# Topic`, a `Tags:` line, then `## Finding` headings carrying `Type:`
 and `Confidence:` lines (detail in `pluto-mempalace-bridge`). Bullet-style output (`- **point**` plus a
