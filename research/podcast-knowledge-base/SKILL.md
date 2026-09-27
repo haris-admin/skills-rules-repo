@@ -367,6 +367,14 @@ Measured 2026-09-26 on a 24.6k-char episode: **$0.005-0.010 per episode**, ~2-4 
 upstream rate-limits (HTTP 429) intermittently. The model actually used is stored per episode
 (`checker_model`), so verification provenance is never ambiguous.
 
+- **Size the daily batch to the cron timeout, not to the episode count.** `podcast_capture_verify_daily.sh`
+  runs `--since 10 --limit 60`; at the measured 2-4 min per episode that is a 2-4 HOUR job, so the first
+  live run (2026-09-27) was killed by the 7200s cron timeout having locked nothing — a red job that looks
+  like a broken verifier but is only an oversized batch. Cap the pass at what fits comfortably (roughly
+  20-25 episodes / 60-90 min), or bound the wrapper with `timeout <secs>` so it exits with a partial
+  result and a readable message instead of being killed mid-run. Locking is per-episode in
+  `capture_ledger`, so a short run is always safely resumable.
+
 **Why the vendor split matters — with the receipt.** On the first full run the DeepSeek maker produced
 14 points; the independent checker accepted all 14 quotes and then listed **3 material points the maker
 had missed** (Iger's crisis-leadership posture, autocrat/democrat decision balance, quality-vs-volume).
@@ -582,7 +590,7 @@ healthy while the knowledge is missing from the others, so the links are now exp
 for structure. For artefacts that predate the contract, `mempalace_sidecar_from_md.py` converts with a
 shape cascade — bullets → bold section headings → whole document — and attaches episode provenance.
 
-**Three rules the bridge now enforces (each one earned by a silent loss):**
+**Five rules the bridge now enforces (each one earned by a silent loss):**
 
 - **Zero findings from a substantial file is a FAILURE.** Only files <400 bytes or carrying an explicit
   gap statement may be skipped: a 244 KB run (502 items) once parsed to zero findings and was marked
@@ -594,6 +602,16 @@ shape cascade — bullets → bold section headings → whole document — and a
 - **Reconcile the three stores.** `scripts/mempalace_reconcile.py` (cron `57e72391a773`, 07:15) checks
   queue → palace → Alexandria, prints nothing when healthy and exits 1 with the specific unlanded list.
   Silent health is only trustworthy because the failure mode is loud.
+- **Cascade the sidecar converter on the BUILT findings, not on the parser's return value.**
+  `mempalace_sidecar_from_md.py` tries bullets → bold headings → whole document; switching shape because
+  "the parser returned items" still yields zero when every parsed item is then dropped for having no
+  title/body — the same silent loss wearing a different hat. Score the cascade after the build+verify
+  stage and advance only when findings actually materialise.
+- **Non-knowledge files get a NAMED exception, never a silent one.** Telegram relay fragments and similar
+  short-form files cannot become findings and would fail the reconciler forever; move them to
+  `mempalace-inputs/_relays/` with a README stating why, so the queue stays honest instead of permanently
+  red. An exception must be visible and enumerable — a file that vanishes without a trace is the exact
+  failure this contract exists to prevent.
 
 ## Lenny's Podcast — Credential Integration
 
