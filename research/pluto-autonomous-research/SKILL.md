@@ -481,6 +481,7 @@ Quick rules that apply on every run:
 - Do NOT generate fake URLs — if no URL, leave empty string
 - Do NOT exceed 10 findings per topic — quality over quantity
 - Always validate JSON before feeding; the feeder needs its ChromaDB ONNX model downloaded (first run is slow)
+- **`stored=N, verified=0, "dedup: N already present"` is DATA LOSS, not an idempotent skip** — a briefing whose blocks are all titled `## Finding` was deduped to zero and re-fed every 5 min forever (28 Sep 2026). Dedup identity is now the EXACT document text and the watcher compares read-back to `findings_added`; verify a feed against the chamber, not the exit status
 - Research outputs go to `/home/habib/.hermes/research_outputs/`
 - When running as a cron job, check which topics were already covered today before picking a new one
 - Staging inbox watcher (`5678a363ce3b`) auto-processes `mempalace-inputs/` every 5 min — no manual steps needed unless urgent
@@ -497,6 +498,7 @@ The full dated incident log — watcher format-mismatch vs. down, research JSON 
 - `references/podcast-knowledge-ingestion.md` — Full Phase 10 script inventory, tier onboarding steps, YouTube channel-type quirks
 - `references/post-run-phase-verification.md` — Full post-run verification one-liner, remediation steps, mempalace feeder check
 - `references/pitfalls-and-incident-log.md` — Full dated incident log (watcher issues, feeder bugs, email failure modes, JSON/parsing gotchas, publisher curl reliability, etc.)
+- `references/watcher-feeder-dedup-defect.md` — Watcher/feeder dedup defect: generic `## Finding` titles deduped a whole 85-item briefing to zero (28 Sep 2026), the two-script fix, and the chamber-level verification recipe
 - `references/delegation-pattern.md` — Proven subagent prompt templates
 - `references/australian-news-feeds.md` — RSS feed catalog
 - `references/google-news-rss-patterns.md` — Google News RSS search queries per topic
