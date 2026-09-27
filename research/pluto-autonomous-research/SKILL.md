@@ -318,6 +318,22 @@ assertions lives in `references/linkedin-generator-defects.md` — load it befor
 19. Any external command inside a generator is best-effort and must degrade, not kill the run: an unhandled
     himalaya `TimeoutExpired` aborted a run with NO output file written at all, so `get_signals_from_files()`
     never got its turn. Wrap it and return "" — the caller already reads empty output as "use the fallback".
+20. A hook must not end on a verb whose object the slice cut away (`MCP exposure ranks LAST among CISO
+    priorities while >6% of enterprise chatbot conversations carry`). A slice ending on a present-tense/base
+    verb is provably unfinished, so gate on a bounded `_DANGLE_VERBS` set and drop the verb — plus the
+    `while|whereas|because|since|as` clause it trailed, since the main clause is the hook. Gate on the VERB,
+    not on clause length: cutting any subordinate clause damages good hooks (`…then shelved after media
+    pushback`). And the scaffolding pop must not leave a bare quantity — `out` sits in `TRAILING_WORDS`, so
+    `…the NIST agent deadline is now three months out` became `…is now three months`; BOTH pop loops
+    (`TRAILING_WORDS` and `_WEAK`) must break when the remainder would end on a `_MEASURE` phrase
+    (`<number> <hour|day|week|month|year|quarter|decade>s`). Guarding one loop leaves the defect live.
+21. The keyword gate protects SELECTION, not the CLAIM: a candidate TITLE is an assertion, so every statistic
+    in it must be countable in the corpus that fired it. `agent-rollback-evidence` shipped "84% of Australian
+    Firms Have Rolled Back an AI Agent" while `84%` and `rollback` occurred zero times — it cleared the subject
+    gate on `auditability`/`pii`, generic context words. Count the figure in the day's inputs before delivering
+    and reword the title rather than widening the gate. When counting, include the `*<YYYYMMDD>*` file names —
+    `mempalace-inputs/*2026-09-28*.md` misses `gmail-briefing-<id>-20260928_<time>.md`, and a "0 occurrences"
+    verdict from the wrong glob is the same mistake in the opposite direction.
 
 **Blog post structure:** Fill gaps in existing content. Each idea notes pillar, gap filled, and companion-post recommendation.
 

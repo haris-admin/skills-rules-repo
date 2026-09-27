@@ -317,3 +317,85 @@ The general lesson — **any helper that strips trailing punctuation must be pai
 re-termination step at the boundary where punctuation is a contract** — applies to
 `_short_title`/hook paths too, not just angles.
 
+---
+
+## Rule 32 (Sep 28 2026) — a hook must not end on a verb whose object the slice cut away
+
+Delivered hook: `MCP exposure ranks LAST among CISO priorities while >6% of enterprise
+chatbot conversations carry` — the word-boundary slice in `_short_title` stopped on a verb,
+so the object of that verb (`sensitive data`) was never reached. The existing gates missed
+it because `carry` is not in `TRAILING_WORDS`/`_WEAK`/`DANGLE_TAIL` and the subordinate-tail
+regex (`while|as|and|…` + 1–3 words) refused a 6-token tail.
+
+A slice ending on a present-tense/base verb is *provably* unfinished, which makes this the
+one safe place to cut an arbitrarily long subordinate clause. Fix — a bounded `_DANGLE_VERBS`
+set (carry/hold/contain/include/involve/require/need/drive/take/hit/give/make/show/report/
+produce/use/run/allow/remain/become/leave/spend/affect/raise/reach/face/expect/want/see/
+keep/add/offer/cover/deliver, with `-s` forms), applied after the scaffolding pop:
+
+```python
+def _ends_on_verb(text):
+    words = text.split()
+    return bool(words) and words[-1].strip(" ,;:.%$()\"'").lower() in _DANGLE_VERBS
+
+if _ends_on_verb(sliced):
+    m = re.search(r"\s(?:while|whereas|because|since|as)\s+\S.*$", sliced, re.IGNORECASE)
+    cand = (sliced[:m.start()].rstrip(" ,;:-—–") if m and m.start() >= 30
+            else sliced.rsplit(" ", 1)[0].rstrip(" ,;:-—–"))
+    if len(cand) >= 30:
+        sliced = cand
+```
+
+**The gate is the verb, not the clause length.** A blanket "cut any subordinate clause"
+rule damages good hooks (`…then shelved after media pushback`, Sep 22 2026); requiring the
+slice to END on a verb means the clause was already broken, so cutting back to the main
+clause only ever repairs it. Result: `MCP exposure ranks LAST among CISO priorities`.
+
+## Rule 33 (Sep 28 2026) — the scaffolding pop must not leave a bare quantity
+
+The same day's NIST hook shipped `UPDATE to the 12 Sep standards-race feed: the NIST agent
+deadline is now three months` — `out` is in `TRAILING_WORDS`, so the first pop loop removed
+it and left a quantity with nothing completing it. There were TWO pop loops (the
+`TRAILING_WORDS` loop and the later `_WEAK` loop); guarding only one leaves the defect live.
+Both now break when the remainder would end on a measurement phrase:
+
+```python
+_MEASURE = re.compile(
+    r"\b(?:\d+|a|an|one|two|three|four|five|six|seven|eight|nine|ten|several|few)\s+"
+    r"(?:hour|day|week|month|year|quarter|decade)s?$", re.IGNORECASE)
+
+while words and words[-1].lower() in TRAILING_WORDS:      # and again in the _WEAK loop
+    if _MEASURE.search(" ".join(words[:-1])):
+        break
+    words.pop()
+```
+
+Result: `…the NIST agent deadline is now three months out`.
+
+**Verification (run both fixes together):** the before/after hook harness over the last 9
+`research_*.json` renders **52 hooks, 2 changed, 0 regressions** — the only two diffs are the
+two defects above. Assert it, don't eyeball one day's file: a day-scoped check cannot see
+that the fix re-cut hooks the previous rules had already repaired.
+
+## Rule 34 (Sep 28 2026) — the keyword gate protects SELECTION, not the CLAIM
+
+`agent-rollback-evidence` reached the delivered blog slate titled **"84% of Australian Firms
+Have Rolled Back an AI Agent. Can You Evidence Yours?"** while `84%` and `rollback` occurred
+**zero** times in the day's corpus. It cleared `_subject_kw_hits()` on `auditability` and
+`pii` — context vocabulary that appears on almost any compliance day — so the candidate was
+ungrounded twice over: the pool of words and the number in its own title.
+
+- **A candidate TITLE is an assertion, not framing.** Every statistic in a candidate title
+  must be countable in the corpus that fired it. Rules 27/28a police the keyword list; they
+  say nothing about a fabricated number inside the title, which is what a reader actually
+  sees. Verify with a direct count (`grep -ci '<the figure>'` across the day's
+  `mempalace-inputs/` + `research_<date>.json`) before delivering.
+- **Fix the candidate, not the matcher.** Reworded to "When the Agent Gets Rolled Back: The
+  Evidence Trail a Regulated Firm Still Owes", keywords cut to `rollback`, `rolled back`,
+  `agent rollback`, `trust pulse`, `sinch`. It now scores 0 hits and correctly does not
+  appear until a day's corpus actually discusses agent rollback — which is the honest
+  outcome, not a loss.
+- Watch the input-file glob when counting: `mempalace-inputs/*2026-09-28*.md` misses
+  `gmail-briefing-<id>-20260928_<time>.md`. Use `*20260928*` as well, or a "0 occurrences"
+  verdict is really "I looked in the wrong file".
+
