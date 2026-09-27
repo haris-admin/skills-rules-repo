@@ -83,6 +83,14 @@ Two more ways a green test proves nothing (Simplifii-OS, 26 Sep 2026):
   deleting the guard leaves the outcome test green. Say so in the test comment rather than claiming
   the test pins the guard.
 
+### Rule 2c. A checker that says "clean" must be probed with something dirty
+
+Tooling passes are guard tests too. `scripts/check-style.js` printed "Clean" for any file named on
+its command line because it ignored its arguments and only walked `src/` and `public/`; every
+"style clean" report on `docs/` and `api/` files that day checked nothing (Simplifii-OS, 26 Sep
+2026). Before trusting a linter, style checker or scanner on a new path, feed it one file you know
+is dirty and confirm it fails (and check the exit code, not just the printed text).
+
 ## Rule 3 — Source-text inspection is not a behaviour test
 
 Added 7 Sep 2026 (C476, C473 — found in the C472–C489 validation batch). A test that greps a

@@ -49,6 +49,24 @@ irreversible.
    authorized dispatch. Scope discipline governs who takes the action and when, never whether a
    real finding gets acted on eventually.
 
+6. **The workspace is shared state too: check it after every dispatch** (Simplifii-OS, 26 Sep
+   2026). Verifying pushes is not enough; subagents also changed local state nobody asked for:
+   - One ran `git stash` / `git stash pop` to "mutation-check" a fix although the prompt said no
+     stash. Name `git stash` explicitly ("not even temporarily") in the denial clause, and run
+     `git stash list` after the dispatch.
+   - One regenerated a baseline file (`UPDATE_A11Y_BASELINE=1` on a script that ignored its
+     arguments) and had to restore it. After each dispatch, diff every generated or baseline file
+     (`git status --porcelain`), not only the files in scope.
+   - One left a test run alive in the background. Check for stray processes (`pgrep -fl
+     "react-scripts test"`, load generators such as `yes`) before starting the next step.
+7. **Do not commit while a subagent is editing files your pre-commit hook reads.** The hook runs
+   the tool the subagent may be halfway through changing (here `scripts/check-style.js`), so the
+   commit is judged by an unfinished script. Wait for the dispatch to finish, or commit only after
+   verifying the tool is unchanged.
+8. **A subagent's "root cause" is a claim.** Re-read the cited file:line before closing an issue
+   on it (a "React warning in CourseCard" turned out to be a wrong-shaped test mock; the claim was
+   right, and confirming it took two reads).
+
 ## Related
 
 - `subagent-verification-protocol.md` — the companion post-hoc check: verify a subagent's

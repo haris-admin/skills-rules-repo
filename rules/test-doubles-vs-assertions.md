@@ -94,6 +94,15 @@ disposable Postgres) is the correct answer when a pure double can't exercise the
 change that touched code with awkward-to-mock collaborators (network, DNS, TLS, subprocess,
 clock). Any hit in non-test code is a finding.
 
+## A mock must have the real contract's shape
+
+A mock that returns a different kind of value from the real dependency creates bugs that exist only
+in tests. Simplifii-OS, 26 Sep 2026: a test mocked a hook's `ProvenanceUI` as a function
+(`() => null`) while the real hook returns an already-rendered element, so React warned
+"Functions are not valid as a React child" and the warning was logged as an app bug. Before
+writing a mock, read what the real function returns and match its type (element, promise, object
+shape, `{ data, error }`); `null` is the honest stand-in for "renders nothing".
+
 ## The check to run on yourself
 
 > If the implementation had a genuine bug, would this test still catch it?

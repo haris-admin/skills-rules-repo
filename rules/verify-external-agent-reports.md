@@ -87,6 +87,14 @@ claim independently before drafting anything on top of it.
    it exists — this applies whether the report is about live infra state or a business/product
    opportunity; the claim type differs, the verification discipline doesn't.
 
+## External reviewers too
+
+Advice from an outside reviewer is the same kind of claim. Simplifii-OS, 26 Sep 2026: a reviewer
+said to "point the apex A/AAAA records at Railway"; Railway's own docs say it publishes no static
+IP and A records are not supported, so the advice could not work. Check the provider's primary
+documentation (the source repository counts when the docs site will not render) before handing a
+fix to the person who has the access.
+
 ## Related
 
 - `prod_issues/issue-151` — the REOPENED image/migration-skew recurrence that looked refuted by a

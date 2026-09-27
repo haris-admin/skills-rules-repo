@@ -70,6 +70,9 @@ The *when* is this file. The *how* is unchanged:
   the evidence (the test command and pass count for **this** task).
 - After committing, re-run `git status --short` and confirm other sessions' files are untouched.
 
+- **Gate the commit on the test result, never chain past it.** `npm test ...; git commit ...` in
+  one command commits whatever the tests said. Use `&&`, or read the result first. (Simplifii-OS,
+  26 Sep 2026: three flaky suites went red and the next line committed anyway.)
 - **Confirm the commit landed.** A pre-commit hook that blocks the commit can print pages of
   output that look like success. After every commit run `git log -1 --oneline` and check the
   subject is yours; if the old subject is still there, read the hook's message and fix it.

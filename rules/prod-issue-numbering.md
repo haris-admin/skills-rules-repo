@@ -19,6 +19,14 @@ ls backend/prod_issues/issue-*.md frontend/prod_issues/issue-*.md prod_issues/is
 | Fix lives in **one layer only** | **One ID**, one file in that layer. Header must say `**Layer:** Frontend only` or `**Layer:** Backend only`. |
 | **Never** | Reuse an ID for a different bug because the number is “free” in one folder (052/053 are pool timeout and agent onboarding — not SEO). |
 
+## Search before you number
+
+Before logging a new issue, search the register for the same symptom (the URL, the error text, the
+file). Simplifii-OS logged the bare-domain TLS failure as ISSUE-044 on 26 Sep 2026 while ISSUE-006
+already held it; the duplicate was merged by pointing 006 at 044. Likewise, a register row marked
+"Done" is a claim: re-read the cited file and lines before relying on it (a "Done" feature row
+pointed at markdown-rendering code, and the feature was only partly built).
+
 ## After creating a file
 
 1. Add a row to `prod_issues/README.md` § Index.
