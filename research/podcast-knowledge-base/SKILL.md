@@ -512,6 +512,15 @@ problem** (see the calibration rules below).
 - **Choose the model by measurement, not reputation** — route that decision through `llm-cost-routing`
   ("Value bake-off: reference-scored, and per JOB SHAPE"): benchmark against a named reference on the
   router's OWN output shape (many items with quotes), and project corpus cost from measured tokens.
+- **Benchmark over >=8 real episodes, never one** (2026-09-27, cheap Chinese models on OpenRouter): on a
+  single episode `inclusionai/ling-3.0-flash` matched the Qwen 3.8 reference's lens counts at 1/28th the
+  cost, which looked like an obvious switch. Over 8 real episodes it delivered **70% of the reference's
+  recall** (8.4 vs 12.0 general items/ep, 1.2 vs 5.2 Australia, 2.1 vs 6.0 project) with 87% verbatim.
+  `deepseek-v4-flash` held up at **90% recall, 96% verbatim, $0.00056/episode** and stayed the router.
+  **At $0.25-$0.76 per THOUSAND-EPISODE corpus, routing cost is not the constraint — recall is.** Do not
+  trade 30% recall for $0.51 across the whole corpus. Free-tier variants (`:free`) score well and are
+  fine for probes, but rate-limit in production. Costs come from the live OpenRouter catalogue, and
+  three of five models produced quotes that failed the verbatim matcher — verify in code, always.
 - **Router ladder as measured (2026-09-27)** — ordered by *completion reliability first*, then value:
   1. `deepseek/deepseek-v4-flash` — completes long structured output, quotes verify, ~$0.0007/episode
   2. `z-ai/glm-5.3-flash` — highest recall (82% vs the Qwen 3.8 reference) and 16/16 verbatim, **but only
