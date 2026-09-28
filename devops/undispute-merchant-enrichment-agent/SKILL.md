@@ -24,7 +24,7 @@ One job in flight at a time; the LLM only runs when there is something to do.
 
 Scripts (all under `~/.hermes/scripts/`):
 
-- `predispute_enrich_poll.py` - claim only. Resolves key + base, refuses to claim while a live claim is held (one in flight), writes `~/.hermes/cache/scratch/predispute_worker_state.json`. `--quiet` = watchdog output for a no_agent cron (empty stdout means nothing is delivered). Exit 10 = claimed.
+- `predispute_enrich_poll.py` - claim only, behind the contract gate above. Resolves key + base, refuses to claim while a live claim is held (one in flight), writes `~/.hermes/cache/scratch/predispute_worker_state.json`. `--quiet` = watchdog output for a no_agent cron (empty stdout means nothing is delivered; a refusal is logged, never printed, so a 60s cron cannot alert-storm). Exit 10 = claimed, 3 = refused. On `204` the non-quiet mode prints the runbook's exact line: `Pluto Hermes: job queue is empty; sleeping until next configured interval`.
 - `predispute_queue_state.py` - the deterministic gate: prints `idle` / `working:<job_id>` / `stuck:<job_id>`. Never prints a timestamp (non-deterministic output would wake the agent every tick).
 - `predispute_agent_ops.py` - `state | heartbeat | fail <CODE> | complete --payload <file>`; refreshes the lease in the state file on heartbeat and closes it (`closed`) on success/failure.
 - `predispute_12h_report.py` - the 09:55/21:55 report: tick counts from `~/.hermes/cron/executions.db`, jobs claimed/completed/failed, open-claim leak check, endpoint health, 🟢/🔴 verdict. Always exits 0 (a non-zero exit would replace the report with a scheduler error alert).
@@ -43,9 +43,12 @@ Base `http://localhost:8008/api/v1/agent/merchant-enrichment`, header `X-Hermes-
 
 Credential and base URL (Hermes side):
 
-- `PLUTO_HERMES_PREDISPUTE_AGENT_API_KEY` in `/mnt/c/Users/habib/.hermes/.env` - **the same secret the backend holds as `HERMES_AGENT_API_KEY`** (`backend/.env`). The old *Hermes-side* name `HERMES_AGENT_API_KEY` was removed 2026-09-22; the scripts fall back to `PREDISPUTE_AGENT_API_KEY` and then the old name for safety. Empty key fails closed (401 for everyone).
-- `PLUTO_HERMES_PREDISPUTE_BASE_URL` is the Windows host LAN IP (`http://192.168.50.210:8008`) - **WSL cannot reach a Windows-bound listener on that IP**. Both scripts probe `/health` and fall back to `http://localhost:8008` (mirrored loopback, verified 200). Same for ACMA on `:8009`.
-- `PLUTO_HERMES_PREDISPUTE_INTERVAL=60` - the poll interval in seconds, i.e. `* * * * *`.
+- `PLUTO_HERMES_PREDISPUTE_AGENT_API_KEY` in `/mnt/c/Users/habib/.hermes/.env` - **the same secret the backend holds as `HERMES_AGENT_API_KEY`** (`backend/.env`). The old *Hermes-side* name `HERMES_AGENT_API_KEY` was removed 2026-09-22; the scripts still accept `PREDISPUTE_AGENT_API_KEY` as a fallback name. Empty key fails closed (401 for everyone).
+- **Configuration is a hard gate, not a convenience (runbook 2026-09-22).** `predispute_enrich_poll.py` validates all three `PLUTO_HERMES_PREDISPUTE_*` and **refuses to start (exit 3)** if any is missing, the base URL is not `https://`, has a trailing slash, or carries `/api/v1`, or the interval is not a positive whole number. Process env is authoritative; the `.env` file only fills in what the runtime did not export. **There is NO silent http:// fallback and NO localhost substitution** - the old `http://localhost:8008` probe-and-fallback was removed because it bypassed the rule without operator intent. Plaintext is reachable ONLY through the explicit, named non-production opt-in below, and only for a **private** origin. The shell wrapper maps exit 3 to 0 so a refusal cannot alert-storm, the refusal is written to the worker log as a `refused` event, and the 12h report surfaces it RED.
+- ⚠️ **`http://192.168.50.210:8008` is private (RFC1918), so with the opt-in it is now CONTRACT-LEGAL under the amended rule — the blocker is REACHABILITY, not the contract.** WSL cannot reach a Windows-bound listener on the LAN IP, so the worker would validate and then claim nothing. Loopback mirroring only works for `127.0.0.1`. Keep the origin set to `http://127.0.0.1:8008`; a private LAN or staging origin is permitted only when the worker can actually reach it (e.g. worker and backend co-located on the dev/staging box).
+- ⚠️ **`PLUTO_HERMES_PREDISPUTE_BASE_URL` is the one value that must be right.** As of 2026-09-22 it is `http://127.0.0.1:8008` (the loopback mirror WSL can actually reach) plus the explicit non-prod opt-in. If it is ever set back to the Windows LAN IP (`http://192.168.50.210:8008`), the config now VALIDATES (private origin + opt-in) but the worker still claims nothing: **WSL cannot reach a Windows-bound listener on that IP**, and only mirrored loopback works.
+- **Non-production exception (owner-directed 2026-09-22; widened to the amended contract 2026-09-28).** Plaintext is allowed ONLY for a **private** origin — loopback (`127.0.0.1` / `localhost` / `::1`), RFC1918 (`10/8`, `172.16/12`, `192.168/16`), link-local/ULA, or a private-only TLD (`.local` / `.internal` / `.lan`) — AND only when the operator sets `PLUTO_HERMES_PREDISPUTE_ALLOW_INSECURE_LOCAL=1` in `/mnt/c/Users/habib/.hermes/.env`. Any PUBLIC host on http:// is still refused, so the exception can never silently authorize plaintext over a public network. The rule has exactly one implementation — `is_private_host()` in `predispute_enrich_poll.py`; the contract test matrix lives beside it and covers prod-HTTPS, private-RFC1918, private name, and public-host refusal. Each use is logged as an `insecure_override` event and the 12h report shows it as a 🟡 FYI (never a RED, never silent). **Unset it for production** - that is the production checklist item.
+- **Nothing from the wire is logged or reported.** The response body of a failed call is drained and discarded; the log and the delivered Telegram banner carry only `http <status> · category <category>` plus an opaque run id, per the runbook's `claim failed; category=<c>; run_id=<r>` shape. Categories: `auth` (401), `conflict` (409), `validation` (422), `service_unavailable` (503), `server_error` (other 5xx), `transport_error`, `http_<code>`.
 
 ## Hard rules
 
@@ -79,6 +82,27 @@ Creating a key is only a fallback: `POST /api/v1/admin/keys {"project_name": ...
 
 Read the decision + `audit_id` from the response and submit `acma_evidence_reference = f"acma-audit:{audit_id}"`.
 
+## Secret hygiene (binding)
+
+No credential value ever appears in tool output, a log, or a report — only its name, presence or length. Read env files with `python3 ~/.hermes/scripts/envpeek.py <file>` instead of ad-hoc `grep`/`cat`: a debug filter written to "show me the config" is the most common leak path, and it is what puts a key into session history. Binding card: `~/.hermes/rules/secret-handling.md` (mirrored in `~/.hermes/skills/rules/`). Local-network-only keys are covered too — the label describes the blast radius, not permission to print.
+
+## Configuration — single source, verified 2026-09-23
+
+Every pre-dispute worker component reads its config from **`/mnt/c/Users/habib/.hermes/.env`** (the Windows-side Hermes env). Nothing sources the WSL `~/.hermes/.env` (it holds no `PLUTO_HERMES_*`) and the gateway does not export these names to cron children, so there is **no shadowing** — process env wins only when a caller sets a value explicitly (that is how the config tests override the base URL).
+
+| Variable | Purpose / current value |
+|---|---|
+| `PLUTO_HERMES_PREDISPUTE_BASE_URL` | API origin the worker polls. Must be HTTPS *or* a **private** `http://` with the opt-in below. Currently `http://127.0.0.1:8008` — the LAN IP `192.168.50.210` is a Windows-bound listener **WSL cannot reach**. |
+| `PLUTO_HERMES_PREDISPUTE_AGENT_API_KEY` | Scoped credential; the backend holds the same secret as `HERMES_AGENT_API_KEY` (73 chars at present). |
+| `PLUTO_HERMES_PREDISPUTE_INTERVAL` | Positive whole-number seconds (60). The crons express the same cadence as `* * * * *`. |
+| `PLUTO_HERMES_PREDISPUTE_ALLOW_INSECURE_LOCAL` | Non-prod opt-in (`1`/`true`, private-host-only — loopback/RFC1918/link-local/ULA/private TLD; a public host is always refused). Logged once per UTC day — see the log-hygiene rule below. Unset for production. |
+| `PLUTO_HERMES_ACMA_BASE_URL` | The ACMA service. **Must be the loopback form `http://127.0.0.1:8009`** — the LAN form is unreachable from WSL. |
+| `PLUTO_HERMES_ACMA_API_KEY` | Declared ACMA project key (`pluto-hermes`). Verified: `/api/v1/check/phone` → 200 `ALLOWED`, `/api/v1/check/email` → 200 `BLOCKED_NO_CONSENT`, **no key → 401** (fails closed). |
+
+**ACMA routes** (from `/openapi.json`): `POST /api/v1/check/phone` · `/api/v1/check/email` · `/api/v1/check/contact` · `POST /api/v1/unsubscribe` · `GET|POST /api/v1/admin/keys` · `DELETE /api/v1/admin/keys/{project_name}` · `GET /api/v1/admin/cache/dncr` · `DELETE /api/v1/admin/cache/dncr/expired` · `GET /health`. There is **no bare `/api/v1/check`** — the three sub-routes are the entry points (a POST to the bare path returns 404).
+
+**Backend safety flag:** `HERMES_ENRICHMENT_ENABLED=false` in `backend/.env` keeps the 5-minute outreach scheduler from emailing merchants — leave it false unless merchant contact is deliberately being turned on.
+
 ## Pitfalls (all hit in practice)
 
 - **`complete` no longer breaks on a datetime expiry.** `canonical_enrichment_seal()` now stringifies `acma_expires_at` when it is set, so the old `TypeError: Object of type datetime is not JSON serializable` is fixed. `acma_expires_at: null` is still safe and remains the default; if the ACMA response carries an expiry it can now be relayed.
@@ -91,6 +115,9 @@ Read the decision + `audit_id` from the response and submit `acma_evidence_refer
 - **Synthetic test fixtures reach the live database.** `backend/tests/test_dispute_service.py` literals ("Tech Electronics", ABN `11223344556`, `support@techelectronics.com.au`) have appeared as real queued jobs, because the suite runs against the configured `DATABASE_URL`. A job whose values match a test fixture is test data: fail it with `TEST_FIXTURE_DATA`, do not enrich it. Run this check BEFORE any research - the 2026-09-21 claim of exactly that fixture is now unreachable (heartbeat 409: the row is gone or terminal after the staging rebuild).
 - **An abandoned claim is invisible.** There is no queue listing and `claim` only returns `PENDING` rows, so a claim left `IN_PROGRESS` is never offered again. The state file plus the `stuck:` monitor signature exist to make that leak visible: if a job cannot be completed, FAIL it - never walk away from a held lease.
 - **A cron script that exits non-zero raises an error alert.** The claim script exits 10 to mean "a job was claimed", which the scheduler reads as a failure, so the shell wrapper maps 10 -> 0. Any new wrapper around a worker script must do the same.
+- **Never let a per-tick worker log a standing state** (a flag, an opt-in, an endpoint mode). One row per tick is ~1,440 rows/day and buries the events that matter — the `insecure_override` notice alone did exactly that before 23 Sep 2026. Log it once per UTC day against a marker file under `state/`; the 12h report reads the opt-in from the env file, so the state still surfaces.
+- **Do not assume a Windows-host origin is reachable from WSL.** `127.0.0.1` is mirrored into WSL; the host's LAN IP is not. Every `*_BASE_URL` a WSL-run worker uses must be the loopback form.
+- **The contract gate must stay testable.** Config comes from the process env first, then the env file, so a test can override the origin without editing the file — keep that precedence if the loader is ever refactored.
 
 ## Verification (read-back is mandatory)
 
