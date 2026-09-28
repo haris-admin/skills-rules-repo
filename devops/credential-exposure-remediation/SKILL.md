@@ -113,7 +113,19 @@ trades a code exposure for a silent operational dependency nobody can discover l
 - **The exposure is often in DOCS while the code is already clean — and a public repo makes containment alone insufficient (Sep 22 2026).** A fleet sweep found a live Gmail app password in six *skill documents* (a code sample, plus prose lines quoting it) while every ingestion script already read `GOOGLE_GMAIL_APP_PASSWORD_MACARTHUR` from the env store — so the step-2 sweep over `<dir>/*.py` reported clean and the secret went unnoticed for months. Sweep the artefact set you are about to touch, not just the script directory: the pre-push `grep` on a skill-change is a legitimate place to find one. Two rules follow. (1) **Check repo visibility before grading severity** — `curl -H "Authorization: oauth2:$TOK" https://api.github.com/repos/<org>/<repo> | jq .visibility` — a private repo bounds the damage; a PUBLIC one means the value was readable by anyone and, because it stays in git history (`git log -S"$VALUE"` shows the import commit), replacing it in the working tree does NOT close the exposure. Rotation is the only real fix; say so explicitly rather than reporting the scrub as done. (2) **Report a placeholder-aware count, not a raw grep count** — 59 candidate matches in that repo resolved to 26 "looks real", of which 25 were shell-variable references (`$TOK`, `{PAT}`, `op://…`, `[PASSWORD]`). A placeholder/`$VAR` filter over each captured value (reject `<`, `>`, `YOUR`, `XXXX`, `${`, `op://`; treat a value equal to its own key name as a reference) is what separates one real credential from a false alarm across a 165-skill tree — and never print the value while doing it, only `file:line`, key name and a `len`/4-char-prefix shape.
 - **Never print, echo, diff or log a value** — not in the report, not in a pasted diff, not by quoting
   an error message. Refer to secrets by key name and line number; when a check would otherwise print
-  matching lines, print `file:line` and a boolean instead.
+  matching lines, print `file:line` and a boolean instead. **Enforce it with a redacting reader rather
+  than discipline:** read any `.env` with `python3 ~/.hermes/scripts/envpeek.py <file>` (names, presence
+  and length only; `--key-like`, `--show-hosts`, `--grep`, `--json`) instead of ad-hoc `grep`/`cat`. The
+  mechanism to design against is the **filter you write while debugging**: "show me the config" code
+  whose whitelist regex ORs one secret-bearing key into the print is enough to put a live value into
+  session history, the transcript, a cron log and whatever channel renders it — and that filter then
+  looks like a harmless inspection in the review. A partial value is equally forbidden: never print a
+  prefix, suffix or hash as a "safe" form. Binding card: `~/.hermes/rules/secret-handling.md` (mirrored
+  in `~/.hermes/skills/rules/`). **"Local-network-only" keys are covered too** — the label bounds the
+  blast radius today, it is not permission to publish, and no rotation is owed for a value that was
+  never supposed to be printed. If a value escapes anyway: say so plainly, do not repeat it, and name
+  rotation as the next step — never delete the evidence silently.
+- **A display-mask written for one quoting style misses the others. Mask by token SHAPE, or better, do not print the artefact at all (Sep 28 2026).** Inspecting `~/.config/himalaya/config.toml` with `re.sub(r'"[^"]{6,}"', …)` printed the live Gmail app password — the value sat in a form that regex did not cover — and the dump went straight into the session transcript: the exact failure above, by a second filter. Two rules. (1) When any value could be present, mask by shape over the WHOLE text — `re.sub(r'[A-Za-z0-9_\-]{12,}', '[REDACTED]', t)` — not by key name and not by quoting style. (2) For a file you must *edit*, never render it for reading: read, transform and write it in-process and print only booleans/ints (`value in text`, `len(value)`, replacement counts). A masked dump is still a dump.
 - **One key is usually several sites.** A sweep that fixes the script and stops leaves the same value
   live in a second script or in a cron prompt. Enumerate the set, fix the set, then re-sweep.
 - **A secret that was committed and later removed is still exposed** — history keeps it. Flag the value
@@ -143,6 +155,28 @@ trades a code exposure for a silent operational dependency nobody can discover l
   import with `RuntimeError: Missing required environment variable: RDS_PW` — the verification at the
   time reported `RDS_PW=loaded` because it fed a dummy value in the subprocess, which is exactly the
   case production would never have.
+
+## Giving a non-Python consumer the value without storing it (env-lookup pattern)
+
+Some consumers cannot do `os.environ[...]` — a Rust CLI (`himalaya`), a shell line, a cron prompt. Their
+config needs a *command that prints the value*, not the value. Wire it through one sanctioned getter
+rather than inlining `echo <value>`:
+
+- `~/.hermes/scripts/secret_get.sh KEY` prints the value from the fleet env store in the loader's
+  candidate order (`/mnt/c/Users/habib/.hermes/.env`, then `~/.hermes/.env`), strips CRLF and quotes
+  (the CRLF pitfall above), and **refuses to print to a TTY** (`[ -t 1 ]` guard) so it cannot be shown
+  by accident.
+- The consumer config then names it and holds nothing: `backend.auth.cmd =
+  "/home/habib/.hermes/scripts/secret_get.sh GOOGLE_GMAIL_APP_PASSWORD_MACARTHUR"`. The secret lives in
+  exactly one place — the env store.
+- **Verify without printing:** `secret_get.sh KEY | wc -c` (length only), `secret_get.sh NO_SUCH_KEY;
+  echo $?` (expect 3), then a live end-to-end call of the consumer (`himalaya folder list`). Never run the
+  getter bare inside a tool call: tool stdout is a pipe, so the TTY guard will not save you.
+
+Worked example (Sep 28 2026): himalaya's `auth.cmd` held `echo <pw>` twice (IMAP + SMTP). The env store
+*already* held the same value under `GOOGLE_GMAIL_APP_PASSWORD_MACARTHUR`, so wiring to it needed no value
+migration and no hand-typed secret (step 7 satisfied). After: config mode 0600, literal count 0,
+`himalaya folder list` still authenticates.
 
 ## Related
 
