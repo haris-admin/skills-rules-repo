@@ -154,6 +154,8 @@ worktree — that symptom is the tell, not a fluke.
    history.** Fix forward (a scoped phase in that change plus a release-hold line) and record it in
    the change's review log. Origin: AMLHive C524 `e423ffeb`, 27 Sep 2026.
 
+**Pathspec lists in zsh.** The agent shell is often zsh, which does not word-split an unquoted variable: `P=$(git status --short | awk '{print $2}'); git add -- $P` passes the whole list as one path and fails with "pathspec did not match". Use `${=P}` in zsh, or list the paths explicitly. Origin: 28 Sep 2026.
+
 ## Quick check before any commit
 
 ```bash
