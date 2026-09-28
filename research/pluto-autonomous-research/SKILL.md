@@ -500,6 +500,8 @@ Quick rules that apply on every run:
 - **`stored=N, verified=0, "dedup: N already present"` is DATA LOSS, not an idempotent skip** — a briefing whose blocks are all titled `## Finding` was deduped to zero and re-fed every 5 min forever (28 Sep 2026). Dedup identity is now the EXACT document text and the watcher compares read-back to `findings_added`; verify a feed against the chamber, not the exit status
 - Research outputs go to `/home/habib/.hermes/research_outputs/`
 - When running as a cron job, check which topics were already covered today before picking a new one
+- **The daily topic rotation is `day-of-month % 5`, not `date.toordinal() % 5`** — the ordinal form silently re-runs the previous day's vertical (verified 29 Sep 2026: `toordinal()%5` returned 3 = the prior day's Agentic topic, while `day%5`=4 matched all six recent files). Sanity-check the pick against the last 5–6 `research_*.json` `topic` fields; a repeat across a month boundary (30→0, 31→1) is normal, a repeat within 1–2 days is not
+- **`write_file`'s stale-file guard is UNSATISFIABLE when the previous file contains a line longer than the read tool's per-line cap** — every read returns `truncated_lines: true` so no re-read clears it and the identical write loops. Archive then recreate (`cp -p x archive/x-<prev-date>.md && rm -f x`) and write the fresh copy to a new path; hit on the daily `gumby-brief-input.md` whose prior `**For Haris:**` line was ~5,000 chars (29 Sep 2026). Never `patch` that file — it is replaced wholesale each morning
 - Staging inbox watcher (`5678a363ce3b`) auto-processes `mempalace-inputs/` every 5 min — no manual steps needed unless urgent
 - Check `/mnt/c/Users/habib/.hermes/.env` for Windows-side credentials if a key is missing
 - Hermes cron uses LOCAL time (AEST), not UTC — always check `next_run_at`'s timezone suffix
@@ -515,6 +517,7 @@ The full dated incident log — watcher format-mismatch vs. down, research JSON 
 - `references/post-run-phase-verification.md` — Full post-run verification one-liner, remediation steps, mempalace feeder check
 - `references/pitfalls-and-incident-log.md` — Full dated incident log (watcher issues, feeder bugs, email failure modes, JSON/parsing gotchas, publisher curl reliability, etc.)
 - `references/watcher-feeder-dedup-defect.md` — Watcher/feeder dedup defect: generic `## Finding` titles deduped a whole 85-item briefing to zero (28 Sep 2026), the two-script fix, and the chamber-level verification recipe
+- `references/daily-run-pitfalls.md` — Operational daily-run pitfalls: the `day-of-month % 5` topic rule, the unsatisfiable `write_file` stale guard on long-line files (archive-then-recreate fix), chamber read-back verification, producer-side `.findings.json` contract failures
 - `references/delegation-pattern.md` — Proven subagent prompt templates
 - `references/australian-news-feeds.md` — RSS feed catalog
 - `references/google-news-rss-patterns.md` — Google News RSS search queries per topic
