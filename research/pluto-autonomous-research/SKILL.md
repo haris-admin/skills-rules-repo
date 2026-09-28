@@ -342,6 +342,14 @@ assertions lives in `references/linkedin-generator-defects.md` — load it befor
 **Curation is part of the phase:** read the generated file, rewrite the hooks in Haris's voice, and append a
 `# ✅ Curated by Pluto` section — the curated set is what gets delivered.
 
+**Rules 35–37 (Sep 29 2026) — hook-path defects fixed in `linkedin_ideas_generator.py`:** a stat prefix must not
+restate the title (parenthetical currency conversions defeated the duplicate check, shipping the same sentence
+twice — harvest the stat's figures with parentheticals stripped); a slice can end on a dangling auxiliary after a
+coordination, which needs `stay`/`stays` in `_DANGLE_VERBS` **and** a dangling-tail pattern that can match tokens
+containing `&` (`R&D`) — a `\w` tail group cannot; and a word-boundary slice must not split a multi-word proper
+noun (`Spark Festival` → `Spark`). Verified by a before/after harness over 48 findings / 8 research days: 3 hooks
+changed, 0 regressions.
+
 See `references/linkedin-content-extraction.md` for content pillar details, `references/gmail-briefing-integration.md` for Gmail signal sourcing, and `references/linkedin-generator-defects.md` for the generator defect log.
 
 ### Phase 9: Email Delivery (NEW June 4, 2026 — Updated June 5, 2026)

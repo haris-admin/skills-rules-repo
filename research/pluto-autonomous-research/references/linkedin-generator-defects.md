@@ -399,3 +399,77 @@ ungrounded twice over: the pool of words and the number in its own title.
   `gmail-briefing-<id>-20260928_<time>.md`. Use `*20260928*` as well, or a "0 occurrences"
   verdict is really "I looked in the wrong file".
 
+## Rules 35–37 (Sep 29 2026) — three hook defects on one Startup & VC day
+
+Three of six hooks shipped broken or awkward on the Startup & VC run. All three live in the
+hook path (`extract_headline_stat` → `_hook_stat_ok` → `_short_title`) and each reproduces
+from that day's own `research_2026-09-29.json`.
+
+### Rule 35 — parenthetical figures defeated the stat-duplication check
+
+**Defect:** the hook read `Amber Electric closed a $78.5 million (EUR 49m / US$56.22m)
+Series E: Amber Electric closes $78.5m Series E led by Morgan Stanley's 1GT` — the same
+sentence twice.
+
+- **Cause:** two gates failed on the same clause. The duplicate check `all(n in short for n
+  in nums)` took `nums` from the raw stat, and the parenthetical currency conversions
+  (`49`, `56.22`) appear nowhere in the title, so the check never fired. The content-word
+  ratio gate then landed on **exactly 0.40** (10 stat words, 4 shared: amber/electric/
+  series/E) — and the gate is `> 0.4`, so it passed by one word.
+- **Fix:** strip parentheticals before harvesting figures — `re.findall(r"\d[\d.,]*",
+  re.sub(r"\([^)]*\)", " ", stat))`. This is Rule 26's "skip numbers inside parentheses"
+  extended from *extraction* to the *duplicate check*.
+- **Assertion:** the hook collapses to the title-only form `Amber Electric closes $78.5m
+  Series E led by Morgan Stanley's 1GT`. Prefer this over moving the 0.4 threshold: the
+  ratio is a proxy for "same sentence", a shared headline figure is the actual test, and
+  loosening the ratio would suppress good stat prefixes elsewhere.
+
+### Rule 36 — slice ended on a dangling auxiliary after a coordination
+
+**Defect:** `UPDATE to the 8 September feed: Harrison.ai says contracted ARR quadrupled to
+$40m and R&D stays`.
+
+- **Cause:** two compounding gaps, and the second is the general lesson. (a) `stays` was not
+  in `_DANGLE_VERBS`, so Rule 32's verb-drop never fired. (b) The dangling-subordinate-tail
+  regex used `(?:\w+['’]?\w*\s*){1,3}$`, and `\w+` **cannot match a token containing `&`** —
+  so ` and R&D stays` was invisible to it. Any punctuation-bearing token (R&D, US$56,
+  state-level, 2026-27) is un-matchable by a `\w` group; check the tail pattern, not just the
+  verb list, when a dangling slice survives.
+- **Fix:** add `stay`/`stays` to `_DANGLE_VERBS`, and widen the tail pattern to
+  `(?:\S+\s*){1,3}$`. The widening is narrow by construction — every token the old pattern
+  matched, the new one matches identically — so previously-repaired hooks are unchanged.
+- **Assertion:** the hook becomes `…contracted ARR quadrupled to $40m`.
+
+### Rule 37 — slice split a multi-word proper noun
+
+**Defect:** `NSW innovation funding retreat hardens: tech minister hand-wrote '$0' over a
+recommended $40k Spark` — the entity is **Spark Festival**.
+
+- **Cause:** the word-boundary slice at the 100-char limit landed between the two words of
+  the name, and nothing in `_short_title` knows a capitalised token may continue into the
+  next one.
+- **Fix:** in the word-slice branch, before the trailing-word pops run, if the last retained
+  token is capitalised AND the next token of the original head is capitalised, append that
+  token. A one-or-two token overshoot is cheaper than a half-named entity.
+- **Assertion:** the hook ends `…over a recommended $40k Spark Festival`.
+
+**Harness and assertion for all three.** Copy the generator to `/tmp` before editing, import
+both copies by path (`importlib.util.spec_from_file_location`), recompute every finding's hook
+in both, diff. Result on this run: **48 findings over 8 research days → 3 hooks changed, 3
+improvements, 0 regressions.** Two harness cautions: it scans only `research_*.json` (so it
+cannot see blog-candidate changes), and its "unbalanced quote" flag fires on possessives
+(`Stanley's`) — count quoting pairs, not raw apostrophes, before calling something a
+regression.
+
+## Rules 8–12 (moved out of SKILL.md 2026-09-29) — generator hardening, remaining items
+
+8. Pillar from `portfolio_hit`, not from regulator keywords.
+9. Order research ideas one-per-pillar before truncating (cap 6).
+10. Never take a clause boundary from inside a parenthetical.
+11. Currency-unit regexes must be case-insensitive and token-bounded (`$100M` ≠ `$100 M`).
+12. Blog rotation suppresses recent titles; `KNOWN_BLOGS` retires them.
+
+Items 1–7 and 13–20 are the numbered entries under the heading above; 21–23 and 27–37 follow in
+this file. SKILL.md now carries only a pointer to this log — the condensed list had been
+duplicated here and SKILL.md had drifted to 100,689 bytes, over its 100K limit.
+
