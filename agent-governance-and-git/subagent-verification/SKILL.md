@@ -31,3 +31,6 @@ description: Verification protocol for an orchestrator agent to check a dispatch
    happens, `git checkout HEAD -- <path>` and re-apply only your genuine additions. See also
    `rules/shared-file-commit-resolution.md`.
 
+8. **Linked lanes and review loops**: commit each lane and state its SHA in every dispatch that reads it; re-check any
+   claimed cross-change contradiction at current HEAD; stop new review rounds once a round returns only narrow, local
+   findings, then fix and verify those directly. Full detail: `rules/subagent-verification-protocol.md` rule 7.

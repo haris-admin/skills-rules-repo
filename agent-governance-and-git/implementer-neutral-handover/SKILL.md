@@ -29,3 +29,8 @@ description: Write build-handover notes addressed to "whichever agent implements
    agent must author (which files, what each contains, gating tests and decisions). Give
    instructions, not implementations. Cross-cutting direction (process, skills, rules) goes in a
    named `docs/` doc. See the `agent-handoff-direction-artifact` rule for the full contract.
+6. **Allowed files are derived, not recalled.** Build a brief's allowed-file list by collecting every path named by
+   every task in `tasks.md` and `design.md`, including shared helpers such as audit services, migrations and contract
+   registries, before handing off. If an implementer stops on a missing file, that stop is correct; record the scope
+   extension as a dated human decision in the brief before it continues. Origin: AMLHive T524.53 needed
+   `audit_service.py`, 28 Sep 2026.

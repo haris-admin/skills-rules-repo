@@ -51,6 +51,13 @@ Whatever it is called, these are the forbidden act:
 - Changing the *expected* value to whatever the code now produces. This is the most common
   self-deception: it always makes the test pass and never means anything.
 
+## Shared test-vector data changes
+
+- Distinct from the above: when a shared test-vector or fixture file changes as data, not as a
+  requirement, updating the expected literal to match the new vector is legitimate, provided the
+  value is read from or checked against that vector and not copied from code output. Say so in the
+  commit message.
+
 ## A mock-call-args assertion does not satisfy a "writes a row" / "persists" requirement
 
 Added 7 Sep 2026 (C473, C476 — from the C472–C489 validation batch). A double is for isolating the

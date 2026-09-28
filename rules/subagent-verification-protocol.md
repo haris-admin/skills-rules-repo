@@ -53,6 +53,8 @@ a subagent updated `tasks.md`'s own `status:` frontmatter to `partial` but never
 claim, run `git status --short` and `git log --oneline -1` yourself. A completion-log sentence is
 not a git operation — only `git status` proves one happened. This is a two-second check; do it
 every time, not just when something feels off.
+The reverse holds too: verify a "not pushed" claim with `git log origin/<branch>..HEAD` before
+relaying it.
 
 ## A third failure mode: a scoped subagent worked outside its lane
 
@@ -132,7 +134,15 @@ trying to do, not what it did.
 6. **A `failed` subagent notification is not "nothing happened".** Check disk (`git status --short`
    + `wc -l`/`tail` on its scoped paths) before reacting. If most of the work landed, resume with
    `SendMessage` and a "finish exactly these gaps" instruction rather than cold-re-spawning — then
-   verify the result for scope and completion as normal.
+   verify the result for scope and completion as normal. The resume message tells the agent to
+   re-read the files it already changed and not duplicate edits.
+7. **Linked lanes and review loops.** Commit each lane before dispatching a lane or reviewer that
+   reads its output, and state the commit SHA (`git rev-parse --short HEAD`) in every dispatch
+   prompt; a subagent reading another lane's uncommitted text produces stale cross-change claims.
+   Before acting on a claimed cross-change contradiction, re-check it at current HEAD. For repeated
+   independent reviews, stop dispatching new rounds once a round returns only narrow, local
+   findings with no new requirement or design gap; fix those findings and verify them directly.
+   Origin: AMLHive C522/C523, about six review rounds, 26 to 28 Sep 2026.
 
 ## Related
 

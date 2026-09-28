@@ -141,6 +141,19 @@ through. Reach for this whenever a plain `git rm`/`git mv`/`git commit` on a sin
 mysteriously reports success but `git log`/`git status` shows nothing changed in a shared
 worktree — that symptom is the tell, not a fluke.
 
+## Pushing and holding in a shared checkout
+
+1. **`git push` publishes every local commit on the branch, including other sessions' unpushed
+   ones.** Before any requested push, run `git log origin/<branch>..HEAD --oneline` and confirm
+   each commit is yours or explicitly approved for push. If any is not, stop and ask.
+2. **A human decision to keep work uncommitted, unpushed or unreleased that lives only in one
+   session's conversation binds no other session.** Record it where every session reads first: a
+   dated release-hold or do-not-commit line in the repo's AGENTS.md (or equivalent handoff file),
+   naming the path or change and the condition that lifts it.
+3. **When another session has already committed or pushed held work, do not rewrite shared
+   history.** Fix forward (a scoped phase in that change plus a release-hold line) and record it in
+   the change's review log. Origin: AMLHive C524 `e423ffeb`, 27 Sep 2026.
+
 ## Quick check before any commit
 
 ```bash

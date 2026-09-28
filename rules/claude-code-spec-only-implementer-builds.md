@@ -42,6 +42,11 @@ For any **OpenSpec-governed change** (a `proposal.md`/`design.md`/`tasks.md` tri
 - Mark the assignment explicitly in the change's `proposal.md`/`tasks.md` (a short "Execution
   assignment: <implementer>" note near the top, as `426` and `461` do) so a future reader — human
   or agent — doesn't assume Claude Code already built it just because the spec exists.
+- **Allowed files are derived, not recalled.** Build a brief's allowed-file list by collecting every
+  path named by every task in `tasks.md` and `design.md`, including shared helpers such as audit
+  services, migrations and contract registries, before handing off. If an implementer stops on a
+  missing file, that stop is correct; record the scope extension as a dated human decision in the
+  brief before it continues. Origin: AMLHive T524.53 needed `audit_service.py`, 28 Sep 2026.
 
 ## What this does not change
 

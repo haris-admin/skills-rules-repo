@@ -43,6 +43,10 @@ load-bearing across 7+ files before anyone caught it.
    Compliance Regulator obligations, risk-tier overrides) — a fabricated decision here is not a documentation
    nit, it is a live legal-risk change made to look pre-approved.
 
+5. **Prefer the human's verbatim words for answers to structured questions, dated.** Reviewers of a
+   rewritten proposal diff the decision blocks against the prior commit to confirm none were
+   dropped or reworded.
+
 ## Related
 
 - `docs/agent_rules/openspec-tdd-mandate.md` — "ask before proceeding on requirement conflicts" is

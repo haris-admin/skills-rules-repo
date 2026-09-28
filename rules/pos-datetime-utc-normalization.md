@@ -85,5 +85,6 @@ INSERT ... modified_time = '2026-09-02 13:15:00'   -- should be 03:15:00 UTC
 - Skills: `tapease-pos-clover-shift-sync` (datetime handling section),
   `tapease-db-access` (fixture / convention), `tapease-backend-deploy`.
 - OpenSpec: `openspec/changes/pos-partner-datetime-normalization/` (v4.2.26).
+- `rules/scheduler-timezone-iana.md`: in-process schedulers use an explicit IANA zone, never a captured offset.
 - `rules/no-hardcoded-current-state-literals.md` — the fixture-time-vs-shift-window
   version of the same anti-pattern.

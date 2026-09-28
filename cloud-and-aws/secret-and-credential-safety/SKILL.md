@@ -9,5 +9,6 @@ description: Absolute mandate against reading, printing, logging, or exposing AP
 - **Never print, log, or include secret contents in any output**: `.env`, `*.tfvars`, `*.pem`, `.aws/credentials`, or API keys.
 - **Opaque Secret Naming**: Treat any variable matching `*_KEY`, `*_SECRET`, `*_TOKEN`, `*_PASSWORD`, `*_URL` as sensitive.
 - **Ignore File Configuration**: Maintain `.gitignore`, `.cursorignore`, and `.geminiignore` across all agent environments.
+- **Git remote URLs**: Remote URLs in `.git/config` are credential-bearing; see the agent-tooling-secrets-protection rule.
 - **Rotation over Recovery**: If a secret is lost or compromised, rotate it immediately in the cloud dashboard rather than attempting to reconstruct it from logs.
 

@@ -77,7 +77,8 @@ delegate_task(
     3. Write minimal implementation
     4. Run: pytest tests/models/test_user.py -v (verify PASS)
     5. Run: pytest tests/ -q (verify no regressions)
-    6. Commit: git add -A && git commit -m "feat: add User model with password hashing"
+    6. Commit (exact paths only, per the git-commit-hygiene-shared-worktree rule):
+       git add -- <paths> && git commit -m "feat: add User model with password hashing" -- <paths>
 
     PROJECT CONTEXT:
     - Python 3.11, Flask app in src/app.py
@@ -183,8 +184,9 @@ pytest tests/ -q
 # Review all changes
 git diff --stat
 
-# Final commit if needed
-git add -A && git commit -m "feat: complete [feature name] implementation"
+# Final commit if needed: stage exact paths and commit with a pathspec
+# (never `git add -A`; see the git-commit-hygiene-shared-worktree rule)
+git add -- <paths> && git commit -m "feat: complete [feature name] implementation" -- <paths>
 ```
 
 ## Task Granularity

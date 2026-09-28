@@ -66,3 +66,7 @@ proposal starts from the right split instead of re-deriving it under time pressu
 
 Add a row here whenever this pattern applies to a new proposal, so the next reader doesn't have to
 re-derive the split from scratch.
+
+## Related
+
+- `rules/scheduler-timezone-iana.md`: in-process schedulers must use an explicit IANA zone, never a captured offset.

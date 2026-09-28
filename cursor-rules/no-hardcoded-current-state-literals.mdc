@@ -55,6 +55,14 @@ When writing a test, verifier, or deploy-time gate that means "the current head/
    hardcoded expectation to match the new, legitimate reality (with a comment explaining the
    addition), not to silently work around the test.
 
+## Exception: migrations are frozen history
+
+A database migration records the schema as it was at that revision, so enumerated values (enum
+members, allowed statuses, seed rows) are written as literals and never imported from live app
+constants. An import makes an old migration change meaning when the constant changes. Pair the
+migration with a drift-guard test comparing the live constant to the migrated values (the
+paired-literal pattern in rule 2 above). Origin: AMLHive C523 design section 4.2, 28 Sep 2026.
+
 ## Related
 
 - [issue-187](../../backend/prod_issues/issue-187-schema-contract-expected-revision-hardcoded-stale-literal.md) —

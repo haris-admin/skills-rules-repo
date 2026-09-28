@@ -21,3 +21,5 @@ description: Best practices for writing zero-downtime, reversible database migra
 7. **Run migration lints locally, not only in the deploy workflow**: a lint that only runs inside the deploy job is found by a
    failed production deploy (2026-09-24: 8 non-concurrent indexes across 3 migrations from another agent's lane reached
    the deploy gate because local suites never ran the lint).
+8. **Freeze values, never import app code**: migrations must not import `app.*` constants or enums. Write literals, and
+   add a drift-guard test against the live constant.
