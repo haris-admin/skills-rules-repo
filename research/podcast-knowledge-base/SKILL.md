@@ -578,6 +578,46 @@ interrupt, and a run must never hold the only copy of its own results in memory.
 
 Sequencing: repair fragments → re-chunk → verify to `locked` → route. Never route ahead of the gate.
 
+### Free-tier routing — the pool IS usable, but only when PACED (built 2026-09-29)
+
+Operator instruction: spend nothing on the routing stage — use the FREE OpenRouter pool. Measured truth:
+free ids **do** work on the real router shape, but they are throttled per-upstream, so availability comes
+from *patience and rotation*, never from a bigger timeout.
+
+- **Burst vs paced, same episode, same day:** a burst of free ids returned **429/503 inside a second**
+  and looked like a hard wall. Paced calls on the same ids succeeded: `openrouter/free` 39.7s
+  (gen=10 au=6), `nvidia/nemotron-3-super-120b-a12b:free` 41.0s (gen=8 au=3, **0 dropped quotes**),
+  `inclusionai/ling-3.0-flash-sante:free` 7.0s (gen=12 au=1). **Never conclude "free is impossible" from
+  a burst failure** — conclude "free needs staggering".
+- **`scripts/podcast_free_router.py`** is the staggered worker. Design rules, each load-bearing:
+  * rotates the free pool; a model answering 429/503/5xx/timeout goes into **cooldown (default 900s)**
+    instead of being retried in a hot loop;
+  * when **every** model is cooling it **ends the run cleanly (exit 0)** and resumes next tick —
+    "resume later" is success, so a cron tick that routes 2 episodes and stops is not a failure;
+  * `--throttle` seconds of our-side pacing between calls (never burst upstream);
+  * `--timeout` generous (420s) because free models are slow;
+  * **no paid fallback by default** (`--allow-paid` opts in).
+- **Wrapper + schedule:** `podcast_free_router_stagger.sh` — 2-hourly cron `e736e32679ab`, `--limit 10`,
+  `--throttle 20`, `--deadline 1500`. It runs the report and the sidecar conversion in the SAME tick
+  (otherwise the work is dropped — see the emitter rule above). The paid daily router `a2ff28e23482` is
+  **paused**, not deleted: resume it to revert.
+- **Free and paid SHARE the dedup state** (`three_filters_state.json`) and the same JSONL, so switching
+  lanes can never double-route. Corollary: the free worker must ALSO seed its `done` set from the JSONL,
+  or it re-routes what the paid run already did and the quotes come back deduped to zero items
+  ("no verifiable items" = a false failure).
+- **Pitfall — `LIMIT` before the `done` filter reports "0 episodes queued" forever.** `pick_ids(since,
+  limit)` applies the limit first, so the newest N are returned — and the newest are exactly what the
+  daily run already routed. Fetch the whole candidate list, then drop `done`, then slice. Symptom: a
+  worker that looks idle while the backlog is untouched.
+- **Interim quality signal (weak, n=1 per model — do not switch on it):** free recall ran **below** paid
+  on the same episode (gen 10-13 vs 15) with higher quote-drop rates on some models. Cost is $0 vs
+  ~$0.001, so the decision is "how much recall does free cost us", which is a **value** question, not a
+  price question. `scripts/probe_free_vs_paid_quality.py` scores free vs paid (incl. **DeepSeek direct**
+  and GLM) on the same episodes against the paid model as reference.
+- **Key state:** `OPENROUTER_API_KEY` is the canonical name (`podcast_capture_verify.llm` already prefers
+  it and prints WHICH name resolved); the `_OPENCLAW` suffix is retired. The key carries its own
+  **per-key spend limit** — check `GET /api/v1/key` for `limit` vs `usage` before assuming headroom.
+
 **Scheduled:** `scripts/podcast_three_filters_daily.sh` runs 06:45 daily (cron `a2ff28e23482`, `no_agent`
 script, `deliver: local`, failures routed to the origin chat). A **2-day window** catches late-ingested
 episodes; the router's quote-hash dedup makes re-runs a no-op. It sits at the end of the chain
