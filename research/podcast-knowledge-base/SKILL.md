@@ -720,6 +720,15 @@ shape cascade — bullets → bold section headings → whole document — and a
   "the parser returned items" still yields zero when every parsed item is then dropped for having no
   title/body — the same silent loss wearing a different hat. Score the cascade after the build+verify
   stage and advance only when findings actually materialise.
+- **A `.done` marker keyed on EXISTENCE alone silently drops every LATER addition to a growing file.**
+  The per-day artefacts are rewritten as the router appends items — measured 2026-09-29: `general`
+  804→1167 findings within one day, `australia` 38→127 — but `mempalace_watcher.get_pending_files()`
+  only asked whether `<stem>.done` existed, so the day's file was processed **once on first sighting**
+  and every subsequent addition was ignored. The marker already recorded `file_hash`; it was simply
+  never compared. **Any producer that appends to a stable filename obliges its consumer to re-process
+  on CONTENT CHANGE, not on first sighting.** After the fix (compare `file_hash`), a single watcher run
+  recovered **540 findings** (knowledge 792→1155, australia 38→127, projects 49→137). Symptom to watch
+  for: the queue reports clean, reconcile is green, and the palace count simply never moves again.
 - **Non-knowledge files get a NAMED exception, never a silent one.** Telegram relay fragments and similar
   short-form files cannot become findings and would fail the reconciler forever; move them to
   `mempalace-inputs/_relays/` with a README stating why, so the queue stays honest instead of permanently
