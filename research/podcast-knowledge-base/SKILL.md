@@ -1036,3 +1036,26 @@ Open levers (NOT yet applied — each changes verification semantics, so decide 
   that matters for knowledge. Record the truncation either way (it already is, in `notes`).
 - Verifying a SAMPLE (e.g. 5/day) rather than every new episode keeps the fidelity assurance at a
   fraction of the cost; the ledger already makes partial runs safe to resume.
+
+### The largest cost lever: DeepSeek's HIDDEN reasoning tokens
+
+Measured 2026-09-29 on a single DeepSeek-direct call (`deepseek-flash`, same prompt, same episode):
+
+    reasoning ON  (no param)                 15.8s  content=1620 chars  reasoning=15911  out=3835
+    reasoning OFF (`reasoning:{enabled:false}`) 5.7s content=1029 chars  reasoning= 4387  out=1153
+
+`reasoning_content` bills as OUTPUT. So on this lane MOST of what you pay for is a hidden thinking pass
+you never see: ~4x the tokens and ~3x the latency of the visible answer. Three consequences:
+
+1. **It silently truncates long episodes.** With a small `max_tokens` the reasoning pass eats the WHOLE
+   budget and the call returns an EMPTY `content` with `finish_reason=length`. That is the real cause of
+   the verify leg's `8k -> 16k -> 32k` retry spiral and the 6600s timeouts (exit 124 at 9/12 and 19/20,
+   ~730s per episode). Raising the budget treats the symptom; turning reasoning off treats the cause.
+2. **DeepSeek ACCEPTS `reasoning:{enabled:false}`** — no 400, unlike Z.AI's GLM endpoint which rejects
+   the parameter outright. Do not assume the parameter is OpenRouter-only.
+3. **It is a quality trade, so measure it on the PRODUCER lane.** `scripts/probe_reasoning_ab.py` runs
+   the real router prompt over real episodes with reasoning ON vs OFF and reports kept items, verbatim
+   drops, lens split, latency, cost and the hidden reasoning tokens. Never switch the producer on
+   latency alone: reasoning may be doing real extraction work, and only the kept-item count tells you.
+   The verify gate's maker already defaults reasoning OFF (its job is bounded); the router is measured,
+   not assumed.
