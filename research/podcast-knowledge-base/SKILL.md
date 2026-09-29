@@ -325,6 +325,19 @@ select count(*) from podcast_kb.ingest_log where coalesce(chunks_created,0) = 0 
 | P4 verify | independent pass re-reads the transcript, lists what the maker MISSED, then locks | **built** — `podcast_capture_verify.py` (job `4ef6e889e8d6`) |
 | P5 curate | only `locked` episodes reach the curated layer | **built** — `podcast_curated_export.py` (job `b0826b3b4123`) exports `locked` rows only into `mempalace-inputs` → the vault sync carries them to `alexandria`; everything else is reported as an explicit unverified count |
 
+**Operational fixes applied 2026-09-29 — each was a daily red that hid its own cause:**
+
+- **`mempalace_health.py` (job `0e14d2e1095f`) ran on an interpreter WITHOUT chromadb**, so it printed
+  `chromadb client failed: No module named 'chromadb'` and `collections read 0, docs 0` every morning
+  while the palace actually held 580+ documents. That single false red also masks any real palace fault.
+  Fix: the script self-heals — when `find_spec('chromadb')` is None it re-execs on
+  `/home/habib/.hermes/venv/bin/python3`. **Never accept a health job's verdict on the palace without
+  checking a direct collection count first**; "0 docs" from a monitor is a claim about the monitor.
+- **`podcast_capture_verify_daily.sh` ran `--limit 60`** — at the measured 2-4 min/episode that is a 2-4
+  HOUR job, so the 7200s cron timeout killed it having locked nothing (job `4ef6e889e8d6` red daily,
+  misread as a broken verifier). Now `--limit 20` inside `timeout 6600`. Size the batch to the CRON
+  TIMEOUT, not to the episode count.
+
 Watchdog job `cc76c11d35d2` (daily 06:25) runs the capture audit and is **silent when healthy** —
 it speaks only when episodes cannot reach the reader, so the next silent outage announces itself.
 
@@ -521,6 +534,14 @@ problem** (see the calibration rules below).
   trade 30% recall for $0.51 across the whole corpus. Free-tier variants (`:free`) score well and are
   fine for probes, but rate-limit in production. Costs come from the live OpenRouter catalogue, and
   three of five models produced quotes that failed the verbatim matcher — verify in code, always.
+- **A FREE first rung does NOT work — measured 2026-09-29, do not adopt it.** Smoke-tested three `:free`
+  OpenRouter ids on a real 64k-char episode: `qwen/qwen3.8-27b:free` → **HTTP 429** (rate-limited),
+  `nvidia/nemotron-3-super-120b-a12b:free` → **503** (upstream overloaded), `google/gemma-4-31b-it:free`
+  → **429**. All three failed in under a second while the paid `deepseek/deepseek-v4-flash` completed the
+  same episode in 29.5s (15 general items, 17/19 quotes verbatim, ~$0.001). Free ids share a throttled
+  pool, so a free first rung adds a failed hop to every episode and falls through to the paid model
+  anyway — slower, not cheaper. Keep free ids for backfills and one-off evaluation only. Corollary: at
+  ~$0.0008/episode the router is not the cost problem; **recall and plumbing are.**
 - **Router ladder as measured (2026-09-27)** — ordered by *completion reliability first*, then value:
   1. `deepseek/deepseek-v4-flash` — completes long structured output, quotes verify, ~$0.0007/episode
   2. `z-ai/glm-5.3-flash` — highest recall (82% vs the Qwen 3.8 reference) and 16/16 verbatim, **but only
@@ -624,8 +645,13 @@ shape cascade — bullets → bold section headings → whole document — and a
   emitter. Treat a recurring unlanded list as a wiring defect: connect the producer to the contract, then
   run `mempalace_sidecar_from_md.py` once to backfill what was already written. Producers that write
   into `mempalace-inputs/` on a cron (the router's per-lens reports included) must be checked against
-  this, not assumed covered. **STATUS 2026-09-29 — NOT implemented for the router.**
-  `podcast_three_filters.py` (cron `a2ff28e23482`) still writes markdown only, so every run adds 4-8
+  this, not assumed covered. **FIXED 2026-09-29 — the emitter is now wired.** `podcast_three_filters_daily.sh` runs
+  `mempalace_sidecar_from_md.py` immediately after `podcast_filters_report.py`, so the router's output is
+  converted to contract sidecars inside the same run. Receipt: the 21-file backlog converted (general
+  530/617/804, australia 24/31/38, harisabib 25/26/38 items) and drained on the next watcher tick —
+  podcast-knowledge 527→792, podcast-australia 24→38, podcast-projects 29→49 — and
+  `mempalace_reconcile.py` went from exit 1 to silent-healthy. Historically `podcast_three_filters.py`
+  (cron `a2ff28e23482`) wrote markdown only, so every run added 4-8
   substantial files with no `.findings.json` (`podcast-filter1-general-*`, `-filter2-australia-*`,
   `-filter3-{harisabib,amlhive,simplifii,predispute,tapease}-*`) and `mempalace_reconcile.py` exits 1
   every morning. Only the 2026-09-27 batch has sidecars (a one-off backfill) — that proves the converter
