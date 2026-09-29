@@ -1075,3 +1075,23 @@ cost (-12%), latency (-13%), fewer failures, and no empty-content truncation at 
 **LESSON (the reason for the n>=8 floor):** the n=3 run said reasoning OFF was better on EVERY axis
 (kept 30.3 vs 28.3, au 6.7 vs 5.7). At n=8 it said the opposite on recall. A small sample did not just
 lose precision — it inverted the sign. `probe_reasoning_ab.py` is the harness; keep the floor.
+
+### Two verify-leg failures worth not repeating
+
+**1. The empty-content trap was on the CHECKER, not the maker.** After reasoning was disabled on the
+maker the leg STILL died (19/20 -> 9/12 -> 6/12). The tell was the ORDER of the log lines:
+`openrouter key source: ...` (a checker call) immediately followed by
+`↻ empty content (finish_reason=length)`. The maker was never the culprit — the checker (qwen via
+OpenRouter) reasons its budget away, then walks 16k->32k and falls back to the next model. Read the
+line ORDER in a log before assuming which call misbehaved; "the leg is broken" is not a diagnosis.
+
+**2. Killing a run with a timeout destroys the evidence.** A SIGKILLed run reports a hard failure and
+hides the episodes that DID land (three runs in a row reported only the timeout, while the ledger had
+already accepted episodes). `--deadline SECONDS` now stops the run CLEANLY after the episode in flight
+and exits 0 with a real summary; the wrapper passes `--deadline 6300` under `timeout 6900`. Per-episode
+ledger locking means a short run is always safe to resume. **Bound every batch job by a deadline it can
+honour, not by an outer timeout that kills it.**
+
+**3. A 400 that names `reasoning` is a wiring failure** (Z.AI GLM refuses the parameter). `llm()` now
+retries once without it instead of recording a working model as broken — the same rule the bake-off
+harness needed.
