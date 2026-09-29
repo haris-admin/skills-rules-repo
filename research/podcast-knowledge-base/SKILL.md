@@ -528,6 +528,20 @@ problem** (see the calibration rules below).
 **Hard rules — each one earned by a failure earlier in this chain:**
 
 - **Only `locked` episodes feed the router.** The P5 gate is the router's input filter, never its job.
+  ⚠️ **This is the CONTRACT, not current code — check before repeating it.** As of 2026-09-30 the
+  worker selects on transcript length alone (`tf.pick_ids`) and routes `locked`, `needs_human` and
+  un-judged episodes alike (measured on the 06:00 tick's 30 routed records: 26 had no ledger row at
+  all, 1 `locked`, 3 judged minutes later). Enforcing the gate is a one-line change in the worker's
+  candidate/fetch predicate — it is an open decision, not an established behaviour.
+- **A shared fetch helper must NEVER carry one leg's selection policy.** `podcast_capture_verify.
+  fetch_episodes` embeds the VERIFY leg's "never re-verify what has already been judged" clause. The
+  router reuses that helper, and its input is the *opposite* set, so every judged episode came back
+  empty and printed as `ep=N: not found` — a cross-leg collision wearing the costume of a data problem
+  (2026-09-30 06:00 tick: 10 of 40 slots lost; 209 of the 316 then-remaining candidates already
+  judged, so the lane was starving toward `routed=0 failed=0 cooling=[]`, which reads as healthy).
+  Fixed by making the clause opt-out (`fetch_episodes(..., ignore_ledger=True)` from the router; the
+  default still excludes, so the verify leg is unchanged). When you add a WHERE clause to a helper
+  that more than one leg imports, ask which legs it is a correct filter for.
 - **Verify quotes in code** with the token-window check and drop (counting) anything that fails. A model
   claiming it quoted verbatim is not evidence; some cheap models paraphrase silently.
 - **Provenance per item**: episode id, show, published date, transcript sha, router model, run timestamp.
@@ -619,16 +633,28 @@ from *patience and rotation*, never from a bigger timeout.
   runs the report (`podcast_filters_report.py`) and the sidecar conversion (`mempalace_sidecar_from_md.py`)
   in the SAME tick (otherwise the work is dropped — see the emitter rule above), and greps ONE status line
   (`free-routed=N failed=N skipped=N cooling=[...]`) for the channel; the full run stays in
-  `cache/scratch/router_value.log`. The paid daily router `a2ff28e23482` is **disabled**, not deleted —
+  `cache/scratch/router_value.log`. **That grep must be run-scoped** (`RUN_START=$(wc -l < $LOG)` before
+  the run, then `tail -n +$((RUN_START+1)) $LOG | grep ...`): over the whole cumulative log, `tail -2`
+  returned the PREVIOUS tick's summary alongside this tick's, so the channel line showed two different
+  counts and the stale one read as this tick's result (fixed 2026-09-30). The paid daily router
+  `a2ff28e23482` is **disabled**, not deleted —
   re-enable it to revert; the old free-lane settings (`--limit 10 --throttle 20 --deadline 1500` with the
   free ids) remain runnable through `--models`. **The cron PROMPT still calls this a free-tier tick and
   claims "free capacity exhausted = exit 0": the job NAME, the script args and this bullet are the truth —
   never re-route to free on the strength of the prompt.**
 - **Backlog accounting (do this before claiming a stall or an ETA):** candidates are
   `podcast_kb.episodes` rows with `length(transcript_text) >= 2000` inside the `--since-days 400` window
-  (689 on 2026-09-30 00:35); the worker's `done` set is `cache/scratch/free_router_done.json` (282 there).
-  Remaining = candidates − done (~407 at that time), and the drain runs ~20-25 episodes/hour at 40/tick,
-  so the whole backlog is a ~1-day job, not a standing one.
+  (708 on 2026-09-30 06:30); the worker's `done` set is `cache/scratch/free_router_done.json` (393 then).
+  Remaining = candidates − done ⇒ **315, all fetchable after the fix below ⇒ ~8 ticks / ~16h at 40 per
+  tick**. Count the JUDGED remainder too — before the fix 209 of 316 were counted but unroutable, which
+  is how a "backlog" and an idle lane can look identical in the summary line.
+- **The router and the verify leg walk the SAME newest-first frontier — expect them to collide.** The
+  05:35 verify run writes its verdict batch while the 06:00 router tick is reading the same head, so a
+  judgment landing mid-run turns that episode into `not found` for the router (2026-09-30: its 12-row
+  batch landed at 06:04 between the router's 2nd and 5th episode). Combined with the policy leak above,
+  judged episodes stayed in the candidate list forever, burning slots on every tick. A `not found`
+  count in the summary is therefore a plumbing signal, never "the episode has no transcript" — check
+  the ledger status of those ids first.
 - **Cost on the direct lane is NOT recorded anywhere.** The worker hardcodes `cost=0.0` on every
   direct-lane record (the DeepSeek API returns tokens, not dollars), so the JSONL's small `$0.05` total
   covers OpenRouter rows only. Never quote our own logs as the spend for this job — verify at the
