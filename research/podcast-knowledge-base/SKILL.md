@@ -609,11 +609,29 @@ from *patience and rotation*, never from a bigger timeout.
   limit)` applies the limit first, so the newest N are returned — and the newest are exactly what the
   daily run already routed. Fetch the whole candidate list, then drop `done`, then slice. Symptom: a
   worker that looks idle while the backlog is untouched.
-- **Interim quality signal (weak, n=1 per model — do not switch on it):** free recall ran **below** paid
-  on the same episode (gen 10-13 vs 15) with higher quote-drop rates on some models. Cost is $0 vs
-  ~$0.001, so the decision is "how much recall does free cost us", which is a **value** question, not a
-  price question. `scripts/probe_free_vs_paid_quality.py` scores free vs paid (incl. **DeepSeek direct**
-  and GLM) on the same episodes against the paid model as reference.
+- **MEASURED VERDICT (2026-09-29, 8 episodes x 6 candidates, reference-scored, quotes code-verified):**
+  the free tier is **not** the right lane for this job, and neither is OpenRouter's paid route. Per run:
+
+  | candidate | ok | kept | dropped | general | AU | latency | $/ep |
+  |---|---|---|---|---|---|---|---|
+  | **deepseek-flash DIRECT** | **8/8** | **29.6** | **0.0** | 16.5 | 6.0 | 39s | $0.0026 |
+  | OpenRouter deepseek-v4-flash | 6/8 | 20.7 | 3.3 | 15.0 | 3.3 | 70s | $0.0006 |
+  | free ling-3.0 | 8/8 | 17.4 | 2.2 | 11.5 | 3.5 | 11s | $0 |
+  | free openrouter/free | 7/8 | 14.1 | 1.3 | 12.0 | 1.3 | 38s | $0 |
+  | free nemotron-super | 5/8 | 12.0 | 0.6 | 9.6 | 1.2 | 32s | $0 |
+
+  Free reproduces only **~23% of the direct lane's material** (22.4-25.7%) and **fails on 12-37% of
+  episodes** (Nvidia 503s, malformed JSON). OpenRouter's paid route **timed out 2/8 at 240s** on long
+  episodes. DeepSeek **direct** wins on recall, fidelity (zero dropped quotes), reliability AND latency.
+  **The whole ~643-episode backlog costs ~$1.70 on the direct lane**, so preferring free to save that
+  throws away ~3/4 of the knowledge for pocket change. **Decision: route on DeepSeek direct**, with the
+  OpenRouter id behind it as a different-route fallback. `scripts/probe_free_vs_paid_quality.py` is the
+  harness; `--models "deepseek-flash@maker,deepseek/deepseek-v4-flash@checker"` selects the lane.
+- **A 400 from the `reasoning` parameter is a WIRING failure, not a bad model — and it silently voids a
+  bake-off.** Z.AI's GLM endpoint answers HTTP 400 `Reasoning is mandatory for this endpoint and cannot
+  be disabled`, so sending `reasoning:{enabled:false}` scored GLM 0/8 in a run where it was never
+  actually tested. Any harness that benchmarks models must retry once with the parameter OMITTED on a
+  400 before recording a failure — otherwise it reports a working model as broken.
 - **Key state:** `OPENROUTER_API_KEY` is the canonical name (`podcast_capture_verify.llm` already prefers
   it and prints WHICH name resolved); the `_OPENCLAW` suffix is retired. The key carries its own
   **per-key spend limit** — check `GET /api/v1/key` for `limit` vs `usage` before assuming headroom.
