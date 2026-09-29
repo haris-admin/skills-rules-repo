@@ -337,6 +337,20 @@ select count(*) from podcast_kb.ingest_log where coalesce(chunks_created,0) = 0 
   HOUR job, so the 7200s cron timeout killed it having locked nothing (job `4ef6e889e8d6` red daily,
   misread as a broken verifier). Now `--limit 20` inside `timeout 6600`. Size the batch to the CRON
   TIMEOUT, not to the episode count.
+- **Any script that imports `chromadb` — directly or transitively via `pluto_mempalace_feeder` — must
+  self-heal its interpreter AT IMPORT TIME.** `pluto_mempalace_feeder` imports chromadb at module scope,
+  so a caller sitting on the wrong venv dies before it can probe anything; resolving the interpreter in
+  the PARENT is too late. Put this immediately before the feeder import — and never inside the feeder
+  itself, because a LIBRARY must not re-exec or every importer re-execs:
+  ```python
+  _vpy = "/home/habib/.hermes/venv/bin/python3"
+  if os.path.exists(_vpy) and os.path.realpath(sys.executable) != os.path.realpath(_vpy):
+      os.execv(_vpy, [_vpy, os.path.abspath(__file__), *sys.argv[1:]])
+  ```
+  Find the whole affected class in one pass: `grep -ln '^import chromadb\|^from pluto_mempalace_feeder
+  import' scripts/*.py`, then check each for the self-heal — only the cron-wired ones can fail
+  unattended. A script that imports the feeder without it reports a failure that has nothing to do with
+  the work it was asked to do.
 
 Watchdog job `cc76c11d35d2` (daily 06:25) runs the capture audit and is **silent when healthy** —
 it speaks only when episodes cannot reach the reader, so the next silent outage announces itself.
@@ -1000,3 +1014,25 @@ named exception with a reason.
 
 **Why reconcile/health crons are paused:** they are now CHECKS INSIDE the orchestrator, so there is one
 consolidated status instead of three independent ones. Re-run them manually when investigating.
+
+### Cost: the VERIFY leg, not the router, is the spend
+
+Measured 2026-09-29. The router (the leg that actually PRODUCES the knowledge) costs ~$0.0026/episode.
+The verify gate costs up to **~$0.017/episode** — roughly 6x more — because its cost is dominated by
+INPUT: it sends the transcript (up to `MAKER_TRANSCRIPT_CAP`) to BOTH the maker and then the checker on
+a DIFFERENT provider (qwen3.8 via OpenRouter). It is therefore the OpenRouter spend driver, not routing.
+
+Two consequences measured the same day:
+- **120000-char cap is too generous for a daily gate.** A 98,742-char episode (Lenny's, 2026-09-29) went
+  in whole: the maker could not fit its point list at 8k tokens, so `finish_reason=length` retried
+  16k -> 32k, and that ONE episode is what blew the 6600s window (run exited 124 at 19/20).
+- **Thin transcripts burned 15% of queue slots** (3 of 20: 1201 / 309 / 623 chars) and were skipped only
+  AFTER being selected. Thin rows are now excluded in `fetch_episodes`' SQL, and the run is `--limit 12`.
+
+Open levers (NOT yet applied — each changes verification semantics, so decide deliberately):
+- Lowering `MAKER_TRANSCRIPT_CAP` to ~45000 roughly halves the checker's input tokens and with it the
+  OpenRouter bill. Both maker and checker see the same window, so the check stays internally coherent —
+  but it only covers part of a long episode, and the router (which sees the FULL transcript) is the leg
+  that matters for knowledge. Record the truncation either way (it already is, in `notes`).
+- Verifying a SAMPLE (e.g. 5/day) rather than every new episode keeps the fidelity assurance at a
+  fraction of the cost; the ledger already makes partial runs safe to resume.
