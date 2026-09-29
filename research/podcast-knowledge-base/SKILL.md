@@ -611,10 +611,29 @@ from *patience and rotation*, never from a bigger timeout.
   * `--throttle` seconds of our-side pacing between calls (never burst upstream);
   * `--timeout` generous (420s) because free models are slow;
   * **no paid fallback by default** (`--allow-paid` opts in).
-- **Wrapper + schedule:** `podcast_free_router_stagger.sh` — 2-hourly cron `e736e32679ab`, `--limit 10`,
-  `--throttle 20`, `--deadline 1500`. It runs the report and the sidecar conversion in the SAME tick
-  (otherwise the work is dropped — see the emitter rule above). The paid daily router `a2ff28e23482` is
-  **paused**, not deleted: resume it to revert.
+- **Wrapper + schedule — the CURRENT lane is the PAID DeepSeek DIRECT lane, not free (switched 2026-09-29
+  per the measured verdict below; the script NAME is historical):** `podcast_free_router_stagger.sh`,
+  2-hourly cron `e736e32679ab` (`0 */2 * * *`, named "… — DeepSeek DIRECT lane (measured best value)"),
+  runs `podcast_free_router.py --since-days 400 --limit 40 --throttle 3 --cooldown 300 --deadline 2100
+  --timeout 420 --models "deepseek-flash@maker,deepseek/deepseek-v4-flash@checker"`. The wrapper then
+  runs the report (`podcast_filters_report.py`) and the sidecar conversion (`mempalace_sidecar_from_md.py`)
+  in the SAME tick (otherwise the work is dropped — see the emitter rule above), and greps ONE status line
+  (`free-routed=N failed=N skipped=N cooling=[...]`) for the channel; the full run stays in
+  `cache/scratch/router_value.log`. The paid daily router `a2ff28e23482` is **disabled**, not deleted —
+  re-enable it to revert; the old free-lane settings (`--limit 10 --throttle 20 --deadline 1500` with the
+  free ids) remain runnable through `--models`. **The cron PROMPT still calls this a free-tier tick and
+  claims "free capacity exhausted = exit 0": the job NAME, the script args and this bullet are the truth —
+  never re-route to free on the strength of the prompt.**
+- **Backlog accounting (do this before claiming a stall or an ETA):** candidates are
+  `podcast_kb.episodes` rows with `length(transcript_text) >= 2000` inside the `--since-days 400` window
+  (689 on 2026-09-30 00:35); the worker's `done` set is `cache/scratch/free_router_done.json` (282 there).
+  Remaining = candidates − done (~407 at that time), and the drain runs ~20-25 episodes/hour at 40/tick,
+  so the whole backlog is a ~1-day job, not a standing one.
+- **Cost on the direct lane is NOT recorded anywhere.** The worker hardcodes `cost=0.0` on every
+  direct-lane record (the DeepSeek API returns tokens, not dollars), so the JSONL's small `$0.05` total
+  covers OpenRouter rows only. Never quote our own logs as the spend for this job — verify at the
+  provider console. The only per-episode figure we hold is the bake-off's ~$0.0026/episode on
+  `deepseek-flash` DIRECT.
 - **Free and paid SHARE the dedup state** (`three_filters_state.json`) and the same JSONL, so switching
   lanes can never double-route. Corollary: the free worker must ALSO seed its `done` set from the JSONL,
   or it re-routes what the paid run already did and the quotes come back deduped to zero items
