@@ -1095,3 +1095,22 @@ honour, not by an outer timeout that kills it.**
 **3. A 400 that names `reasoning` is a wiring failure** (Z.AI GLM refuses the parameter). `llm()` now
 retries once without it instead of recording a working model as broken — the same rule the bake-off
 harness needed.
+
+### A daily gate must exclude work it has already judged
+
+`fetch_episodes` selected the newest N episodes with a usable transcript and NO ledger filter, so the
+daily run re-verified the SAME episodes every day — same episodes, same verdicts, **~$0.11/day of
+duplicated spend**, indefinitely. Worse, a `needs_human` verdict could never settle: the maker misses
+the same points every night, so the row stayed pending and the cost repeated while the verdict never
+changed. The selection now excludes any episode already carrying a `locked` OR `needs_human` row.
+**Rule: a scheduled gate selects UNJUDGED work. If a job's selection does not consult its own verdict
+store, it is re-buying the same answer forever.** To re-run one deliberately, update or clear its row.
+
+### A review FINDING is not a job FAILURE
+
+The leg returned exit 1 whenever any episode was not `locked`, which counted `needs_human` as failure.
+With 7 of 12 episodes genuinely needing review, the cron would have been RED EVERY DAY FOREVER — the
+"permanently red alarm" that trains everyone to ignore it, and it would have made the chain assertor
+report the pipeline broken daily. The gate DID its job: it ran, produced verdicts, recorded them. Only a
+real script/LLM failure exits non-zero now; `needs_human` prints as a review queue and stays in the
+ledger. **Distinguish 'the job failed' from 'the job found something' before wiring an exit code.**
