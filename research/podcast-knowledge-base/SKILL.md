@@ -1037,7 +1037,7 @@ Open levers (NOT yet applied — each changes verification semantics, so decide 
 - Verifying a SAMPLE (e.g. 5/day) rather than every new episode keeps the fidelity assurance at a
   fraction of the cost; the ledger already makes partial runs safe to resume.
 
-### The largest cost lever: DeepSeek's HIDDEN reasoning tokens
+### DeepSeek's HIDDEN reasoning tokens — a real cost, but NOT the 4x it first looked like
 
 Measured 2026-09-29 on a single DeepSeek-direct call (`deepseek-flash`, same prompt, same episode):
 
@@ -1057,5 +1057,21 @@ you never see: ~4x the tokens and ~3x the latency of the visible answer. Three c
    the real router prompt over real episodes with reasoning ON vs OFF and reports kept items, verbatim
    drops, lens split, latency, cost and the hidden reasoning tokens. Never switch the producer on
    latency alone: reasoning may be doing real extraction work, and only the kept-item count tells you.
-   The verify gate's maker already defaults reasoning OFF (its job is bounded); the router is measured,
-   not assumed.
+   The verify gate's maker already defaults reasoning OFF (its job is bounded).
+
+**Measured verdict, n=8 real episodes (2026-09-29) — reasoning is OFF on BOTH lanes now:**
+
+    reasoning ON  kept 29.0  dropped 0.0  au 5.5  out_tok 9834  41.3s  $0.00314/ep   2/8 failed
+    reasoning OFF kept 28.4  dropped 0.0  au 5.4  out_tok 8413  35.8s  $0.00276/ep   1/8 failed
+
+**CORRECTION — do not repeat the 4x claim.** A single degenerate test prompt made reasoning look like
+the dominant cost (15911 reasoning vs 1620 content chars). On real episodes reasoning is only ~30-40% of
+output tokens, so the true saving is **~12%**, not 4x. Quote the n=8 table, never the single call.
+
+**The recall difference is NOISE.** 0.6 items separate the means, but single episodes ranged 16-33 kept
+in BOTH modes, so the between-episode spread swamps the between-mode difference. The stable effects are
+cost (-12%), latency (-13%), fewer failures, and no empty-content truncation at a tight budget.
+
+**LESSON (the reason for the n>=8 floor):** the n=3 run said reasoning OFF was better on EVERY axis
+(kept 30.3 vs 28.3, au 6.7 vs 5.7). At n=8 it said the opposite on recall. A small sample did not just
+lose precision — it inverted the sign. `probe_reasoning_ab.py` is the harness; keep the floor.
