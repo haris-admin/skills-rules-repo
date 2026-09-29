@@ -975,3 +975,28 @@ work** — you get a live ingest instead of usage text.
 - `references/youtube-data-api-setup.md` — YouTube Data API v3 setup and quota reference
 - `references/youtube-sapisidhash-auth.md` — YouTube cookie + SAPISIDHASH auth workaround for transcript fetching
 - `references/transcript-sources-and-fallback.md` — where to get a transcript or summary when the KB is stale (podscripts.co / finance.biggo.com / Apple-Podbean), the freshness query to run first, and the quote-attribution rules (confirm the speaker; check the on-record wording before repeating a paraphrase)
+
+## The daily pipeline (the chain, and the thing that asserts it)
+
+The chain runs as time-sequenced legs. Each leg is a separate cron, which is the failure mode it
+also creates: on 2026-09-29 an audit found FIVE legs red, one for 11 days, and nothing surfaced it —
+a dead leg looks identical to an idle one when every leg reports only to itself.
+
+   04:00  d4d77c41f6c0  ingest    episodes + transcripts -> Supabase podcast_kb
+   04:30  bc60994e5592  chunk     embed chunks into podcast_kb (pgvector)
+   every 2h  e736e32679ab  route  three filters on the DeepSeek-DIRECT lane (40 eps/tick)
+   05:35  4ef6e889e8d6  verify    maker(deepseek-flash) / checker(qwen3.8-flash, OpenRouter)
+   06:10  b0826b3b4123  export    curated export
+   every 5m  5678a363ce3b  feed   mempalace_watcher -> vector chambers
+   6-hourly  fc726783497f  sync   alexandria
+   09:00  7e4a2379157d  ASSERT   podcast_pipeline_daily.py  <-- the only job that judges the CHAIN
+
+**Assert the chain, not the legs.** `podcast_pipeline_daily.py` is a watchdog: silent when every leg
+ran inside its cadence AND its effect exists, one block + exit 1 otherwise. Freshness alone is not
+evidence — the Aug 2026 silent failure had every cron reporting ok while writes journalled
+`result:null`. So it also runs reconcile + health and checks the palace for a routed-count regression.
+**Never quiet a failing leg by adding it to an accepted baseline**: fix the leg, or record an explicit
+named exception with a reason.
+
+**Why reconcile/health crons are paused:** they are now CHECKS INSIDE the orchestrator, so there is one
+consolidated status instead of three independent ones. Re-run them manually when investigating.
