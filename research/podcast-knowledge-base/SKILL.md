@@ -618,6 +618,19 @@ shape cascade — bullets → bold section headings → whole document — and a
 - **Reconcile the three stores.** `scripts/mempalace_reconcile.py` (cron `57e72391a773`, 07:15) checks
   queue → palace → Alexandria, prints nothing when healthy and exits 1 with the specific unlanded list.
   Silent health is only trustworthy because the failure mode is loud.
+- **A fail-closed consumer obliges you to audit every producer in the same change.** The moment the
+  bridge drops markdown-only files, any producer not yet emitting a sidecar becomes a **daily** silent
+  drop — the reconciler then lists that day's files as unlanded, which names the symptom and not the
+  emitter. Treat a recurring unlanded list as a wiring defect: connect the producer to the contract, then
+  run `mempalace_sidecar_from_md.py` once to backfill what was already written. Producers that write
+  into `mempalace-inputs/` on a cron (the router's per-lens reports included) must be checked against
+  this, not assumed covered. **STATUS 2026-09-29 — NOT implemented for the router.**
+  `podcast_three_filters.py` (cron `a2ff28e23482`) still writes markdown only, so every run adds 4-8
+  substantial files with no `.findings.json` (`podcast-filter1-general-*`, `-filter2-australia-*`,
+  `-filter3-{harisabib,amlhive,simplifii,predispute,tapease}-*`) and `mempalace_reconcile.py` exits 1
+  every morning. Only the 2026-09-27 batch has sidecars (a one-off backfill) — that proves the converter
+  works and the EMITTER is the missing link. Fix: emit from the router, or run
+  `mempalace_sidecar_from_md.py` over new artefacts inside `podcast_three_filters_daily.sh`.
 - **Cascade the sidecar converter on the BUILT findings, not on the parser's return value.**
   `mempalace_sidecar_from_md.py` tries bullets → bold headings → whole document; switching shape because
   "the parser returned items" still yields zero when every parsed item is then dropped for having no
