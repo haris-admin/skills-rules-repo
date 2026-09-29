@@ -350,6 +350,17 @@ containing `&` (`R&D`) — a `\w` tail group cannot; and a word-boundary slice m
 noun (`Spark Festival` → `Spark`). Verified by a before/after harness over 48 findings / 8 research days: 3 hooks
 changed, 0 regressions.
 
+**Rules 38–39 (Sep 30 2026) — a tag shipped as a hook, and a repeat took the leftover slot:** `_short_title`
+splits on `' - '`, so a title the research phase had tagged (`UPDATE - `, `FOLLOW-ON - `) yielded the TAG as the
+hook — 4 of 6 posts on the AI-Regulation day shipped a first line of literally `UPDATE`/`FOLLOW-ON`. Strip the tag
+BEFORE the dash split, and only when a separator actually follows it (making the separator optional rewrote
+`UPDATE to the 12 Sep standards-race feed: …` into a hook opening `to the 12 Sep standards-race feed:` — a tag
+without a separator is a sentence, not a tag). And a within-10-day blog repeat must not merely rank last while
+still taking the leftover slot: on 30 Sep the 24 Sep `aml-data-residency-cloud` idea filled slot 3 because only
+two fresh candidates matched — with >=2 fresh grounded candidates, emit those and pad no further, and padding must
+skip repeats too. A new grounded candidate (`insurer-as-regulator`) was added for the private-enforcement-channel
+gap, and the CTA invariants re-asserted (0 exact duplicates, worst content-word fingerprint overlap 0.17).
+
 See `references/linkedin-content-extraction.md` for content pillar details, `references/gmail-briefing-integration.md` for Gmail signal sourcing, and `references/linkedin-generator-defects.md` for the generator defect log.
 
 ### Phase 9: Email Delivery (NEW June 4, 2026 — Updated June 5, 2026)

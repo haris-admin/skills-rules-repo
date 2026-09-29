@@ -461,6 +461,48 @@ cannot see blog-candidate changes), and its "unbalanced quote" flag fires on pos
 (`Stanley's`) — count quoting pairs, not raw apostrophes, before calling something a
 regression.
 
+## Rules 38–39 (Sep 30 2026) — a tag shipped as a hook, and a repeat took the leftover slot
+
+**Rule 38 — the pipeline's own repeat tag became the hook.** `_short_title` normalises with
+`raw.split(" - ")[0]`, which exists to drop a publisher suffix ("Headline - Publisher"). The
+research phase tags repeat findings with its own bookkeeping prefix, so four of six posts on
+the 30 Sep AI-Regulation day shipped with a hook of literally `UPDATE` (x3) or `FOLLOW-ON` —
+a label, not a claim, and useless as the first line of a post.
+
+Fix: strip a leading `UPDATE|UPDATED|FOLLOW-ON|FOLLOW ON|FOLLOWUP|FOLLOW-UP|FORMALISATION|
+FORMALIZATION|NEW` tag before the dash split, keeping the full tagged title for display.
+
+Two constraints, both found by the before/after harness:
+
+1. **A separator must actually follow the tag.** The first attempt made the separator
+   optional (`\s*(?:[-–—:]\s*)?`), which rewrote `UPDATE to the 12 Sep standards-race feed:
+   …` into a hook opening `to the 12 Sep standards-race feed:` and `UPDATE to the 8 September
+   feed: …` into `to the 8 September feed:` — the tag sentence IS the title there, so
+   stripping it strands a preposition. Require the separator: `\b\s*[-–—:]\s*`.
+2. **Never trade a tag-only hook for an empty one** — if stripping leaves nothing, keep the
+   original.
+
+Harness: `_short_title` old vs new over the last 9 `research_YYYY-MM-DD.json` files, flagging
+any result that is under 8 chars, is a bare tag, or opens on `to|of|for|and|the`.
+Result: **5 hook changes, 0 regressions** (4 on 30 Sep = the tag defects; 1 on 29 Sep turning
+`UPDATE: startup CGT carve-out consultation closed…` into the headline itself).
+
+**Rule 39 — a within-10-day repeat must not take the leftover slot.** Rule 29d marks a
+candidate proposed in the last 10 days as a repeat and sorts it last, but "last" still wins
+when only two fresh candidates match: on 30 Sep the third blog slot went to
+`aml-data-residency-cloud`, already delivered on 24 Sep. Haris reads the slate, not the sort
+order. Fix: when >=2 fresh grounded candidates exist, emit those and stop (`_fresh_hits[:3]`);
+repeats still pad only when fewer than two fresh candidates exist, and the padding loop now
+skips repeats as well.
+
+Also added this run: candidate `insurer-as-regulator` ("Your Insurer Is Now Your AI Regulator:
+The Private Route to Obligation", pillar `AI Agents & Governance`, subject-bound keywords
+`insurer|insurance|underwriting`). It fills a gap no existing candidate covers — the private
+enforcement channel: obligations arriving via underwriting, procurement conditions and private
+standards bodies while statute stalls — and it fired on the day's own signal that enterprise
+obligations land there first. CTA invariants re-asserted: 0 exact duplicates, worst content-word
+fingerprint overlap 0.17.
+
 ## Rules 8–12 (moved out of SKILL.md 2026-09-29) — generator hardening, remaining items
 
 8. Pillar from `portfolio_hit`, not from regulator keywords.
