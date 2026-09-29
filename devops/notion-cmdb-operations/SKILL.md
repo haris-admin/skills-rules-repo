@@ -89,11 +89,68 @@ When asked to "fetch the CMDB data", report: total rows · counts by `CI Type` a
 items renewing in 30/60/90 days (once dates exist) · rows with `Missing details`/`To assess` ·
 monthly cost total. Persist anything durable to Alexandria, not just the chat reply.
 
+## Currency: the CMDB is AUD-only, and Notion owns the conversion
+
+A cost field must never hold a foreign-currency number. Model it as three properties so **Notion** does
+the maths and the scripts never need an FX rate:
+
+| Property | Type | Who writes it |
+|---|---|---|
+| `Billing Currency` | select (AUD/USD/EUR/GBP) | the sync script — what the provider actually bills |
+| `Amount (Local)` | number | the sync script — the raw amount in that currency |
+| `Monthly Cost (AUD)` | **formula** | nobody — Notion computes `Amount (Local)` × rate |
+
+Formula (rates are constants; update when they drift materially):
+
+```
+ifs(
+  prop("Billing Currency") == "AUD", round(prop("Amount (Local)"), 2),
+  prop("Billing Currency") == "USD", round(prop("Amount (Local)") * 1.4045, 2),
+  prop("Billing Currency") == "EUR", round(prop("Amount (Local)") * 1.6121, 2),
+  prop("Billing Currency") == "GBP", round(prop("Amount (Local)") * 1.8789, 2),
+  round(prop("Amount (Local)"), 2))
+```
+
+**Reader trap — the most important rule here:** a formula property returns **0 for a blank input**, not
+null. `Monthly Cost (AUD) == 0` therefore cannot distinguish "no cost recorded" from "genuinely free".
+Test **`Amount (Local)` for null** to compute a priced/unpriced split. Reading the formula directly
+silently reports every unpriced row as priced-at-zero and destroys the backlog signal.
+
+Provider billing currencies: AWS + OpenRouter + DeepSeek **USD**; Veriff **EUR**; Delisense **GBP**;
+AU subscriptions **AUD**.
+
+`~/.hermes/scripts/fx.py` → `to_aud(amount, ccy)` is for display/verification only (daily cache,
+cross-checks open.er-api against ECB, stale-rate fallback so an offline box cannot write a bad number).
+
 ## Related
 
 - `productivity/notion` — the general Notion API skill (+ `references/fleet-notion-workspace.md`)
 - `devops/plane-issues` — the issue tracker that mirrors into Notion
 - Rule: `rules/fleet-records-system-of-record.md`
+
+## Provider cost sync — credential resolution IS a correctness bug waiting to happen
+
+`~/.hermes/scripts/provider_cost_sync.py` writes OpenRouter + DeepSeek spend into their CMDB rows
+(cron `158bf46a5959`, daily **07:05 AEST**, `deliver=local`, `failure_deliver=origin`).
+
+- **Resolve key NAMES with a fallback, and fail LOUDLY on no-data.** The script looked for
+  `OPENROUTER_API_KEY` only; that var was removed from both `.env` files in favour of
+  `OPENROUTER_API_KEY_OPENCLAW`. Result: three days of silent OpenRouter cost gaps — the script logged
+  "no data returned", still **exited 0**, and a `deliver=local` cron shows nothing on success. Resolve
+  `("PREFERRED", "LEGACY")`, and treat "provider returned no data" as a FAILURE (exit non-zero) so
+  `failure_deliver` actually fires.
+- **Read the `.env` FILES, never `os.environ`, in anything that writes money to the system of record.**
+  An `os.environ`-first lookup let a stale shell export shadow the file with a *different live
+  credential* and write US$2.84 into Notion where the real figure was US$14.86.
+- **Several live credentials per provider is normal here.** The fleet holds two OpenRouter keys (one per
+  `.env` file) with separate balances, credit pools and month-to-date spend. The number that belongs in
+  the CMDB is the one the JOB scripts bill — `or_free.py` and `podcast_capture_verify.py` read Windows
+  `.env` then WSL `.env`, so match that order rather than inventing a new one.
+- **Stamp each note with the credential fingerprint** (`sha256(key)[:8]`) so a cost figure is
+  auditable; never the value. Two keys with different balances make an unattributed number worthless.
+- **A `Monthly Cost` that stops moving is not evidence of low spend.** Check the row's
+  `last_edited_time` and its newest note date before believing a flat figure; compare against the
+  previous month's notes, because the daily note is what proves the sync is alive.
 
 ## AWS cost → CMDB (live, since 2026-09-14)
 
