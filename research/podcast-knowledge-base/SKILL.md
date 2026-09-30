@@ -649,6 +649,12 @@ from *patience and rotation*, never from a bigger timeout.
   Remaining = candidates − done ⇒ **315, all fetchable after the fix below ⇒ ~8 ticks / ~16h at 40 per
   tick**. Count the JUDGED remainder too — before the fix 209 of 316 were counted but unroutable, which
   is how a "backlog" and an idle lane can look identical in the summary line.
+  **DRAINED 2026-09-30 20:17** — done caught up to the whole window (708/708, remaining 0; cumulative
+  routed 718). **So a tick now reporting `free-routed=0 failed=0 skipped=0 cooling=[]` is CAUGHT UP, not
+  starved** — the starved-lane shape and the drained-lane shape are identical, so resolve the two by
+  comparing `done` against the candidate count (both are one query each; see the coverage queries
+  above) before escalating. From here a tick routes only episodes ingested since the last tick, so the
+  steady-state count is small and 0 is normal.
 - **The router and the verify leg walk the SAME newest-first frontier — expect them to collide.** The
   05:35 verify run writes its verdict batch while the 06:00 router tick is reading the same head, so a
   judgment landing mid-run turns that episode into `not found` for the router (2026-09-30: its 12-row
