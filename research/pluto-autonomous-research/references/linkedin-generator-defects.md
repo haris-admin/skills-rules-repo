@@ -503,6 +503,83 @@ standards bodies while statute stalls — and it fired on the day's own signal t
 obligations land there first. CTA invariants re-asserted: 0 exact duplicates, worst content-word
 fingerprint overlap 0.17.
 
+## Rule 40 (Oct 1 2026) — a hook ended on a bare initialism, and the blog slate recycled wholesale
+
+One Cloud & Infrastructure day produced one hook defect and a blog block that was entirely
+recycled from the topic's previous cycle. Both were caught by probe before delivery.
+
+### 40a. A slice ending on an all-caps acronym ships half a compound noun
+
+**Defect:** `Investment-flight warning crystallises: peak body says Australia risks losing
+A$30bn of AI` — the 100-char word-boundary slice in `_short_title` stopped between `AI` and
+`investment`. Every existing gate missed it: `AI` is not in `TRAILING_WORDS`/`_WEAK`/
+`DANGLE_TAIL`, it is not a dangling verb (Rule 32), and Rule 36's proper-noun guard asks for
+BOTH tokens to be capitalised (`investment` is lowercase).
+
+**Fix:** when the last retained token is an all-caps acronym of <=4 letters, pull the next
+token in. Applied in the word-slice branch, after the Rule 36 capitalised-pair check:
+
+```python
+if words and _rest and 1 < len(words[-1]) <= 4 \
+        and words[-1].isupper() and words[-1].isalpha():
+    words = words + [_rest[0]]
+```
+
+Narrow by construction — one extra token at most — and the later scaffolding/`_WEAK` pops leave
+it alone (`investment` is neither). Assertion: hooks no longer end on a bare acronym.
+
+**Harness:** before/after `render()` over the last 8 `research_*.json` files — **48 findings,
+1 changed, 0 regressions**.
+
+### 40b. The day's OWN pillar had no un-repeated candidate, so the block came back identical
+
+On 1 Oct (Cloud & Infrastructure, the topic's 5-day cycle returning) the delivered blog slate was
+`datacentre-energy-grid` and `cloud-waste-finops` — both **verbatim repeats of 26 Sep** — plus
+`aml-data-residency-cloud`, already delivered 24 Sep. Rule 39 could not help: with `_fresh_hits`
+empty there was nothing fresh to promote, and Rules 13/28a then required the padding slot to be
+same-pillar AND grounded.
+
+**The fix is the candidate list, never the matcher** (Rules 18/23): three grounded Cloud
+candidates were added, each subject-bound to the day's own evidence and verified to fire on it
+while NOT firing on other days' subjects (blog-candidate replay across 8 research days):
+
+| key | subject hits on 1 Oct | other days |
+|-----|----------------------|------------|
+| `datacentre-permitting-risk` | 6 (`project mars`, `goodman`, `lane cove`, `withdrawn`, `fast-track`, `senate inquiry`) | 1 hit on 25/26/27 Sep |
+| `datacentre-efficiency-disclosure` | 6 (`pue`, `wue`, `usage effectiveness`, `rating scheme`, `waste heat`, `delegated regulation`) | none |
+| `compute-securitisation-lockin` | 5 (`firmus`, `bookbuild`, `prospectus`, `data#3`, `vendor lock-in`) | 24 & 29 Sep (the float's own coverage — legitimate) |
+
+Slate went from 3 recycled to 3 fresh grounded ideas. **Diagnostic to run the moment a topic
+comes round and the slate looks familiar:** count the candidates for that day's OWN pillar
+(`_subject_kw_hits` probe below) before touching the rotation window or the padding gate.
+
+### 40c. Two candidate defects fixed the same way — by fixing the CANDIDATE
+
+- **`cloud-waste-finops` shipped an ungrounded figure in its TITLE.** Delivered as "The 29% You
+  Are Paying For Nothing" while `29%` AND `finops` occurred **zero** times in the corpus
+  (`grep -ci` across `mempalace-inputs/*20261001*` + `research_2026-10-01.json`). Rule 34 in
+  action: a title is an assertion. Reworded to "FinOps as a Compliance Deliverable: Proving
+  Cloud Cost Control, Not Just Reporting It" and its keyword list trimmed to subject terms
+  (`capex` was doing the firing, and `capex` is context on any cloud day) — it now correctly
+  scores 0 and does not ship until a corpus actually discusses FinOps.
+- **`aml-data-residency-cloud` fired on context vocabulary.** Its list was
+  `[data residency, record, cloud, tranche 2, amlhive, austrac, vendor]`; `record`/`cloud`/
+  `vendor` match ANY cloud day, which is how a 24 Sep repeat re-took a slot on a Cloud day. Now
+  `[data residency, record-keeping, records retention, offshore vendor, aml record]` → 0 hits,
+  correctly excluded. Note this is the mirror image of Rule 29e's warning: **tighten a specific
+  candidate's list when its words are context for that candidate; never widen the global
+  `GENERIC_BLOG_KEYWORDS` blocklist** (it eats real subject words such as `payments`/`records`).
+
+**Invariants re-asserted this run:** auto block 6/6 CTAs distinct (worst fingerprint 0.33),
+curated block 5/5 distinct (worst 0.18), 0 dangling quotes/brackets, every angle terminal,
+every delivered blog idea >= 1 subject hit, and the curated section byte-identical across a
+generator re-run (Rule 17).
+
+**Provenance note for the same run:** no `gmail-briefing-*.md` existed for the day (newest was
+the previous day's), the `inbox_*.json` dumps were podcast-filter streams rather than a
+Perplexity topic, and the newest Claude Daily Research file was 3 days old — so the slate was
+research-driven and that degradation was stated in the output file rather than glossed over.
+
 ## Rules 8–12 (moved out of SKILL.md 2026-09-29) — generator hardening, remaining items
 
 8. Pillar from `portfolio_hit`, not from regulator keywords.

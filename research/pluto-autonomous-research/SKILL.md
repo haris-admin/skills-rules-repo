@@ -361,6 +361,23 @@ two fresh candidates matched — with >=2 fresh grounded candidates, emit those 
 skip repeats too. A new grounded candidate (`insurer-as-regulator`) was added for the private-enforcement-channel
 gap, and the CTA invariants re-asserted (0 exact duplicates, worst content-word fingerprint overlap 0.17).
 
+**Rule 40 (Oct 1 2026) — a hook ended on a bare initialism, and the blog slate recycled wholesale:** a
+100-char word-boundary slice can stop inside a compound noun (`…risks losing A$30bn of AI`), which no existing
+gate catches — `AI` is not a trailing/weak word, not a dangling verb, and Rule 36's proper-noun guard wants BOTH
+tokens capitalised. Pull the next token in when the last retained token is an all-caps acronym of <=4 letters.
+Same run, a whole blog block recycled: on the topic's 5-day cycle the slate was two verbatim repeats of the
+previous cycle plus one idea from four days earlier, because the day's OWN pillar had no un-repeated, grounded
+candidate left (Rule 39 cannot promote what does not exist). Fix the candidate LIST, never the matcher — three
+grounded Cloud candidates were added (`datacentre-permitting-risk`, `datacentre-efficiency-disclosure`,
+`compute-securitisation-lockin`; 6/6/5 subject hits on the day, no spurious firing on other days) and the block
+came back three fresh. Two candidate defects fixed the same way: a candidate whose TITLE asserts a statistic must
+have that statistic in the corpus (`cloud-waste-finops` shipped "The 29% You Are Paying For Nothing" while `29%`
+and `finops` occurred ZERO times — title reworded, keywords trimmed so `capex` stops firing it), and a keyword
+list made of context vocabulary (`record`/`cloud`/`vendor`) re-fires on any cloud day and re-takes a slot for an
+idea already delivered — tighten THAT candidate's list, never widen the global `GENERIC_BLOG_KEYWORDS` blocklist.
+Verified by the before/after hook harness (48 findings / 8 days: 1 change, 0 regressions) and a blog-candidate
+replay over the same days.
+
 See `references/linkedin-content-extraction.md` for content pillar details, `references/gmail-briefing-integration.md` for Gmail signal sourcing, and `references/linkedin-generator-defects.md` for the generator defect log.
 
 ### Phase 9: Email Delivery (NEW June 4, 2026 — Updated June 5, 2026)
