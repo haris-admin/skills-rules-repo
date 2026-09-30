@@ -1,0 +1,48 @@
+---
+description: Deletion precheck: recoverability and live references before removing "stale" files (all agents)
+globs: *
+alwaysApply: false
+---
+
+# Deletion precheck: recoverability and live references before removing "stale" files (all agents)
+
+Applies whenever an agent is asked, or proposes, to remove files as stale, duplicate or superseded.
+
+**Scope:** docs, drafts, extracted text, generated artifacts, screenshots and any cleanup pass in any repo.
+
+---
+
+## Why this exists
+
+**30 Sep 2026, Undispute docs cleanup:** asked to "remove the stale files and duplicate information", an agent listed four candidates and the human said yes. Checking before deleting found two traps. One file was gitignored (an extracted text copy of a PDF), so deleting it could not be undone from git and other work cited it as a source. Two drafts looked stale (past a deadline) but a hidden `.hermes/plans/` file named one of them "ready as internal source of truth". Only the one file that was tracked, superseded and referenced only by two links was removed. The rest were kept and reported.
+
+## Core Directives
+
+1. **Look at the target first.** Run `git ls-files --error-unmatch <path>` and `git check-ignore -v <path>`. Untracked or ignored files are not recoverable from history, so they need an explicit, separate confirmation.
+2. **Search for references, including hidden directories.** Grep the whole repo excluding only `.git` and build directories, so `.hermes/`, `.agents/`, `.github/` and plans are covered. A reference from an active plan overrides the word "stale".
+3. **A yes to a list is not a yes to what you have since learned.** If the precheck contradicts the reason the human gave, delete only the safe subset and report the rest with the evidence.
+4. **Prefer tracked, superseded, unreferenced files.** Remove those in their own commit with the recovery hash in the message.
+5. **Fix the links you orphan.** Update or annotate every reference to a removed file, including review or history files that pointed at it.
+6. **Regenerable is not the same as disposable.** If a file can be rebuilt (for example `pdftotext`), record the command and still confirm before removing a file others cite.
+7. **Never sweep other ventures' material under "duplicate".** A file that belongs to a different product in a shared workspace needs its owner's confirmation.
+
+## Patterns to Follow
+
+```bash
+git ls-files --error-unmatch docs/x.md ; git check-ignore -v docs/x.md
+grep -rn "x.md" --exclude-dir=.git --exclude-dir=node_modules .
+git rm docs/x.md && git commit -m "docs: remove superseded x (recover from <hash>)"
+```
+
+## Patterns to Avoid
+
+```bash
+rm -rf docs/drafts/*        # no precheck, hidden references, untracked files lost
+grep -r "x.md" docs/        # misses .hermes/ and other non-docs directories
+```
+
+## Verification & Guardrails
+
+- After deleting, grep again for the removed filename and confirm zero live references.
+- Confirm `git status` shows only the intended deletions and the link fixes.
+- If paired with a Cursor rule, update `cursor-rules/deletion-precheck-untracked-and-referenced.mdc` to match.
