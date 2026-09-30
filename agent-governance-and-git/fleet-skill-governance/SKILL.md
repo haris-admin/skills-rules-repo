@@ -87,6 +87,44 @@ When a Windows profile has a skill the repo lacks:
    shared skill appears identically in all 6 profiles.
 4. Update `fleet-agents.md` if it's an agent-protocol skill; commit + push.
 
+## Vendoring a third-party skill pack (upstream repo → our library)
+
+Class of work: adopting a published skill collection (a vendor's official skills repo, a community
+pack) so our agents — and the other CLI trees — get it. Do it as a REVIEW, not a copy; the value is
+mostly in what you deliberately skip.
+
+1. **Clone upstream to scratch**, not into the library, and read every `SKILL.md` before deciding.
+   Descriptions alone do not reveal whether a skill duplicates one we already do better.
+2. **Decide keep / skip explicitly and record the skip reasons in the registry** so the next session
+   does not re-litigate. Skip, as a rule: packaging for other ecosystems (plugin manifests,
+   `.mcp.json`, per-CLI install scripts — our deployment is `sync.sh --global` + the profiles);
+   anything superseded by a richer local skill; a hosted-doc pointer when we already carry the
+   procedure.
+3. **Place by category** — `~/.hermes/skills/<category>/<name>/`, keeping its `references/` and
+   `scripts/`.
+4. **Verify LOADABLE, not merely present**: `skill_view(<name>)` must return `available` with the
+   linked files listed.
+5. **Mirror into the repo** under the same category, and register it in `fleet-agents.md` (shared-tool
+   list + provenance) with the upstream URL and licence. **Keep the upstream `description`** — it
+   carries the trigger clause; do not rewrite vendored metadata into our voice.
+6. **Run the repo gates** (`validate.py`, catalog generator) and commit with a PATHSPEC limited to the
+   new skill dirs + the regenerated catalog + the registry. See Pitfalls for why an unscoped commit is
+   destructive here.
+7. **Propagate**: copy into each profile that should carry it, then `sync.sh --global` for the CLI
+   trees (`~/.claude`, `~/.Codex`, `~/.gemini`).
+8. **Verify by BYTE SIZE across every target** once the sync process has EXITED.
+
+Vendoring pitfalls:
+
+- **`sync.sh --global` takes minutes and populates its targets sequentially.** A listing taken while it
+  runs shows some trees complete and others still missing the new skills — that is not a failed sync.
+  Start it in the BACKGROUND with notify-on-complete, and verify after exit; never announce a
+  propagation failure from a mid-run sample.
+- **Skipped content is part of the deliverable.** An unexplained gap invites the next session to import
+  it after all; write the skip + reason down.
+- **Upstream licences travel with the files** — record the licence in the registry entry rather than
+  re-licensing vendored content under ours.
+
 ## Pitfalls
 
 - **Always commit with a PATHSPEC — a bare `git commit` lands the whole index, not what you just staged.**
@@ -182,6 +220,23 @@ When a Windows profile has a skill the repo lacks:
   a CRLF-dirty repo: clear it with `git restore .` first (see `git-working-tree-hygiene`), never
   by committing.
 
+  **A count is not a review.** Running `diff … | grep -c '^<'` and seeing a small number is NOT the
+  classification step — print the lines and actually read them, because "drop" versus "merge" is the
+  entire pitfall and it cannot be decided from an integer. If you have already copied over, prove what
+  was lost instead of guessing: diff the PREVIOUS commit's version against the new file and classify
+  every `<` line —
+
+  ```bash
+  git show HEAD~1:<cat>/<skill>/SKILL.md > /tmp/prev.md
+  diff /tmp/prev.md <cat>/<skill>/SKILL.md | grep '^<'   # every deleted line, to classify
+  ```
+
+  Superseded bullets (an older, thinner version of a rule the WSL copy already states in full, or a
+  stale value a later fix corrected) are a safe drop — the commit's `+N/-M` will show the deletions.
+  Anything with no counterpart in the new file (a reference pointer, a trigger clause) must be
+  restored. Then confirm the facts you are about to claim survived by **grepping the mirrored file for
+  them**, not by trusting the diff you skimmed.
+
 - **A repo SKILL.md can be a deliberately CONDENSED variant — copying WSL over it is destructive by design.**
   `research/pluto-autonomous-research` is the worked example: the repo copy keeps a short numbered rule list
   and pushes detail into reference files that exist ONLY in the repo (`pitfalls-and-incident-log.md`,
@@ -200,6 +255,16 @@ When a Windows profile has a skill the repo lacks:
   WSL copy updated separately for its own verbose format; the divergence is acceptable, a deleted pointer is not.
   Even when the diff looks additive, check `git diff --stat` for deletions BEFORE committing — a 7-line additive
   edit and a 368-insertion/80-deletion overwrite look identical in the commit summary line you read back.
+
+  **Known condensed/divergent repo copies — never `cp` WSL→repo over these; edit them in place (verified 1 Oct 2026):**
+  `pluto-operations/pluto-amlhive-operating-contract` (409 vs 521 lines; carries an `## Additional references` block),
+  `devops/pluto-pipeline-orchestration` (247 vs 993; pushes audit/known-issue detail into `references/` and points at it),
+  `research/pluto-weekly-review` (289 vs 724; has `## Resolved and Historical Incidents` + reference pointers),
+  and `devops/amlhive-prod-monitor` (repo copy was also **value-stale**: Jul-19 instance IDs against the Sep-12 WSL copy,
+  plus repo-only pointers to `nginx-proxy-monitoring.md` / `daily-business-report.md`). For these four, apply new rules
+  as an in-place string edit so pointers and trigger clauses survive. Process that worked: copy only the skills whose
+  `diff repo vs WSL | grep -c '^<'` is **0**, edit the rest, then grep every repo-only marker (reference filename,
+  section heading) before committing.
 
 ## Related
 
