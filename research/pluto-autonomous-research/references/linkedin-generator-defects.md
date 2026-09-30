@@ -588,7 +588,8 @@ research-driven and that degradation was stated in the output file rather than g
 11. Currency-unit regexes must be case-insensitive and token-bounded (`$100M` ≠ `$100 M`).
 12. Blog rotation suppresses recent titles; `KNOWN_BLOGS` retires them.
 
-Items 1–7 and 13–20 are the numbered entries under the heading above; 21–23 and 27–37 follow in
+Items 1–7 and 13–20 are the numbered entries under the heading above; 21–23 and 27–40 follow in
 this file. SKILL.md now carries only a pointer to this log — the condensed list had been
-duplicated here and SKILL.md had drifted to 100,689 bytes, over its 100K limit.
+duplicated here and SKILL.md had drifted to 100,689 bytes, over its 100K limit (trimmed back to
+~99.3K on 2026-10-01 by folding Rules 24–30 and 32–40 into pointers, since the detail lives here).
 
