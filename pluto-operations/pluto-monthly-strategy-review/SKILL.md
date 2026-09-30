@@ -1,7 +1,7 @@
 ---
 name: pluto-monthly-strategy-review
-description: "Monthly strategy review: evidence, gaps, ≤3 priorities. Use when running the first-Monday monthly strategy review cron, assembling evidence against baseline, or recommending the month's top priorities — distinct from the pluto-monthly-strategy Honcho/executor handoff skill."
-version: 1.0.0
+description: "Use when running the first-Monday monthly strategy review cron. Assembles evidence against baseline and recommends ≤3 priorities; distinct from the pluto-monthly-strategy handoff."
+version: 1.1.0
 tags: [pluto, amlhive, monthly, seo, geo, strategy-review]
 ---
 
@@ -112,6 +112,22 @@ right this month (measured wins). Deliver the review as the final response — t
   early month-end run (00:02 firing consumed a 31 Aug 14:35 partial; the canonical 00:05 review
   triggered a second firing at 00:15). If the injected review lacks a RULES TO REFRESH section,
   re-check for a newer month-end output before concluding.
+- **Expect a SPURIOUS pre-completion fire every 1st of month at ~00:00 (verified 01 Oct 2026).**
+  `month_end_complete_check.py` prints `MONTH_END_COMPLETE <ym>` only once the file exists; on the
+  next 1st its output necessarily flips to `NOT_COMPLETE` because the new month's file cannot exist
+  before the 00:01 month-end job finishes (~11 min runtime). The monitor fires on ANY output change,
+  so Start-of-Month fires ~00:00 — **before the Month-End Review has even been dispatched**
+  (01 Oct 2026: this job dispatched 00:00:45, month-end dispatched 00:01:40, `next_run_at` already
+  advanced to 01 Nov). The `context_from` injection then carries the PREVIOUS month's review, which
+  was already applied last month — the same trap as the 01 Sep double-fire.
+  **Rule:** on a 1st-of-month fire before ~00:15, check `ls ~/.hermes/research_outputs/month-end-<prev-month>.md`
+  (fall back to the newest `cron/output/09d6d950544f/*.md` `## Response`). If it is absent, append a
+  DEFERRED record to the runlog and STOP — never derive refreshes from the stale injected review.
+  The gate re-evaluates every 15 min (00:00–03:45) and fires legitimately once the file lands; if no
+  such firing happens, the month-end review itself failed and needs escalation.
+  **Archive caveat:** the cleanup cron moves month-end files out of `research_outputs` (Aug 2026's is
+  now at `~/.hermes/archive/research/2026/09/month-end-2026-08.md`) — absence there is expected for
+  older months, so never treat a missing older file as a defect in its own right.
 - **Watch for timeouts:** the 08-05 off-window run hit `TimeoutError: idle for 603s (limit 600s)`
   waiting for a non-streaming API response and recorded nothing. A timeout on the real first-Monday
   run would silently lose the monthly review — check last_status/executions.db if a month is missing.
