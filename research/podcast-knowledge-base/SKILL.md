@@ -301,6 +301,17 @@ runs, and the extractor's own window accounting (`episodes_in_window` vs `episod
 months behind `episodes.created_at` means the reader has been blind since that date regardless of how
 healthy every cron's `last_status` looks.
 
+**Coverage must be stated as MEASURED, with its date (measured 1 Oct 2026):** **1,439 episodes ·
+806 with any chunks · 539 selectable (>= 8 chunks) · 900 unreachable by learning = 62.5%** and **88
+false-green ingests** (a run logged `success` with zero chunks created). Never describe this corpus as
+fully captured, and never quote an episode count as coverage. Re-run the audit before restating any
+figure.
+
+**An insight window that reads `None` is a FAILURE CONDITION, not a cosmetic gap.** The extractor's
+`episodes_in_window` / `episodes_read` pair must both be integers; `None` means the reader was blind
+for that window, so the day's "no insights" result is *unmeasured* — report it as a failed leg, never
+as "nothing new in the feeds".
+
 **Coverage queries (the audit's core):**
 
 ```sql

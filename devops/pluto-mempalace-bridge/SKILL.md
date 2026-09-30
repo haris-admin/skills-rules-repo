@@ -498,6 +498,13 @@ anything unlanded across queue → palace → Alexandria.
 
 ## Pitfalls
 
+- **Any cron script that imports `chromadb` must self-heal its interpreter AT IMPORT TIME (added 1 Oct 2026).** A `no_agent` .py cron runs on the PM dependency env, which has no chromadb, so the script dies before it can probe anything: `mempalace_health.py` (job `0e14d2e1095f`) printed `chromadb client failed: No module named 'chromadb'` and `collections read 0, docs 0` every morning while the palace actually held 580+ documents — a false red that also masked any real palace fault. Put the self-heal immediately before the chromadb/feeder import (never inside the feeder — a library must not re-exec, or every importer re-execs):
+  ```python
+  _vpy = "/home/habib/.hermes/venv/bin/python3"
+  if os.path.exists(_vpy) and os.path.realpath(sys.executable) != os.path.realpath(_vpy):
+      os.execv(_vpy, [_vpy, os.path.abspath(__file__), *sys.argv[1:]])
+  ```
+  Find the whole affected class with `grep -ln '^import chromadb\|^from pluto_mempalace_feeder import' scripts/*.py`. Fixing the CALLER is too late when a transitive import (the feeder) pulls chromadb in at module scope; and resolving the interpreter by NAME (`python3`) is not a fix — see the chamber-refresh pitfall below. Never accept a health job's verdict on the palace without checking a direct collection count first: "0 docs" from a monitor is a claim about the monitor.
 - **Interactive/ad-hoc research is invisible to both ingestion pipelines.** Files saved to `research_outputs/` during interactive Telegram sessions (e.g., `2026-06-18-aml-hive-internal-plan-playbook-query.md`) are NOT picked up by: (a) the mempalace watcher (only monitors `mempalace-inputs/`), or (b) the Honcho bridge (only pushes pipeline-standard `research_*.json`, `synthesis_*.json`, etc.). After any interactive research session, manually copy the file to `mempalace-inputs/` or feed directly via the feeder script. See the "Feeding Interactive/Ad-Hoc Research" section above for step-by-step.
 - **Python buffering in cron/background processes: always use `python3 -u`.** When Python stdout is piped (cron jobs, `background=true`, delegate_task), it switches to 4KB block buffering. A script can run for minutes with zero visible output — psql queries complete, yt-dlp downloads finish, but the log shows nothing. Always use `python3 -u script.py` in cron prompts, background terminal commands, and subprocess calls. This applies to ALL Pluto scripts: podcast_ingestor.py, mempalace_cleanup.py, git_sync.py, etc.
 

@@ -17,7 +17,7 @@ allowed-tools: [terminal, read_file, write_file]
 **Script:** `~/.hermes/scripts/amlhive_prod_monitor.py` (v0.4.12+)
 **Sibling script:** `~/.hermes/scripts/amlhive_daily_report.py`
 **AWS Account:** 560205084533, ap-southeast-2
-**Instances:** Backend `amlhive-prod` (t3.medium), Frontend `amlhive-frontend` (t3.small). **Auto-discovered by Name tag** via `get_instance_id()` — hardcoded IDs no longer required. Current (Jul 19): backend `i-052ca2acc74707378`, frontend `i-0eb3f1faa213420ce`. Previously: i-0bda9f... + i-0cb6f5... (replaced Jul 18); i-02276d... + i-0cf88f... (replaced Jul 16).
+**Instances:** Backend `amlhive-prod-backend` (t3.medium), Frontend `amlhive-prod-frontend` (t3.small). **Auto-discovered by Name tag** via `get_instance_id()`. Current (Sep 12, 2026): backend `i-04f81ec595a004caf`, frontend `i-01481b0eb1b7ff43e`. Previously: backend `i-0b111b75d3c70fcb7` (replaced Sep 10), `i-052ca2acc74707378`. **Always re-discover; never copy an ID from this line into a command.**
 **RDS:** amlhive-prod.ch4ykiy82n3q.ap-southeast-2.rds.amazonaws.com, postgres 17.9, db.t4g.small, 20GB. Replaced June 2026 (was c9aso80ocbn0, postgres 15.x, 100GB).
 
 ## Cron Schedule
@@ -100,7 +100,8 @@ Detects proxy-layer failures that bypass the app entirely (oversized cookies, ma
 ## Pitfalls
 
 - **Exit code 1 ≠ script failure.** `last_status: error` on the 11PM run is normal when alerts exist. Check stderr for `✅ Email sent` to confirm the monitor ran successfully.
-- **Instance ID drift (SOLVED with auto-discovery):** ~~Hardcoded instance IDs in both...~~ **Fixed July 2026** — `amlhive_prod_monitor.py` and `amlhive_daily_report.py` now use `get_instance_id()` which discovers running instances by their `Name` tag (`amlhive-prod`, `amlhive-frontend`). A fallback hardcoded ID is provided for when EC2 is unreachable. The module-level cache ensures only one API call per script run. The function is importable and reusable — see `references/ec2-auto-discovery.md`.
+- **Every monitor needs a defined ALL-CLEAR path (added 1 Oct 2026).** Sep 2026: **120 of 120 runs** carried at least one alert while TapEase stayed materially cleaner (120 runs, 0 P0). A monitor that can never go green trains its reader to ignore it. State what an all-clear run looks like; **demote any alert standing >24h into ONE summary line** (count + oldest age) rather than repeating the full block; keep a genuinely rare P0 path. Demote — never delete — a standing alert.
+- **Instance ID drift (SUPERSEDED — it broke again on 10 Sep 2026, see below):** ~~Hardcoded instance IDs in both...~~ **Fixed July 2026** — `amlhive_prod_monitor.py` and `amlhive_daily_report.py` now use `get_instance_id()` which discovers running instances by their `Name` tag (`amlhive-prod`, `amlhive-frontend`). A fallback hardcoded ID is provided for when EC2 is unreachable. The module-level cache ensures only one API call per script run. The function is importable and reusable — see `references/ec2-auto-discovery.md`.
   
   **No manual recovery needed on recycle.** If instances are recycled, the next cron run auto-discovers the new IDs. The fallback ensures the script still runs during an EC2 outage.
 - **psql NOT pre-installed on Amazon Linux 2023.** When the backend instance is recycled, `psql` must be reinstalled. Run via SSM: `sudo yum install -y postgresql15`. This does NOT survive instance replacement (unlike Ubuntu where it's often pre-installed). The daily report and any SSM-based SQL queries will fail with `psql: command not found` after a new instance launch. Check immediately after any known instance replacement.

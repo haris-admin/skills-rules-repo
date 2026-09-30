@@ -56,6 +56,8 @@ Compare: index coverage (GSC URLs ever seen), query visibility (brand vs non-bra
 ## Recommend ≤3 priorities
 
 Ordering: **current regulator change > stale content > missing intent coverage > technical repair**.
+
+**Escalation override (added 1 Oct 2026):** an unresolved CMS-publish blocker that survives **three consecutive weekly evidence records** jumps to the **top** of the next monthly review regardless of the ordering above — it is a live public defect, not a stale-content item. The record must name the proven one-write fix path (`backend/scripts/migrate_blog_posts.py --mode update`, which patches page + blog index + sitemap lastmod + both llms files in one PATCH — proven 29 Sep 2026) and state exactly what is blocked on whose approval. Worked example: the 29-July-deadline / prohibited "2-week" / expired-offer cluster was live for 6 weeks with correction copy ready 42 days as at 1 Oct 2026.
 Each priority must carry: evidence gap (measured), recommended action, expected measurable signal
 (bounded — no rank/click promises), recheck date. No ranking shortcuts; no content-for-show.
 

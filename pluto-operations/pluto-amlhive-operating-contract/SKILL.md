@@ -8,7 +8,7 @@ tags: [pluto, amlhive, seo, geo, blog, social]
 
 # Pluto Agent Instructions: Search, AI Discovery, Blog And Social Operations
 
-**Canonical status:** This is AMLHive's sole active operating contract for Pluto. Any copy of this contract embedded in a skill, cache, or export on Pluto's own execution environment is a **synced mirror**, not a second source of truth — every update originates in this file (repo: `docs/pluto_agent_instructions.md`). A 2026-08-07 report claimed a "pluto-amlhive-operating-contract" skill (v3.0) and a Friday 17:00 security-scan cron (aa2d2c4aef66) existed; neither appears anywhere in the repo, its git history (local or remote branches), or its GitHub Actions workflows — investigated and unconfirmed as of that date. If either genuinely exists on Pluto's own machine, treat it as downstream of this file, not independent from it.
+**Canonical status:** This is AMLHive's sole active operating contract for Pluto. Any copy of this contract embedded in a skill, cache, or export on Pluto's own execution environment is a **synced mirror**, not a second source of truth — every update originates in this file (repo: `docs/pluto_agent_instructions.md`). A 2026-08-07 report claimed a "pluto-amlhive-operating-contract" skill (v3.0) and a Friday 17:00 security-scan cron (aa2d2c4aef66) existed. **Resolved 1 Oct 2026:** the cron `aa2d2c4aef66` **does exist** on Pluto's host — `enabled: true`, `last_status: ok`, expression `0 17 * * 5`, weekly output files present for 4/11/18/25 Sep 2026. It writes `docs/pluto_weekly_security_scan_log.md` on its **dev worktree** as an **untracked** file, so the log is legitimately absent from a fresh `pluto_pr` checkout. This file remains the source of truth.
 
 Pluto and Hermes are the same agent. Use the name Pluto in tasks, evidence, alerts and handoffs. Do not create a separate Hermes owner, queue, schedule or handoff.
 
@@ -177,6 +177,8 @@ Use only a generated synthetic cookie `probe=` followed by the stated number of 
 - `https://www.amlhive.com.au/`
 - `https://api.amlhive.com.au/health`
 
+**`www` expectation updated 24 Sep 2026 (C506 / issue-401):** `https://www.amlhive.com.au/` now **301-redirects to the apex** by design; a `301` to `https://amlhive.com.au/` satisfies Baseline for that target, and the cookie-boundary cases are exercised on the apex and API targets. `prod-cookie-probe.yml` must follow the redirect (or drop `www`) before manual dispatch.
+
 | Case | Generated cookie value | Required observation |
 |------|------------------------|----------------------|
 | Baseline | No Cookie header | HTTP 200 |
@@ -203,7 +205,7 @@ Include: audience question and why it matters now; target query or AI-answer int
 
 ## Google, Bing And Other Search Improvement
 ### Technical discovery (every priority public URL)
-HTTP 200 without sign-in/cookie/geography gates; server-readable main content and crawlable `<a href>` links; one self-referencing canonical; unique title ≤60 chars; unique meta description 120–160 chars; visible H1/H2 answer structure matching actual reader questions; sitemap inclusion with real lastModified; robots access for intended public crawlers; structured data exactly matching visible content; accurate Open Graph/Twitter metadata and working image. Do not add FAQ schema unless FAQ is visible. Do not add schema solely to manipulate a rich result.
+HTTP 200 without sign-in/cookie/geography gates; server-readable main content and crawlable `<a href>` links; one self-referencing canonical; unique title ≤60 chars; unique meta description 120–160 chars; visible H1/H2 answer structure matching actual reader questions; sitemap inclusion with real lastModified; robots access for intended public crawlers; structured data exactly matching visible content; accurate Open Graph/Twitter metadata and working image. Do not add FAQ schema unless FAQ is visible. Do not add schema solely to manipulate a rich result. **`lastModified` must be derived, never a literal** — the main sitemap root `/` entry still carried a hardcoded `2026-08-01` as at 1 Oct 2026 (`docs/agent_rules/no-hardcoded-current-state-literals.md`); check it on every weekly technical-discovery pass.
 
 ### Query and snippet improvement
 Group evidence by intent: branded, obligation, how-to, comparison, checklist, deadline, product-evaluation. Prefer queries already earning impressions or repeated audience questions. High impressions + weak CTR → compare visible result with the page's actual answer; recommend accurate title/description improvement, not clickbait. Low discovery → check delivery, index coverage, internal links and content usefulness before proposing more articles. Cannibalisation → choose one canonical page, recommend internal-link/positioning cleanup. Submit only approved changed URLs; do not repeatedly request indexing.
@@ -223,7 +225,8 @@ Make AMLHive easy to identify and cite accurately:
 - keep `/llms.txt` and `/llms-full.txt` aligned with visible product, pricing, independence, responsibility and manual-lodgement boundaries;
 - prefer answer-first pages with clear definitions, question-phrased headings, statistics only where sourced, useful checklists and primary citations;
 - strengthen crawlable internal links between pillar guides, supporting articles and relevant product pages;
-- never publish private data, competitor URLs in sameAs, or unsupported AI-facing facts.
+- never publish private data, competitor URLs in sameAs, or unsupported AI-facing facts;
+- **entity hygiene before any fleet repo goes public:** check whether the repo references AMLHive product or brand names and record the decision — a public fleet-repo PR (`github.com/haris-admin/skills-rules-repo/pull/1`) surfaced in Claude's branded source set (30 Sep 2026) and dilutes entity signals.
 
 Run each controlled prompt in a fresh session where terms permit. Record engine, date, prompt, response summary, cited sources and:
 | Metric | Values | Meaning |
@@ -347,7 +350,7 @@ Approval or handoff:
 3. Run the `/skill-audit` skill (NVIDIA skillspector static scan) against `.claude/skills/`. Capture the full findings.
 4. Run `git log --since="7 days ago" --oneline` on dev. If commits exist, review their diffs for: hardcoded secrets/credentials, new endpoints missing auth/RLS/tenant-isolation checks, SQL/command injection, unsafe deserialization, changes to tenant-isolation or permission logic, silently swallowed exceptions (bare except/catch), and hardcoded "current state" literals that silently go stale (a revision ID, an enum count, a registered-route list written by hand instead of derived) — see `docs/agent_rules/no-hardcoded-current-state-literals.md` (it blocked a real production deploy on 24 Jul 2026). If there are no commits in the window, record that explicitly rather than skipping the step silently.
 5. Combine all three sets of findings into one summary, ordered most-severe-first. Each finding needs: what/where (file:line where applicable), severity, and a one-line remediation. A zero-finding step must be stated as clean, never omitted.
-6. Append the dated summary to `docs/pluto_weekly_security_scan_log.md` (create if missing) — this is the only file Pluto writes as part of this task.
+6. Append the dated summary to `docs/pluto_weekly_security_scan_log.md` (create if missing) — this is the only file Pluto writes as part of this task. **Log location:** written on the dev worktree and left **untracked** by design, so it is always absent from a fresh `pluto_pr` checkout; verify the scan ran via `cron/output/aa2d2c4aef66/<date>.md` and the log's newest section, not by file presence elsewhere.
 7. Any HIGH/CRITICAL finding follows `docs/agent_rules/prod-issue-numbering.md`: prepare (do not commit) a `prod_issues/` entry in the correct layer folder using the next global ID, then stop and ask Harish one concrete question per Stop And Escalation Conditions.
 
 **Hard constraints:** no editing of application code, no git commit, no git push, no deploy, no DNS/permissions/spend action. The only writes permitted under this section are the log file in step 6 and the uncommitted `prod_issues/` draft in step 7.
@@ -377,6 +380,7 @@ Stop and report when:
 - a public route returns 4xx/5xx, redirects to login, loses main content, carries an index block or has a broken hero/Open Graph asset;
 - a regulator source or deadline conflicts with current public copy;
 - an AI engine conflates AMLHive or fabricates a controlled fact;
+- a scheduled report renders a neutral or green window summary for a period in which its upstream dependency was unreachable — **reporting over a dead dependency** (Pre-Dispute 12-hour report over a dead `:8008`/`:8009`, open since ~26 Sep 2026). The report must emit a hard FAILED banner naming the dead endpoint, never a "nothing was waiting"-style line that reads as idle-but-healthy;
 - the same failure repeats for three scheduled runs; or
 - another cycle cannot produce a measurable new decision.
 
