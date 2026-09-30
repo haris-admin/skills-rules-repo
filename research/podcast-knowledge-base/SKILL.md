@@ -335,7 +335,8 @@ select count(*) from podcast_kb.ingest_log where coalesce(chunks_created,0) = 0 
   checking a direct collection count first**; "0 docs" from a monitor is a claim about the monitor.
 - **`podcast_capture_verify_daily.sh` ran `--limit 60`** — at the measured 2-4 min/episode that is a 2-4
   HOUR job, so the 7200s cron timeout killed it having locked nothing (job `4ef6e889e8d6` red daily,
-  misread as a broken verifier). Now `--limit 20` inside `timeout 6600`. Size the batch to the CRON
+  misread as a broken verifier). Now `--limit 12 --deadline 6300` inside `timeout 6900`
+  (2026-09-30 run: 29 min, exit 0 — locked=4, needs_human=8). Size the batch to the CRON
   TIMEOUT, not to the episode count.
 - **Any script that imports `chromadb` — directly or transitively via `pluto_mempalace_feeder` — must
   self-heal its interpreter AT IMPORT TIME.** `pluto_mempalace_feeder` imports chromadb at module scope,
@@ -395,7 +396,7 @@ upstream rate-limits (HTTP 429) intermittently. The model actually used is store
 (`checker_model`), so verification provenance is never ambiguous.
 
 - **Size the daily batch to the cron timeout, not to the episode count.** `podcast_capture_verify_daily.sh`
-  runs `--since 10 --limit 60`; at the measured 2-4 min per episode that is a 2-4 HOUR job, so the first
+  ran `--since 10 --limit 60` in Sep 2026 (now `--limit 12 --deadline 6300` under `timeout 6900`); at the measured 2-4 min per episode that is a 2-4 HOUR job, so the first
   live run (2026-09-27) was killed by the 7200s cron timeout having locked nothing — a red job that looks
   like a broken verifier but is only an oversized batch. Cap the pass at what fits comfortably (roughly
   20-25 episodes / 60-90 min), or bound the wrapper with `timeout <secs>` so it exits with a partial
@@ -695,8 +696,11 @@ from *patience and rotation*, never from a bigger timeout.
   it and prints WHICH name resolved); the `_OPENCLAW` suffix is retired. The key carries its own
   **per-key spend limit** — check `GET /api/v1/key` for `limit` vs `usage` before assuming headroom.
 
-**Scheduled:** `scripts/podcast_three_filters_daily.sh` runs 06:45 daily (cron `a2ff28e23482`, `no_agent`
-script, `deliver: local`, failures routed to the origin chat). A **2-day window** catches late-ingested
+**Scheduled — ⚠️ PAUSED 2026-09-29; do not read it as the live router.** `scripts/podcast_three_filters_daily.sh`
+ran 06:45 daily (cron `a2ff28e23482`, `no_agent`
+script, `deliver: local`, failures routed to the origin chat); that job is now `enabled: false` and the
+ACTIVE router is the 2-hourly DeepSeek-DIRECT lane `e736e32679ab` (`podcast_free_router_stagger.sh`), with
+the whole chain judged by the 09:00 assert job `7e4a2379157d`. Re-enable `a2ff28e23482` to revert. A **2-day window** catches late-ingested
 episodes; the router's quote-hash dedup makes re-runs a no-op. It sits at the end of the chain
 (04:00 ingest → 04:30 chunk → 05:35 verify → 06:10 curate → 06:25 watchdog → 06:45 route) so it can only
 ever route what is already captured and verified.
