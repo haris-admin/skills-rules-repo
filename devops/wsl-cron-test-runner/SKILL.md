@@ -181,6 +181,17 @@ Two bugs in `a2square_weekly_test_runner.py` produced the same useless output fo
   calling it cleared** — a fix that gets the script one stage further is progress, not a pass.
   Corollary for a multi-repo runner: one leg dying early aborts the whole script, so the later repos'
   results are UNKNOWN, not green.
+- **A diagnosis route that cannot see the output is worse than no diagnosis — pass the REAL captured output.**
+  `a2square_weekly_test_runner.py` called `codex_diagnose(name, "Test failure detected in pytest output
+  above.", path)`: a placeholder, not the failure. The model answered "please paste the failing output"
+  on every failure for weeks, burning a call each time, and the report still looked like a working feature.
+  Two rules: (1) pass the captured `out`; (2) **initialise the capture BEFORE the `try`** (`out = ""`) and
+  set it in the `except` (`out = f"{type(e).__name__}: {e}"`) — the original variable lived inside the
+  `try`, so a `TimeoutExpired` (the failure you most want diagnosed) had nothing to route at all.
+- **Name the failing test from pytest's cache instead of re-running the suite.** After any run,
+  `<repo>/.pytest_cache/v/cache/lastfailed` is a JSON map of failing node ids — read it (or `pytest --lf`
+  to re-run only those) rather than paying another 10–90 min to rediscover the failure. On a 650-test
+  suite that is a 10-second read versus a full re-run.
 
 ## Pre-Requisites: Always Pull Latest Code
 
@@ -210,7 +221,7 @@ This is non-negotiable — stale test results are worse than no results.
 
 ## Current AMLHive Daily Test Suite Architecture
 
-The cron job (044c0bc41e31 at 03:00 AM) runs three suites in sequence in a single script (`amlhive_daily_test_runner.py`):
+The cron job (044c0bc41e31 at **03:40 AM** AEST — its job NAME says "03:00 AM" but the live expr is `40 3 * * *`) runs three suites in sequence in a single script (`amlhive_daily_test_runner.py`):
 
 ```
 0. 📡 git pull --ff-only origin dev                ← always first

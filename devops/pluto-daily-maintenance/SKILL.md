@@ -17,6 +17,11 @@ description: Pluto's lightweight daily maintenance engine — 4-task health chec
 1. Load skills used/referenced in the last 24 hours
 2. Check for stale references: old repo names (`ideas-*-au` → `ideas-*`), dead file paths, wrong cron times
 3. Patch minor issues immediately; flag severe staleness for Saturday
+3b. **Audit the schedule EXPR, never the job NAME — a stale NAME survives every expr change.** Job names
+   are free text and are not rewritten when a schedule moves. Seen 2026-10-01: `044c0bc41e31` is named
+   `★ AMLHive Daily Test Suite (03:00 AM)` while its live expr is `40 3 * * *` (fires 03:40); the stale
+   name had been copied into three skills and into `environment.md` as fact. Trust `schedule.expr` and
+   the run's own stdout timestamp; fix the DOCS, never the expr from this tick.
 4. Check for old pruned cron IDs referenced outside of `pipeline-orchestration` (historical documentation)
 5. **Fleet-mirror drift — the biggest silent gap (added 2026-09-23).** `daily_skill_scan.py` does NOT
    compare skill CONTENT against the canonical repo, so a skill can be patched in WSL for weeks while
@@ -26,7 +31,11 @@ description: Pluto's lightweight daily maintenance engine — 4-task health chec
    in (then run the frontmatter check and path-scoped `git add`/`git commit -m "..." -- <paths>`);
    a DIFFERING skill needs a MERGE, because the repo side often carries sections the WSL side never
    had (see the merge pitfall in `fleet-skill-governance`) — report those, never bulk-overwrite them
-   from a daily tick. Seen 2026-09-23: repo held 341 SKILL.md vs 246 local, 112 WSL-only (several
+   from a daily tick. Seen 2026-10-01 (re-measured): repo 389 SKILL.md vs WSL 254; **65** genuinely
+   WSL-only (excluding `.archive/`) and **97** content-differing. Note `devops/fleet-skill-governance`
+   reads as repo-ABSENT only because the repo files it under `agent-governance-and-git/` — compare by
+   skill NAME, not by path, before calling a skill missing (that copy is byte-identical). Seen
+   2026-09-23: repo held 341 SKILL.md vs 246 local, 112 WSL-only (several
    fleet-relevant, incl. `acma-dncr-live-washing`, `alexandria-vault-sync`, `git-working-tree-hygiene`,
    and — circularly — `fleet-skill-governance` itself) and 104 differing.
 

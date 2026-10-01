@@ -5,7 +5,8 @@ description: Use when running the AML Hive daily test suite.
 
 # AML Hive Daily Test Suite
 
-Cron `044c0bc41e31` (daily 3:00 AM AEST, no_agent) → `~/.hermes/scripts/amlhive_daily_test_runner.py`.
+Cron `044c0bc41e31` (daily **3:40 AM** AEST — the job's own NAME still reads "03:00 AM" and is stale;
+the schedule expr is `40 3 * * *`) → `~/.hermes/scripts/amlhive_daily_test_runner.py`.
 
 **Purpose:** Run the full AML Hive test pyramid daily against the native WSL
 ext4 repo `~/code/amlhive1` (3–10× faster than the NTFS mirror):
