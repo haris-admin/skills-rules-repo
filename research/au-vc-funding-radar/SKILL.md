@@ -43,6 +43,15 @@ AEST week (Sat–Fri), so anchor on the current date rather than on the supplied
   Series E") include deals that closed a month earlier (Pay.com.au = 25 Aug 2026), and Dealroom
   re-dates items by month only. Always confirm the announcement date in the primary per-deal article
   before calling a round "this week".
+- **Regtech/AML items that "look current" in undated search hits are usually months old.** Personr's
+  FundWA follow-on is Oct 2025 and Legora's acquisition of Melbourne regtech Graceview is May 2026 —
+  both surface as fresh in aggregator/undated hits. Confirm the primary announcement date before
+  flagging, and treat the round-up feeds (Startup Daily RSS) as the in-window test.
+- **Regtech capital often arrives as a LISTED raise that never enters VC round-ups.** ASX small-caps
+  raise by placement + entitlement offer (e.g. Dataworks Group DWG, A$3.0M placement + 1-for-10
+  entitlement, Sep–Oct 2026, for its BetStop/BetGuard government regtech platforms). Check ASX
+  announcements for regtech names during the window or the 🚩 block misses the only regtech capital
+  event of a quiet week.
 - **A quiet week is a real finding.** Micro-rounds (A$0.5–3M) are often the only new deals; say so
   rather than padding with last week's larger raises (label those clearly as prior week).
 - **Regtech/AML supply signal ≠ equity round.** Demand is driven by Tranche 2 AML/CTF (live 1 Jul 2026,
