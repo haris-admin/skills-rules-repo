@@ -580,6 +580,49 @@ the previous day's), the `inbox_*.json` dumps were podcast-filter streams rather
 Perplexity topic, and the newest Claude Daily Research file was 3 days old — so the slate was
 research-driven and that degradation was stated in the output file rather than glossed over.
 
+## Rule 41 (Oct 2 2026) — a topic cycle with ONE fresh candidate re-ships last cycle's slate
+
+On 2 Oct (FinTech Regulation, the 5-day cycle returning) the delivered blog block was
+`digital-asset-licence-cliff` (fresh, 5 hits) plus **two verbatim repeats from 27 Sep**
+(`surcharge-ban-scope`, `psp-regulated-software`). Rule 39 behaved exactly as written — it
+promoted every fresh grounded candidate that existed — so the defect was upstream: the
+day's own pillars held only **one** fresh candidate. Meanwhile the run's single biggest
+signal, AUSTRAC's first Tranche 2 infringement notices (finding #1, `impact: critical`,
+6 sources), had **no candidate at all**: `tranche2-property` is subject-bound to
+`western union` and correctly scored 0.
+
+**Diagnostic — run this the moment a topic comes round and the slate looks familiar.** It is
+the Rule 40 step made mechanical; counting candidates for the day's OWN pillar is what
+distinguishes "the rotation is broken" from "the candidate list is thin":
+
+```python
+repeat_blob = lig.recently_proposed_blog_titles(days=10)
+for key, title, pillar, gap, kws in lig.BLOG_CANDIDATES:
+    if pillar in lig.day_pillars(topic, findings):
+        print("REPEAT" if title.lower() in repeat_blob else "FRESH ",
+              len(lig._subject_kw_hits(kws, corpus)), title)
+```
+
+On 2 Oct that printed one FRESH line for 20 FinTech/AI-governance candidates — every other
+grounded one was a repeat.
+
+**Fix — candidates, never the matcher.** Two added, each subject-bound to the event itself
+and replayed across the prior 7 `research_*.json` files (0 hits on every day except the one
+it describes):
+
+| key | subject hits on 2 Oct | other days |
+|-----|----------------------|------------|
+| `austrac-infringement-notices` | 5 (`infringement notice`, `infringement notices`, `section 167`, `tranche 2 enrolment`, `enrolment gap`) | 0 — an earlier draft anchored on `designated service` / `reporting entities` fired 1–2 hits on 25/27 Sep, i.e. on any Tranche-2 mention, so it was tightened to the enforcement vocabulary |
+| `asic-ai-banking-review` | 6 (`customer-facing ai`, `ai in customer-facing`, `banking priorities`, `lender conduct`, `broker oversight`, `referrer arrangement`) | 0 |
+
+Slate went 1 fresh + 2 repeats → **3 fresh grounded ideas**. Rule 34 checked on both titles:
+neither asserts a figure, so there is nothing to verify against the corpus.
+
+**The rule:** a topic on the 5-day cycle must hold at least as many fresh grounded candidates
+as it emits slots, and the run's highest-impact finding must have one. When a repeat ships,
+diagnose the candidate pool before touching the rotation window, the padding gate, or
+`GENERIC_BLOG_KEYWORDS` — all three were tested-and-reverted routes (Rules 27/40).
+
 ## Rules 8–12 (moved out of SKILL.md 2026-09-29) — generator hardening, remaining items
 
 8. Pillar from `portfolio_hit`, not from regulator keywords.
@@ -588,7 +631,7 @@ research-driven and that degradation was stated in the output file rather than g
 11. Currency-unit regexes must be case-insensitive and token-bounded (`$100M` ≠ `$100 M`).
 12. Blog rotation suppresses recent titles; `KNOWN_BLOGS` retires them.
 
-Items 1–7 and 13–20 are the numbered entries under the heading above; 21–23 and 27–40 follow in
+Items 1–7 and 13–20 are the numbered entries under the heading above; 21–23 and 27–41 follow in
 this file. SKILL.md now carries only a pointer to this log — the condensed list had been
 duplicated here and SKILL.md had drifted to 100,689 bytes, over its 100K limit (trimmed back to
 ~99.3K on 2026-10-01 by folding Rules 24–30 and 32–40 into pointers, since the detail lives here).

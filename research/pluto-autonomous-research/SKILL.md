@@ -378,6 +378,21 @@ idea already delivered — tighten THAT candidate's list, never widen the global
 Verified by the before/after hook harness (48 findings / 8 days: 1 change, 0 regressions) and a blog-candidate
 replay over the same days.
 
+**Rule 41 (Oct 2 2026) — a topic cycle with one fresh candidate re-ships the previous slate:** on the FinTech
+day the blog block came back as one fresh idea (`digital-asset-licence-cliff`) plus two verbatim 27 Sep repeats
+(`surcharge-ban-scope`, `psp-regulated-software`), because the day's own pillars held exactly ONE fresh grounded
+candidate — and the run's highest-impact finding (AUSTRAC's first Tranche 2 infringement notices) had NO candidate
+at all. Rule 39 can only promote what exists, so this is an upstream pool defect, not a sort defect. Diagnose by
+printing FRESH/REPEAT plus the subject-hit count for every candidate whose pillar is in
+`day_pillars(topic, findings)` BEFORE touching the rotation window, the padding gate or
+`GENERIC_BLOG_KEYWORDS`; then add candidates for the day's own pillars. Two were added —
+`austrac-infringement-notices` (5 subject hits: `infringement notice`, `infringement notices`, `section 167`,
+`tranche 2 enrolment`, `enrolment gap`) and `asic-ai-banking-review` (6 hits: `customer-facing ai`,
+`ai in customer-facing`, `banking priorities`, `lender conduct`, `broker oversight`, `referrer arrangement`) —
+each replayed across the prior 7 research days at 0 hits; an earlier draft anchored on
+`designated service`/`reporting entities` was tightened because it fired on any Tranche-2 mention (1–2 hits on
+25/27 Sep). Block went 1 fresh + 2 repeats → 3 fresh. Rule 34 checked: neither new title asserts a statistic.
+
 See `references/linkedin-content-extraction.md` for content pillar details, `references/gmail-briefing-integration.md` for Gmail signal sourcing, and `references/linkedin-generator-defects.md` for the generator defect log.
 
 ### Phase 9: Email Delivery (NEW June 4, 2026 — Updated June 5, 2026)
