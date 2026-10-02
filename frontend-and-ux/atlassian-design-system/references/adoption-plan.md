@@ -1,6 +1,6 @@
 # Development Plan — Adopting the Atlassian Design System
 
-**Created:** 2026-09-30 · **Source review:** <https://atlassian.design/> · **Status:** proposed, not yet scheduled
+**Created:** 2026-10-02 · **Source review:** <https://atlassian.design/> · **Status:** proposed, not yet scheduled
 
 This is the development plan the skill exists to serve. It is deliberately **adoption-first**: ADS is
 mature enough that the value to us is in its *decisions* (token architecture, the accessibility bar, the
