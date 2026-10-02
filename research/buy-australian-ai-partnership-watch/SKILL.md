@@ -194,10 +194,11 @@ A separate weekly cron owns a *deep* per-enterprise note across CBA · Westpac �
    (4) regulatory calendar · (5) actionables · (6) quarantined stale items · (7) sources + coverage gaps.
 4. **Append** a `## Week of YYYY-MM-DD` block to **each** of `profiles/01-cuscal.md` … `05-westpac.md`,
    and a dated entry to the signal log at the **bottom** of `vault/chambers/stone-chalk-partnership.md`,
-   plus an entry at the **top** of the pack `CHANGELOG.md`. **These three file classes are CRLF** — write
-   them in Python bytes mode with explicit `\r\n` (the patch tool normalises line endings file-wide and a
-   small insertion then diffs as dozens of changed lines). The new weekly note itself is LF, like its
-   predecessors. The chamber's header pattern (`### YYYY-MM-DD · intel · …`) may already exist from that
+   plus an entry at the **top** of the pack `CHANGELOG.md`. **Line endings must be checked per file, per run — do
+   not assume.** As of Oct 2026 the **profiles are CRLF** (`\r\n`) while the **chamber and CHANGELOG are LF**
+   (they were converted from CRLF at some point; both HEAD and working tree are LF, CR count 0). Write in
+   Python bytes/text mode, preserving what each file currently uses (the `patch` tool normalises line endings
+   file-wide and a small insertion then diffs as dozens of changed lines). The new weekly note itself is LF. The chamber's header pattern (`### YYYY-MM-DD · intel · …`) may already exist from that
    day's daily sweep — key idempotency checks on the entry's own wording, not on the header.
 5. **Secret-scan, then commit and push** — `git add --` the eight paths explicitly (never `git add -A`;
    `vault/reports/*` deletions in this clone are sparse-checkout phantoms, not real deletions), push
@@ -206,7 +207,7 @@ A separate weekly cron owns a *deep* per-enterprise note across CBA · Westpac �
    Verify with `git rev-parse HEAD == origin/main`, `git cat-file -e origin/main:<path>`, **and** confirm a
    phantom reports path still exists upstream.
 
-**Source-availability quirks (verified Sep 2026).** `afca.org.au` is **Cloudflare-challenged** for scripted
+**Source-availability quirks (verified Sep–Oct 2026).** **OAIC ADM-transparency guidance (APP 1.7–1.9) publishes to the MEDIA-CENTRE path + PDFs + the APP 1 Guidelines update — NOT the consultation page.** Polling the consultation page (which changes only via a Squiz CMS "Page generated" stamp) and candidate guidance URLs (which 404) produced three false "still unpublished" runs across Sep–Oct 2026; the guidance actually published 30 Sep 2026. Always also fetch `oaic.gov.au/news/media-centre/...` and the APP 1 Guidelines chapter. `afca.org.au` is **Cloudflare-challenged** for scripted
 fetches — take AFCA consultation closing dates from the AFCA-adjacent legal analyses rather than the site.
 Cuscal's newsroom resolves at **`cuscal.com/newsroom`** (200) while the **`www.cuscal.com.au/newsroom`**
 variant **404s**, and its ASX-announcement feeds (`openbriefing.com`, `company-announcements.afr.com`)
@@ -321,10 +322,12 @@ per-enterprise section is the point of the note — a roster of news without it 
 - Rewriting whole profiles on a light sweep instead of appending to "Last 30–60 days."
 - Treating an unverified named title as fact — carry the `[verify]` flag until an official page
   or the person's own statement confirms it.
-- **Line endings: write these pack files as BYTES with explicit CRLF** (CHANGELOG, PARTNERS, WATCH,
-  chamber). Never round-trip them through `Path.read_text()/write_text()` — Python's universal-newline
-  translation silently rewrites CRLF as LF and the next commit diffs as the whole file (this is why the
-  CHANGELOG showed 21 CRLF / 196 LF after a sweep run). Read bytes, decode, edit, re-encode, set the ending.
+- **Line endings: VERIFY per file each run, never assume a class is CRLF.**
+  `python3 -c "import sys;print(open(sys.argv[1],'rb').read().count(b'\r'))" <file>` — a 0 count means LF, so
+  append LF. In Oct 2026 the profiles are CRLF (CR count = line count) while the **chamber and CHANGELOG are LF**.
+  When a file IS CRLF, never round-trip it through `Path.read_text()/write_text()` — Python's universal-newline
+  translation silently rewrites CRLF as LF and the next commit diffs as the whole file. Read bytes, decode, edit,
+  re-encode, set the ending.
 - **Never `git checkout --` a pack file to clear "uncommitted churn".** The day's sweep writes stay
   uncommitted until the next sync, so a checkout silently destroys that day's CHANGELOG/chamber entry
   (happened 23 Sep 2026; recovered from the sweep's own scratch script). Diff first — dirty usually
