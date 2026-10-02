@@ -166,6 +166,27 @@ When you see `last_status: error` on a cron, classify before escalating:
 - **Gateway shutdown**: `Gateway shutdown (final-cleanup) killed the job's tool subprocess`. Caused by gateway restarts. Auto-recovers next cycle.
 - **`Interrupted by shutdown before terminal completion` with NO gateway restart**: the message is misleading — the real cause is a scheduler fire-claim loss. Confirm with `grep "fire claim ownership lost" ~/.hermes/logs/errors.log | grep <job-id>`; if the timestamp matches the job's `last_run_at` and `logs/gateway.log` shows no shutdown at that minute, it was a claim-ownership interruption, not a shutdown. The job's deliverable is often ALREADY WRITTEN — check `~/.hermes/cron/output/<id>/` and the artifact's own path (e.g. `research_outputs/`) before calling it a failure. Seen 4x between 09-09 and 09-12 (incl. the 09-12 Saturday Weekly Review, whose 16 KB report was produced at 06:03 before the 06:04 interrupt). Flag as a standing scheduler defect, do not re-escalate the individual jobs.
 - **`Broken pipe` on agent-driven crons**: Stream stale/timeout. Built-in 3-attempt retry usually succeeds — **but check for a CLUSTER before calling it transient.** Several agent crons red in the same window with the same error is ONE provider event, and the retry only saves you if a fallback chain exists. Verified 2026-09-15: 8 jobs, `[Errno 32] Broken pipe` + `503 Service is too busy` from `provider=deepseek`, all dead at attempt 3/3 because the chain was empty — one outage, eight red jobs, no 6:00 AM briefing. See Task 3 step 2 for the cluster commands; resilience fix in `monitoring-alert-verification` + `llm-cost-routing`.
+- **`Provider has been unresponsive (no response received) for N consecutive stale attempts` (cluster,
+ one morning)**: a STREAMING STALL, distinct from `Broken pipe`/503 — and it is classified
+ **non-retryable**, so the fallback chain NEVER engages even when `hermes fallback list` shows healthy
+ hops. Verified 2026-10-02: 3 hops configured, jobs still died. Seen 05:35→07:15 the same day:
+ `c527fed4a1da` (Morning Briefing), `0fb6bf47f704` (Moonshots Daily Learning), `4ef6e889e8d6` (podcast
+ verify — `curl rc=28` 240 s timeout, "3 bytes received" against `api.deepseek.com`). Treat as ONE
+ provider event, not three bugs. **Also check delivery**: the briefing was red AND still delivered
+ (`agent.log`: `Job 'c527fed4a1da': delivered to telegram:-1003834479227`), meaning the USER received
+ the error text as their briefing — report that, it is user-visible. Confirm with
+ `grep "<job-id>" ~/.hermes/logs/agent.log | grep delivered`.
+ - **A chromadb red whose signature is `No module named 'pydantic_core._pydantic_core'` (not the plain
+ `No module named 'chromadb'`) is an ABI MIX, and it may already be stale.** The traceback shows
+ chromadb from `~/.hermes/venv/lib/python3.13/site-packages` and pydantic from a PM env's
+ `lib/python3.14/site-packages` — two interpreters' trees on one `sys.path`. **PM generation hashes
+ rotate**, so RE-PROVE it before reporting: `~/.hermes/venv/bin/python3 -c "import chromadb"` (healthy
+ → expect OK), then re-run the script through the real cron bootstrap. Seen 2026-10-02: `0959371eec17`,
+ `d941471b7fc8`, `7e4a2379157d` were all red at 05:25–07:50 with this signature, but the same bootstrap
+ invocation of `sc_watch_to_mempalace.py` at 14:00 printed `nothing new to feed` exit 0 — the PM env
+ had regenerated (traceback hash `87ff6705…` vs live `47f2039c…`). Do not carry it forward as a live
+ fault, and never "fix" it by exporting `PYTHONPATH` (leakage is what creates it). Recipe + the
+ self-heal checklist: `podcast-knowledge-base` skill.
 - **`Script timed out after 3600s` on `hermes_update_check.sh` (4eef20ef0e25)**: The `hermes update` step (git pull + npm rebuild + web UI build) is slow and can exceed the 3600s cron timeout even when the update SUCCEEDS. Check `~/.hermes/logs/hermes_update.log` first — if it ends with "✓ Code updated!" / "✓ Model catalog cache refreshed", the update applied and only the "Restart gateway" prompt was cut off (gateway is still running old code until its next natural restart). Escalate only if the log shows no "Code updated" line. Note: the 03:00 Mon+Fri run (`0 3 * * 1,5`) may also show `ok` vs `error` depending on whether the load-sleep (30 min) plus slow update fits in the window.
 
 ### Stale (error from previous run, job runs infrequently)

@@ -364,6 +364,27 @@ select count(*) from podcast_kb.ingest_log where coalesce(chunks_created,0) = 0 
   unattended. A script that imports the feeder without it reports a failure that has nothing to do with
   the work it was asked to do.
 
+**The self-heal guard is NOT proof the fault is live — a mixed-ABI import is a SECOND failure mode
+(seen 2026-10-02).** Three jobs (`0959371eec17` chamber refresh, `d941471b7fc8` S&C→MemPalace feed, and
+`7e4a2379157d`'s palace leg) went red with `No module named 'pydantic_core._pydantic_core'`: chromadb
+resolved from `~/.hermes/venv/lib/python3.13/site-packages` while pydantic resolved from a PM env's
+`lib/python3.14/site-packages` — i.e. TWO interpreters' trees on one `sys.path`. That is NOT the plain
+`No module named 'chromadb'` red, and it is not cured by adding a `PYTHONPATH` (leakage is what creates
+it). **PM dependency-env generation hashes rotate**, so a bootstrap that is clean today can be the one
+that mixed yesterday, and the fault self-clears without anyone fixing anything:
+
+1. Confirm the venv itself is healthy: `~/.hermes/venv/bin/python3 -c "import chromadb"` (expect OK on
+   the venv's own minor version — 3.13.13 as of 2026-10-02).
+2. Re-run the EXACT cron bootstrap and only call it live if it still fails — the `no_agent` path is
+   `python <PM venv python3> -c "…sys.path[0:1] = [dirname(script), repo] … exec(compile(...))"`.
+   On 2026-10-02 this re-run printed `nothing new to feed` exit 0, so the red was stale, not live.
+3. Report the PM env generation dir (`~/.hermes/installs/<install>/environments/<hash>/venv`) from the
+   traceback alongside the current one; a differing hash is the explanation.
+
+Still lacking the self-heal as of 2026-10-02: `gumby_mempalace_query.py`, `mempalace_dedup_podcast.py`,
+`pluto_mempalace_feeder.py`, `rebuild_drawers.py`, `seed_chambers.py` — none are cron-wired, so they are
+safe until one of them is.
+
 Watchdog job `cc76c11d35d2` (daily 06:25) runs the capture audit and is **silent when healthy** —
 it speaks only when episodes cannot reach the reader, so the next silent outage announces itself.
 
