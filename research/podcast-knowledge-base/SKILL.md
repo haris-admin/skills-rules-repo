@@ -133,6 +133,28 @@ retry stops — the row exists, no episodes ever arrive, and nothing looks wrong
 
 This allows the 12:35 AM cron to complete within ~90 minutes and still have buffer before the 5:02 AM insight extractor.
 
+### A just-published episode: captions lag, and the sweep may have run minutes early
+
+The daily sweep looks back 3 days, so an episode published shortly AFTER the run is picked up on a later
+run — **delayed, not lost**, so do not "fix" a missing episode by widening the lookback. But when the
+user asks for a specific new episode, do not wait for tomorrow: write it in directly.
+
+```bash
+/home/habib/.hermes/venv/bin/python3 ~/.hermes/scripts/ingest_one_episode.py \
+    --video <VIDEO_ID> --podcast-id <N> --title "<EXACT title>" --date <YYYY-MM-DD>
+python3 ~/.hermes/scripts/podcast_chunker.py        # then embed it
+```
+
+`--podcast-id` is `podcast_kb.podcasts.id`; title and date must be EXACT because together they form the
+upsert key. Run it on the Hermes venv (`~/.hermes/venv/bin/python3`) — that is the one that has
+`youtube_transcript_api`.
+
+**A fresh video usually has NO English captions yet, but it HAS ~18 auto-generated tracks in other
+languages, all flagged translatable.** An English-only fetch returns `None` for those, so a brand-new
+episode looks transcript-less when it is merely un-subtitled-in-English. `download_transcript()` now
+falls back to translating an available track to English. `IpBlocked` is a RATE LIMIT, not a verdict —
+retry with backoff and read it as "fetch again later", never as "this episode has no transcript".
+
 ### Two-Phase Video Discovery (CRITICAL)
 yt-dlp without `--flat-playlist` crawls full metadata per video, timing out at 60s with 0 results. The fix is two-phase:
 
@@ -409,6 +431,12 @@ model family for the verify pass than for the extract pass, and keep the raw leg
 - **Aggregate-in-`GROUP BY` fails in psql.** `to_char(created_at,'YYYY-MM') || count(*) ... GROUP BY 1`
   errors with "aggregate functions are not allowed in GROUP BY"; bucket in a subquery and concatenate
   outside it.
+- **`created_at` is UTC — never judge "did today's ingest run" with `created_at::date = current_date`.**
+  The 04:00 AEST ingest lands on the PREVIOUS UTC date (04:52 AEST = 18:52 UTC), so a perfectly healthy
+  run reads as **0 inserted today** and the newest row looks a day old. Compare against a window
+  (`created_at > now() - interval '12 hours'`) or state the timezone. The failure mode is nasty because
+  it looks EXACTLY like a dead ingest — the tie-breaker is the run LOG (per-show `New: N episodes`),
+  which is in local time and shows the work that landed.
 
 ### The maker/checker verifier (`podcast_capture_verify.py`)
 
@@ -661,7 +689,7 @@ from *patience and rotation*, never from a bigger timeout.
 - **Wrapper + schedule — the CURRENT lane is the PAID DeepSeek DIRECT lane, not free (switched 2026-09-29
   per the measured verdict below; the script NAME is historical):** `podcast_free_router_stagger.sh`,
   2-hourly cron `e736e32679ab` (`0 */2 * * *`, named "… — DeepSeek DIRECT lane (measured best value)"),
-  runs `podcast_free_router.py --since-days 400 --limit 40 --throttle 3 --cooldown 300 --deadline 2100
+  runs `podcast_free_router.py --since-days 3650 --limit 40 --throttle 3 --cooldown 300 --deadline 2100
   --timeout 420 --models "deepseek-flash@maker,deepseek/deepseek-v4-flash@checker"`. The wrapper then
   runs the report (`podcast_filters_report.py`) and the sidecar conversion (`mempalace_sidecar_from_md.py`)
   in the SAME tick (otherwise the work is dropped — see the emitter rule above), and greps ONE status line
@@ -676,8 +704,9 @@ from *patience and rotation*, never from a bigger timeout.
   claims "free capacity exhausted = exit 0": the job NAME, the script args and this bullet are the truth —
   never re-route to free on the strength of the prompt.**
 - **Backlog accounting (do this before claiming a stall or an ETA):** candidates are
-  `podcast_kb.episodes` rows with `length(transcript_text) >= 2000` inside the `--since-days 400` window
-  (708 on 2026-09-30 06:30); the worker's `done` set is `cache/scratch/free_router_done.json` (393 then).
+  `podcast_kb.episodes` rows with `length(transcript_text) >= 2000`, counted **ALL-TIME** rather than
+  inside a window (the windowed count is exactly what hid the 15 older episodes — see the correction
+  below). (708 on 2026-09-30 06:30, windowed; the worker's `done` set is `cache/scratch/free_router_done.json` (393 then).
   Remaining = candidates − done ⇒ **315, all fetchable after the fix below ⇒ ~8 ticks / ~16h at 40 per
   tick**. Count the JUDGED remainder too — before the fix 209 of 316 were counted but unroutable, which
   is how a "backlog" and an idle lane can look identical in the summary line.
@@ -687,6 +716,24 @@ from *patience and rotation*, never from a bigger timeout.
   comparing `done` against the candidate count (both are one query each; see the coverage queries
   above) before escalating. From here a tick routes only episodes ingested since the last tick, so the
   steady-state count is small and 0 is normal.
+  **CORRECTION 2026-10-03 — "caught up" is only true WITHIN the window you counted, and the window was
+  too narrow.** The 400-day window hid **15 transcript-bearing episodes** (13 × The Logan Bartlett Show
+  Apr–Jun 2025, 2 × Masters of Scale Aug 2024) that NEITHER lane could ever reach — the daily router runs
+  `--since-days 2` and this lane ran `--since-days 400` — so 12 ticks a day printed a clean
+  `0 episode(s) queued` while real work sat unqueued. Count candidates with
+  `tf.pick_ids(100000, None, None)`, never `pick_ids(400, ...)`: all-time is **766**, and `done` now
+  matches it (766/766, remaining 0, verified 2026-10-03 10:10 after the wrapper was switched to
+  `--since-days 3650`). A window narrower than the corpus turns a DRAINED queue into a STARVED one with
+  the same summary line — when a lane reports 0 for hours, re-count with the widest window before
+  believing it.
+- **A single `failed=N` is usually TRANSIENT — retry the id once before investigating.** The episode is
+  NOT written to `done` on failure, so it re-queues on the next tick by design. 2026-10-03 ep=152 (Logan
+  Bartlett, 2273 chars): the maker returned `JSONDecodeError: Extra data: line 1 column 4009` (the model
+  emitted a valid object then appended text — the router's greedy `re.search(r"\{.*\}")` swallows the
+  extra), the OpenRouter fallback then returned `no verifiable items`; a manual
+  `podcast_free_router.py --episode-id 152` minutes later routed it clean (gen=14). So a lone failed
+  count is not a dead episode, and it is NOT grounds to widen the model pool or the timeout — re-run the
+  id and read the actual error first.
 - **The router and the verify leg walk the SAME newest-first frontier — expect them to collide.** The
   05:35 verify run writes its verdict batch while the 06:00 router tick is reading the same head, so a
   judgment landing mid-run turns that episode into `not found` for the router (2026-09-30: its 12-row
