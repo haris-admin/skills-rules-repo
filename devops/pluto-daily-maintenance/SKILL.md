@@ -16,28 +16,48 @@ description: Pluto's lightweight daily maintenance engine — 4-task health chec
 ### Task 1: Skill Health Check
 1. Load skills used/referenced in the last 24 hours
 2. Check for stale references: old repo names (`ideas-*-au` → `ideas-*`), dead file paths, wrong cron times
+2b. **Audit the schedule EXPR, never the job NAME — a stale NAME survives every expr change.** Cron job
+   names are free text and are not rewritten when the schedule moves. Seen 2026-10-01: `044c0bc41e31` is
+   named `★ AMLHive Daily Test Suite (03:00 AM)` while its live expr is `40 3 * * *` (fires 03:40) — the
+   name had been stale since a contention-driven move, and three skills plus `environment.md` had copied
+   the NAME's time forward as fact. When reconciling a documented time against `cron list`/`jobs.json`,
+   trust `schedule.expr` (and the run's own stdout timestamp) and fix the DOCS, not the expr; flag the
+   stale name to the owner rather than renaming the job from this tick.
 3. Patch minor issues immediately; flag severe staleness for Saturday
-3b. **Audit the schedule EXPR, never the job NAME — a stale NAME survives every expr change.** Job names
-   are free text and are not rewritten when a schedule moves. Seen 2026-10-01: `044c0bc41e31` is named
-   `★ AMLHive Daily Test Suite (03:00 AM)` while its live expr is `40 3 * * *` (fires 03:40); the stale
-   name had been copied into three skills and into `environment.md` as fact. Trust `schedule.expr` and
-   the run's own stdout timestamp; fix the DOCS, never the expr from this tick.
 4. Check for old pruned cron IDs referenced outside of `pipeline-orchestration` (historical documentation)
 5. **Fleet-mirror drift — the biggest silent gap (added 2026-09-23).** `daily_skill_scan.py` does NOT
    compare skill CONTENT against the canonical repo, so a skill can be patched in WSL for weeks while
-   the copy every other agent reads stays old. Scan by normalised hash, not mtime (normalise CRLF on
-   BOTH sides or every `/mnt/c` file reads as changed), listing (a) skills absent from the repo and
-   (b) skills whose content differs. Classify: an ABSENT skill is a pure ADD — safe to copy straight
-   in (then run the frontmatter check and path-scoped `git add`/`git commit -m "..." -- <paths>`);
-   a DIFFERING skill needs a MERGE, because the repo side often carries sections the WSL side never
-   had (see the merge pitfall in `fleet-skill-governance`) — report those, never bulk-overwrite them
-   from a daily tick. Seen 2026-10-01 (re-measured): repo 389 SKILL.md vs WSL 254; **65** genuinely
-   WSL-only (excluding `.archive/`) and **97** content-differing. Note `devops/fleet-skill-governance`
-   reads as repo-ABSENT only because the repo files it under `agent-governance-and-git/` — compare by
-   skill NAME, not by path, before calling a skill missing (that copy is byte-identical). Seen
-   2026-09-23: repo held 341 SKILL.md vs 246 local, 112 WSL-only (several
-   fleet-relevant, incl. `acma-dncr-live-washing`, `alexandria-vault-sync`, `git-working-tree-hygiene`,
-   and — circularly — `fleet-skill-governance` itself) and 104 differing.
+   the copy every other agent reads stays old. Scan by normalised hash, not mtime:
+
+   ```bash
+   python3 - <<'EOF'
+   import hashlib
+   from pathlib import Path
+   L=Path.home()/'.hermes/skills'; R=Path('/mnt/c/Code/github/haris-admin/skills-rules-repo')
+   def sk(root):
+       d={}
+       for p in root.rglob('SKILL.md'):
+           c=p.read_text(encoding='utf-8',errors='replace').replace('\r\n','\n').strip()
+           d[str(p.relative_to(root))]=hashlib.md5(c.encode()).hexdigest()
+       return d
+   l,r=sk(L),sk(R)
+   print('MISSING IN REPO:', [k for k in l if k not in r])
+   print('DIFFERS:', [k for k in l if k in r and l[k]!=r[k]])
+   EOF
+   ```
+
+   Normalise CRLF on BOTH sides or every `/mnt/c` file reads as changed. Two classes of result:
+   (a) **repairable now** — a skill absent from the repo entirely is a pure ADD: copy it in, run the
+   frontmatter check, then path-scoped `git add -- <paths>` + `git commit -m "..." -- <paths>` + push.
+   (b) **Saturday scope** — a copy that DIFFERS needs a MERGE, because the repo side often carries
+   sections the WSL side never had (see the fleet-skill-governance merge pitfall); a blind overwrite
+   a blind overwrite deletes them. Report the differing list, do not bulk-overwrite it from a daily tick.
+   **Re-measured 2026-10-01: repo 389 SKILL.md vs WSL 254; 65 WSL-only (excluding `.archive/`) and 97
+   content-differing.** Compare by skill NAME, not by path — `devops/fleet-skill-governance` reads as
+   repo-absent only because the repo files it under `agent-governance-and-git/` (byte-identical).
+   Seen
+   2026-09-23: repo held 341 SKILL.md vs 246 local, 112 WSL-only (several fleet-relevant, incl.
+   `acma-dncr-live-washing`, `alexandria-vault-sync`, `git-working-tree-hygiene`) and 104 differing.
 
 ### Task 2: Memory Grooming
 1. Check `~/.hermes/memories/MEMORY.md` for stale entries
@@ -55,11 +75,18 @@ Routing rules: `memory-hygiene` skill; design history: `~/.hermes/ops/memory-arc
 
 ### Task 3: Cron Health Pulse
 
+**Alexandria writer check (step 5).** Both alexandria writers are `no_agent` scripts that push to
+`haris-admin/alexandria` (`fc726783497f`) and `haris-admin/alexandria-ops` (`1dc6606ac8c5`). Verify by
+date, not by status: `cd /mnt/c/Code/github/haris-admin/alexandria && git log -1 --format='%h %ad %s'
+--date=iso && git rev-list --left-right --count origin/main...HEAD` (the count must read `0\t0` —
+anything else means an unpushed commit). A non-zero `git status --porcelain` on `alexandria-ops` is
+usually an untracked cron-output subdir (e.g. `?? podcast-capture/`) and is NOT a push failure.
+
 **Run the hardened helpers first — they cover Task 1 and Task 3 steps 1-4 + 6 in one pass:**
 `python3 ~/.hermes/scripts/daily_cron_audit.py` (script-path resolution against BOTH script roots,
 delivery-target histogram, non-ok jobs grouped by delivery, enabled jobs with null/past
 `next_run_at`, **plus `=== error clustering ===` and `=== staleness classification ===`** — step 2
-below is now automated, read it instead of clustering by eye) and `python3 ~/.hermes/scripts/daily_skill_scan.py` (skill usage + SKILL.md touches in
+below is now automated, read it instead of clustering by eye) and `python3 ~/.hermes/scripts/daily_skill_scan.py` (skill usage **from `state.db` tool_calls** + SKILL.md touches in
 the last 24h, legacy-key scans by FILE not path since agent.log is append-only, dead-cron-ID
 detection that skips context already marked RETIRED/PRUNED/dead/historical/PAUSED).
 
@@ -166,7 +193,7 @@ When you see `last_status: error` on a cron, classify before escalating:
 - **Gateway shutdown**: `Gateway shutdown (final-cleanup) killed the job's tool subprocess`. Caused by gateway restarts. Auto-recovers next cycle.
 - **`Interrupted by shutdown before terminal completion` with NO gateway restart**: the message is misleading — the real cause is a scheduler fire-claim loss. Confirm with `grep "fire claim ownership lost" ~/.hermes/logs/errors.log | grep <job-id>`; if the timestamp matches the job's `last_run_at` and `logs/gateway.log` shows no shutdown at that minute, it was a claim-ownership interruption, not a shutdown. The job's deliverable is often ALREADY WRITTEN — check `~/.hermes/cron/output/<id>/` and the artifact's own path (e.g. `research_outputs/`) before calling it a failure. Seen 4x between 09-09 and 09-12 (incl. the 09-12 Saturday Weekly Review, whose 16 KB report was produced at 06:03 before the 06:04 interrupt). Flag as a standing scheduler defect, do not re-escalate the individual jobs.
 - **`Broken pipe` on agent-driven crons**: Stream stale/timeout. Built-in 3-attempt retry usually succeeds — **but check for a CLUSTER before calling it transient.** Several agent crons red in the same window with the same error is ONE provider event, and the retry only saves you if a fallback chain exists. Verified 2026-09-15: 8 jobs, `[Errno 32] Broken pipe` + `503 Service is too busy` from `provider=deepseek`, all dead at attempt 3/3 because the chain was empty — one outage, eight red jobs, no 6:00 AM briefing. See Task 3 step 2 for the cluster commands; resilience fix in `monitoring-alert-verification` + `llm-cost-routing`.
-- **`Provider has been unresponsive (no response received) for N consecutive stale attempts` (cluster,
+ - **`Provider has been unresponsive (no response received) for N consecutive stale attempts` (cluster,
  one morning)**: a STREAMING STALL, distinct from `Broken pipe`/503 — and it is classified
  **non-retryable**, so the fallback chain NEVER engages even when `hermes fallback list` shows healthy
  hops. Verified 2026-10-02: 3 hops configured, jobs still died. Seen 05:35→07:15 the same day:
@@ -187,7 +214,45 @@ When you see `last_status: error` on a cron, classify before escalating:
  had regenerated (traceback hash `87ff6705…` vs live `47f2039c…`). Do not carry it forward as a live
  fault, and never "fix" it by exporting `PYTHONPATH` (leakage is what creates it). Recipe + the
  self-heal checklist: `podcast-knowledge-base` skill.
+ **CONFIRMED ROOT CAUSE + PROVEN FIX (2026-10-03) — this IS a live cause, and it is not a
+ chromadb-only problem.** The gateway exports a `PYTHONPATH` entry pointing at a FOREIGN
+ interpreter's `site-packages`; PYTHONPATH is prepended to `sys.path`, so it shadows the running
+ venv's `pydantic_core` while `chromadb` still resolves from the venv (mixed ABI). It is NOT
+ self-clearing and NOT a stale record: reproduced deterministically by adding one env var —
+ `PYTHONPATH=<pm-env site-packages> <cmd>` fails every time, without it the same command passes.
+ Because `subprocess.run(...)` children INHERIT `os.environ`, that one entry also reached every test
+ process in `amlhive_daily_test_runner.py`: the backend suite died with **243 errors during
+ collection** while the same venv collected **7833 tests clean** by hand. Fix = an in-process env
+ guard at the TOP of the script (before any chromadb/feeder import): strip every `site-packages`
+ entry from `os.environ["PYTHONPATH"]`, drop foreign-version `site-packages` from `sys.path`, then
+ re-exec onto `~/.hermes/venv/bin/python3` when not already there. Applied + verified 2026-10-03 to
+ `mempalace_watcher.py`, `mempalace_health.py`, `sc_watch_to_mempalace.py`, `podcast_pipeline_daily.py`,
+ `pluto_chamber_refresh.py`, `amlhive_daily_test_runner.py`; full recipe, per-line rationale and the
+ sweep live in `~/.hermes/ops/environment.md` -> "Cron env guard". A `find_spec('chromadb')`
+ self-heal CANNOT detect this (chromadb is found; its dependency fails), which is why the older
+ guards in `mempalace_health.py`/`sc_watch_to_mempalace.py` never fired — when you meet a
+ `find_spec`-shaped guard on a pydantic_core error, replace it, do not add a PYTHONPATH export.
+ **`poetry` is NOT installed on this host** — the test runner's `backend/.venv/bin/pytest` fallback
+ is now the permanent path, so a stale `.venv` surfaces as 243 collection errors, not as a
+ "missing poetry" warning.
 - **`Script timed out after 3600s` on `hermes_update_check.sh` (4eef20ef0e25)**: The `hermes update` step (git pull + npm rebuild + web UI build) is slow and can exceed the 3600s cron timeout even when the update SUCCEEDS. Check `~/.hermes/logs/hermes_update.log` first — if it ends with "✓ Code updated!" / "✓ Model catalog cache refreshed", the update applied and only the "Restart gateway" prompt was cut off (gateway is still running old code until its next natural restart). Escalate only if the log shows no "Code updated" line. Note: the 03:00 Mon+Fri run (`0 3 * * 1,5`) may also show `ok` vs `error` depending on whether the load-sleep (30 min) plus slow update fits in the window.
+- **`⚠ A previous hermes update pulled new code but did not restart running gateways` printed by
+  EVERY `hermes` CLI call — a FALSE POSITIVE; verify, do not restart blindly (root-caused 2026-09-20).**
+  `_warn_pending_fleet_restart()` (`hermes_cli/update_cmd_fleet.py`) prints it whenever the latest
+  update RECEIPT failed — even when the restart completed. The 2026-09-19 14:14 AEST update applied
+  `5dea46d1` → `03fee43c` and DID restart the gateway (`gateway_restart.restarted_services:
+  ["hermes-gateway"]`, `incomplete: false`; systemd shows the gateway active since 14:15:54, inside the
+  receipt's own window). The receipt is marked failed only by a mid-update
+  `TypeError: _find_stale_dashboard_pids() got an unexpected keyword argument 'scope_home'`: the process
+  loaded the NEW `dashboard_procs.py` (passes `scope_home=`, HEAD line 584) while the OLD
+  `main_dashboard.py` sat in `sys.modules` (pre-update `5dea46d1` signature: `(*, exclude_pids=None)`)
+  — self-inflicted mixed-modules, NOT a bug at HEAD. Confirm in two commands: dump the receipt
+  (`python3 -c "import sys;sys.path.insert(0,'/home/habib/.hermes/repo');from hermes_cli.update_receipt
+  import read_latest_receipt;import json;print(json.dumps(read_latest_receipt(),indent=2))"`) and read
+  `stop_reason` + `gateway_restart`; then
+  `git show <pre_sha>:hermes_cli/main_dashboard.py | grep -A2 "def _find_stale_dashboard_pids"`.
+  It clears by itself on the next clean `hermes update` (Mon/Fri 03:00 window). Cosmetic — never
+  restart the gateway from this cron to silence a warning.
 
 ### Stale (error from previous run, job runs infrequently)
 - **Weekly crons (Mon-only, Fri-only)**: An error from the last weekly run persists until the next schedule. Check the `last_run_at` date — if it's days old and the cron only runs once a week, it's stale.
@@ -217,6 +282,13 @@ When you see `last_status: error` on a cron, classify before escalating:
   NEW occurrence of that fault class**, not as this incident continuing. Full triage: `amlhive-asic-sync`
   skill. Re-check the OTHER datasets each run — if they also go `NO_CHANGE` with a stale `last_synced_at`,
   that IS new and means the whole sync pipeline has stalled. CloudWatch triage: `amlhive-asic-sync` skill.
+- **RESOLVED 2026-09-20 — this failure mode no longer exists; do NOT re-chase it.**
+  `cmdb_cost_monitor.py` was rewritten to read the Notion CMDB **DIRECTLY** (data_source
+  `40638825-121a-48f6-8f95-d2bf11fffb15`, `NOTION_TOKEN_WS`) — no local `:3009` plugin, no LAN probe,
+  no auth-approval hang. Verified 2026-09-20: `last_status: ok`, `Assets: 38 (13 priced)`,
+  `A$768.59 / month`. Only the Hermes dashboard on `:9119` runs now, and the monitor does not depend on
+  it. The entry below is kept **historical** for recognising the old blind-zero signature in archived
+  output — if you see a `:3009 unreachable` failure dated after 2026-09-20, treat it as a NEW fault.
 - **`🔴 dashboard /api/status unreachable on http://127.0.0.1:3009` (`4c28178fad0f`, CMDB Cost
   Monitor, 07:20 daily, `deliver: origin`)**: the monitor exits 1 because the Notion-CMDB dashboard
   plugin it reads is not running — `hermes dashboard --status` reports "No hermes dashboard or serve
@@ -231,6 +303,55 @@ When you see `last_status: error` on a cron, classify before escalating:
   check + `hermes dashboard --status` instead.
 
 ### Real (needs action)
+- **A paused job's stale `last_status: error` is NOT a current failure — read `enabled` before classifying.**
+  `daily_cron_audit.py` and this skill's own standing-fault records both key off `last_status`, so a job
+  the owner PAUSED keeps appearing as a live red indefinitely. Seen 2026-09-30: `0e14d2e1095f`,
+  `57e72391a773` and `a2ff28e23482` are `enabled: false` (retired INTO the chain orchestrator
+  `7e4a2379157d`, 09:00 daily, silent when green) while still carrying `error` from their last run. Pull
+  `enabled` + `next_run_at` for every non-ok job, and verify the REPLACEMENT job instead of the retired one.
+- **Name a failing test the cron only counted.** When a test runner reports "N failed" with no names, the
+  repo's own pytest cache has them: `backend/.pytest_cache/v/cache/lastfailed` (its mtime is that run).
+  Seen 2026-09-30: `044c0bc41e31` reported 6 backend failures with no names; the cache gave the cluster
+  (audit-entry `platform_user_id`, Veriff/provider-quality workflows, JWT email fallback). If the runner's
+  own diagnosis writer stays silent two runs straight (`~/.hermes/reviews/test_diagnoses.log` still 09-28),
+  fixing that writer is the real task.
+- **`ModuleNotFoundError: No module named 'chromadb'` in one or more same-morning `no_agent` scripts
+  (seen 2026-09-28) — CRON SCRIPT INTERPRETER REGRESSION, not a MemPalace fault.** POSIX `no_agent`
+  `.py` scripts no longer run on `~/.hermes/venv`: `cron/scheduler_script.py::_posix_cron_script_argv`
+  runs them on the **PM dependency env** (`pm.environments.project_python(repo)` →
+  `~/.hermes/installs/<install>/environments/<hash>/venv/bin/python`), which has **no chromadb** (and
+  none of the ad-hoc packages the scripts historically imported by accident). It sets **no PYTHONPATH
+  on purpose** (#123440) — do NOT add one as a workaround. Only scripts importing chromadb at MODULE
+  TOP LEVEL break (`mempalace_health.py`, `sc_watch_to_mempalace.py`, `mempalace_reconcile.py`,
+  `gumby_mempalace_query.py`, `mempalace_dedup_podcast.py`, `rebuild_drawers.py`, `seed_chambers.py`);
+  scripts that shell out to `~/.hermes/venv/bin/python3` keep working — that is the standing fix
+  pattern (`mempalace_watcher.py` → `pluto_mempalace_feeder.py`). Diagnose with
+  `hermes pm env` + `ls <env>/venv/lib/python*/site-packages | grep -c chromadb`; cross-check the
+  update's own chromadb health step in `~/.hermes/logs/hermes_update.log` (it only ever verifies
+  `~/.hermes/venv` — which is why it reported "all 1 chromadb-bearing venv(s) healthy" while cron was
+  broken). PM-native fix: `hermes pm install chromadb`; it is an owner-level managed-state change, so
+  alert rather than apply it from this cron. **Status 2026-09-30 — SUPERSEDED; do NOT re-report these as daily reds, and do NOT re-open this as day-N.**
+ All three jobs named here are now paused or healthy: `0e14d2e1095f` and `57e72391a773` are
+ `enabled: false` (their checks moved INSIDE the chain orchestrator `7e4a2379157d`), `d941471b7fc8` ran
+ `ok` on 09-30 ("nothing new to feed"), and `a2ff28e23482` is paused too. chromadb is STILL absent from all
+ three PM envs (`~/ .hermes/installs/*/environments/*/venv` → 0 hits), so the standing rule is the
+ CODE-side one: any cron script that imports chromadb — directly or via `pluto_mempalace_feeder` — must
+ self-heal its interpreter AT IMPORT TIME (`os.execv` to `~/.hermes/venv/bin/python3`; recipe and the
+ `grep -ln '^import chromadb'` sweep in the `podcast-knowledge-base` skill). A NEW import error dated
+ after 2026-09-30 is a fresh fault with the same cause; report it as such.
+- **A red job can hide a SECOND fault behind the one you already classified (2026-09-29).** The same
+  morning's `57e72391a773` (reconcile) red was blamed first on the chromadb regression and on the
+  verifier timeout — but its 8 unlanded files had a third, independent cause: the three-filter router
+  emits no sidecar at all, so the artefacts can never land. When a job stays red after its cluster's
+  cause is understood, re-read ITS OWN output and follow the artefact list to the producer before
+  closing it with the cluster verdict.
+- **`podcast_capture_verify_daily.sh` (`4ef6e889e8d6`) — ✅ RESOLVED 2026-09-30, historical (do NOT
+  re-classify as a timeout).** It timed out on three consecutive mornings (09-27 → 09-29) at `--limit 60`,
+  because the leg makes a live maker call per episode plus an independent checker call and retries at a
+  larger token budget on `finish_reason=length` — 2-4 min/episode cannot fit a 7200 s cron timeout. The
+  wrapper is now `--limit 12 --deadline 6300` under `timeout 6900` (a DEADLINE it can honour, not an outer
+  kill), and the 09-30 run finished in 29 min with exit 0 (`locked=4 needs_human=8`, $0.113). If a timeout
+  reappears, size the batch to the deadline — never conclude the verifier is broken.
 - **`RuntimeError: Missing required environment variable: <KEY>` (cluster of same-day jobs, different
   scripts)**: a credential-hardening pass removed hardcoded values and pointed the scripts at env keys
   that **exist in neither `.env`**. The signature is a group of `no_agent` scripts failing on the import
@@ -339,8 +460,34 @@ record):
   fired at 14:00:24 on time. Before flagging a wrong-time run, check whether a gateway
   restart/shutdown happened in that window — if the slot is held correctly the run after it is on
   time, and there is nothing to fix.
+- **A catch-up fire can DUPLICATE already-delivered output — count the output files, don't trust `last_run_at`.**
+  Seen 2026-09-21: WSL/Windows reboot stopped the gateway at 11:57:14 and it restarted 12:02:44; the
+  scheduler then re-fired five completed morning agent jobs, INCLUDING the 6:00 AM briefing
+  (`c527fed4a1da` wrote output at 06:02:44 AND 12:27:28 and delivered a second copy to
+  `telegram:-1003834479227` — confirmed in agent.log: `Job 'c527fed4a1da': delivered to
+  telegram:-1003834479227`). Detection: `ls -t ~/.hermes/cron/output/<id>/ | head -4` — two files with
+  the same date and hours apart is a double-run; `last_run_at` shows only the newer one and `cron list`
+  still labels it `Dispatch: on time`, so neither field reveals the duplicate. Report the duplicate to
+  the owner (the delivered copy is user-visible) rather than dismissing the run as an ordinary catch-up.
+- **A `pgrep`-based liveness check must match EVERY launch form of its target.** `gateway-watchdog.sh`
+  (crontab `*/2 * * * *`) hardcoded `pgrep -f "hermes_cli.main gateway run"` while the live gateway's
+  cmdline was `/home/habib/.hermes/repo/venv/bin/python3 /home/habib/.hermes/venv/bin/hermes gateway`
+  → permanent false DOWN → it fired `hermes gateway run --replace` every 2 minutes; the ownership
+  guard refused (no `gateway.pid`) and spammed 104 error lines in one afternoon (~720/day). Verify the
+  pattern against the REAL cmdline (`tr '\0' '\n' < /proc/<pid>/cmdline`), never against the string a
+  docstring claims, and prefer matching both the module form and the console-script form.
+- **Never read skill usage out of `agent.log`.** Log lines are only
+  `tool skill_view completed (0.9s, 43242 chars)` — the skill NAME is never on the line, so a
+  log-regex scan prints an empty list every day and reads as "no skills used in 24h". Query
+  `state.db` instead (`select tool_calls from messages where tool_calls like '%skill_view%' and
+  timestamp >= <epoch>`; `timestamp` is a UNIX float, not ISO). Any scanner that can return empty for
+  two different reasons (nothing used vs. cannot see) must print an explicit UNKNOWN warning.
 
 ## Output
+
+Durable standing faults belong in `~/.hermes/ops/environment.md` (a plain dir, not a repo) as well as
+in this skill — the skill is re-read only when a maintenance run loads it, while environment.md is the
+pointer target every agent can reach.
 
 Save detailed results to `~/.hermes/reviews/daily/maintenance-{DATE}.json` with:
 - Skills patched count
