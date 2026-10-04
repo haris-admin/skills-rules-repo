@@ -178,6 +178,15 @@ When you see `last_status: error` on a cron, classify before escalating:
 - When auditing a cron that reports "ok" but skips work, read the script's reason classification before trusting the summary icon.
 
 ### By-Design (NOT errors — do NOT escalate)
+- **The podcast leg is RED by design: `cc76c11d35d2` (Capture Watchdog 06:25) and the chain's `verify`
+  row.** ~62.5% of the corpus has no readable transcript (YouTube IP block), so the watchdog tripping is
+  the designed signal, not a regression — the corpus grows faster than transcripts resolve. **The chain is
+  judged by the ONE 09:00 assertion job `7e4a2379157d`**, whose other rows (`ingest/chunk/export/
+  alexandria/contract/palace/feed`) carry the real status. A `verify` leg reporting `locked=N error=1`
+  (2026-10-04: 4 locked / 7 needs_human / 1 error) is a **single-episode** maker/checker failure — either
+  unparseable JSON from the maker or a 240 s `curl rc=28` timeout — and is written to the ledger for the
+  next run; do not re-escalate it. Escalate only if a leg produces NO locked episodes, or the 09:00
+  assertion flags a stage other than `verify`. Detail: `podcast-knowledge-base` skill.
 - **`pluto_feedback_processor.py` exit code 3** (`59f18c4d557c`, Pluto Feedback Loop 06:10
   `deliver: local`): `sys.exit(3)` is the script's own DEGENERATE-SCORER signal. It means every
   tracked finding carries the same `used_count`, `skipped_count=0`, and no `USED:`/`SKIPPED:`
@@ -312,9 +321,20 @@ When you see `last_status: error` on a cron, classify before escalating:
 - **Name a failing test the cron only counted.** When a test runner reports "N failed" with no names, the
   repo's own pytest cache has them: `backend/.pytest_cache/v/cache/lastfailed` (its mtime is that run).
   Seen 2026-09-30: `044c0bc41e31` reported 6 backend failures with no names; the cache gave the cluster
-  (audit-entry `platform_user_id`, Veriff/provider-quality workflows, JWT email fallback). If the runner's
-  own diagnosis writer stays silent two runs straight (`~/.hermes/reviews/test_diagnoses.log` still 09-28),
-  fixing that writer is the real task.
+  (audit-entry `platform_user_id`, Veriff/provider-quality workflows, JWT email fallback). **But check the
+  COUNT before trusting the cache: lastfailed accumulates every nodeid that has failed at ANY point in the
+  cache's life (186 entries on 2026-10-04 for a run that reported 8 failed), so it names suspects, not
+  the run's failures.** The authoritative names, in order of preference: the runner's own diagnosis writer
+  `~/.hermes/reviews/test_diagnoses.log` (STALE since 2026-09-28 — two weeks of runs reported "N failed"
+  with no names), then a `-q --tb=no -rf` re-run of the newly-failing subset, then the cache as a
+  candidate list only. **Fixing the diagnosis writer is the real task**; until it is fixed, every
+  "N failed" line in this report is a count with no actionable content.
+- **`044c0bc41e31` (AMLHive Daily Test Suite) has a STEADY standing backlog: 6-8 backend failures every day**
+  (10-01: 8, 10-02: 7, 10-03: 2 + a 0-collected backend run, 10-04: 8). Do not report each day's number as
+  a new incident. The 10-03 `❌ 0 passed, 0 failed (19.3s)` backend leg is the separate
+  **collection-failure/pytest-cache signature** — 19 s and zero tests collected is never a pass (No Fake
+  Pass Rule); it also invalidates that run's count. Escalate only on a change in the COUNT TREND or a
+  change in component (frontend/E2E were green through this window).
 - **`ModuleNotFoundError: No module named 'chromadb'` in one or more same-morning `no_agent` scripts
   (seen 2026-09-28) — CRON SCRIPT INTERPRETER REGRESSION, not a MemPalace fault.** POSIX `no_agent`
   `.py` scripts no longer run on `~/.hermes/venv`: `cron/scheduler_script.py::_posix_cron_script_argv`
