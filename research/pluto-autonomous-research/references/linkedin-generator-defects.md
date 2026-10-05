@@ -623,6 +623,43 @@ as it emits slots, and the run's highest-impact finding must have one. When a re
 diagnose the candidate pool before touching the rotation window, the padding gate, or
 `GENERIC_BLOG_KEYWORDS` — all three were tested-and-reverted routes (Rules 27/40).
 
+## Rule 42 (Oct 6 2026) — a candidate retired into `KNOWN_BLOGS` silently shrinks the FRESH pool, and the Rule 41 diagnostic misreports it
+
+The Rule 41 diagnostic (below) prints `REPEAT` / `FRESH` from `recently_proposed_blog_titles(days=10)
+alone, but selection runs through `_fresh()`, which ALSO excludes any candidate whose KEY is in
+`KNOWN_BLOGS`. On 6 Oct (Cloud & Infrastructure, 5-day cycle) the diagnostic showed **two** FRESH
+Cloud candidates, yet only one reached `scored`: `sovereign-cloud-procurement` had been retired
+into `KNOWN_BLOGS` when its gap published as "Australia's Cloud-First Policy Is An Architecture
+Decision…", so the real fresh pool was one candidate and two 1 Oct repeats
+(`datacentre-efficiency-disclosure`, `compute-securitisation-lockin`) took the leftover slots.
+
+**Diagnostic correction — count the pool the matcher actually uses:**
+
+```python
+repeat_blob = lig.recently_proposed_blog_titles(days=10)
+for key, title, pillar, gap, kws in lig.BLOG_CANDIDATES:
+    if pillar in lig.day_pillars(topic, findings) and lig._fresh(key, title):
+        print("REPEAT" if title.lower() in repeat_blob else "FRESH ",
+              len(lig._subject_kw_hits(kws, corpus)), title)
+```
+
+`_fresh()` returning False for a KNOWN_BLOGS key is correct behaviour (the post is written); the
+defect is only that the diagnostic double-counted it as available. **Rule: every published post
+removes one candidate from that pillar's pool — a topic that publishes a Cloud post loses that
+Cloud candidate permanently, so the candidate list has to grow faster than the blog does.**
+
+**Fix — three candidates added** (Rule 41 route: candidates, never the matcher), each subject-bound
+to its own event and replayed across the prior 12 `research_*.json` days:
+
+| key | hits on 6 Oct | other days |
+|-----|---------------|------------|
+| `datacentre-state-planning-approval` | 5 (`community benefit agreement`, `social impact assessment`, `planning scheme`, `council planning`, `non-negotiables`) | 0 everywhere |
+| `datacentre-firb-screening` | 4 (`firb`, `national security business`, `divestment`, `call-in`) | 1 on 1 Oct (a bare FIRB mention — legitimate) |
+| `datacentre-embodied-carbon` | 4 (`embodied carbon`, `mecla`, `whole-of-life`, `mep systems`) | 0 everywhere |
+
+Slate went 1 fresh + 2 repeats → **3 fresh grounded ideas**; auto block re-verified (6/6 CTAs
+distinct, worst fingerprint 0.33, every angle terminal, every delivered blog idea >= 1 subject hit).
+
 ## Rules 8–12 (moved out of SKILL.md 2026-09-29) — generator hardening, remaining items
 
 8. Pillar from `portfolio_hit`, not from regulator keywords.
