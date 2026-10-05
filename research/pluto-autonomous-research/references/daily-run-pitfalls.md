@@ -61,6 +61,21 @@ The feeder's `{"status": "stored", "findings_added": 6}` is a self-report. Confi
 `pluto_<YYYYMMDD>_` exist, (c) `len(set(texts)) == len(texts)` (no duplicate documents), and (d) the
 other chambers gained **zero** `pluto_<YYYYMMDD>_` ids (no misroute into `pluto_research`).
 
+## A near-miss chamber name can swallow a whole feed (Oct 6 2026)
+
+The palace holds **both** `cloud_infra` (**0 docs**, empty duplicate) and `cloud-infra` (**canonical**, 123
+docs). A name-resolution mismatch is completely silent: the feeder still returns
+`{"status": "stored", "findings_added": 6, "chamber": "..."}` with a correct count into *whichever*
+collection it resolved, so findings can land in the empty duplicate and look successful while being
+invisible to every subsequent dedupe/audit query — which is worse than an error, because the next run
+then re-drafts the same findings as "new".
+
+**Fix:** pass the chamber explicitly (`--chamber cloud-infra` for this topic), then read that exact
+collection back and assert `docs == unique doc texts == finding count` for today's `pluto_<YYYYMMDD>_`
+ids. Never treat `list_collections()` output containing a near-miss spelling as harmless — diff the
+possibly-colliding pair's doc counts before trusting either, and if the duplicate is empty, note it to
+Haris rather than deleting it unilaterally.
+
 ## Producer-side contract failures in `mempalace-inputs/` are not your pipeline's failure
 
 The watcher now fails a `.md` input with `needs_contract: true` when the producer emitted no
