@@ -75,3 +75,5 @@ paired-literal pattern in rule 2 above). Origin: AMLHive C523 design section 4.2
 - `docs/agent_rules/openspec-tdd-mandate.md` — this rule is a specialisation of "tests come from
   requirements, not from code": a hardcoded literal here is a proxy for the requirement, not the
   requirement itself
+
+Date-dependent and count literals rot: a test asserting `'AEST'` fails after the October DST change and a hardcoded enum count goes stale. Derive the expected value, pin the instant under test.

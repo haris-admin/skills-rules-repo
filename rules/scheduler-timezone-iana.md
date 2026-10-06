@@ -21,6 +21,18 @@ hour-anchored job it runs.
    window.
 4. **A job that would do harm if skipped or doubled must be idempotent or guarded on its own.**
 
+5. **A `ZoneInfo` alone does not fix minute-only crons (arq 0.25).** `WorkerSettings.timezone =
+   ZoneInfo(...)` fixes hour-anchored jobs, but arq's `CronJob.calculate_next` does wall-clock
+   arithmetic, so a job that fires on minutes only (for example every 15 minutes, no `hour`) skips the
+   repeated hour on fall-back and, on a restart, re-enqueues instants that have already passed. Use a
+   `CronJob` subclass (AMLHive C526: `SydneyCronJob`) that overrides `calculate_next` to compute
+   minute-only jobs in **UTC** and delegates hour-anchored jobs to the zone-aware path.
+6. **Prove it by driving the real loop.** Drive the real `Worker.run_cron` with a fake clock in 0.5 s
+   and 30 s steps across both DST transitions, and restart the worker inside the repeated hour.
+   Assert no skipped fire, no duplicate fire, no fire for an instant already in the past, and
+   hour-anchored jobs firing at the intended local time. A test that calls `calculate_next` alone
+   cannot see the restart behaviour.
+
 Origin: AMLHive issue-406, 28 Sep 2026.
 
 ---

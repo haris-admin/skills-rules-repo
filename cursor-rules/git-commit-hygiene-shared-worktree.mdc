@@ -165,3 +165,5 @@ C337 T337.07 / D337.07) was **promoted to `docs/agent_rules/commit-message-quali
 12 Aug 2026 — it kept being violated while buried in a document about *which files* to commit, and
 two more offending subjects (`2e6465f4`, `cda89ba5`) landed the same day. Read that rule for the
 full text, the C07 backstop and its known blind spot.
+
+Same-file sweep: `git commit -- <file>` commits the whole file including another session's hunks (four times on 6 Oct 2026, including in subagents). Stage only your hunks via `git apply --cached --unidiff-zero`, commit without a pathspec, check `git show --stat HEAD`; if swept and unpushed, `git reset --soft HEAD~1`, `git reset -q`, redo. Full text in `rules/git-commit-hygiene-shared-worktree.md`.

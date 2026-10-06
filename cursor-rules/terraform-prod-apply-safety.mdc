@@ -86,3 +86,5 @@ on, stop.
 - [issue-173](../../prod_issues/issue-173-terraform-drift-cron-never-runs-default-branch-mismatch.md) —
   the still-open gap (no automated drift detection) that let all of the above go unnoticed until a
   human manually ran a full plan
+
+Apply resets CloudWatch alarm actions to enabled: re-apply the deploy-only silence plan after any apply. Always an explicit AWS profile; `-lock=false` only if no lock table and sole operator; give humans short per-step scripts (a wrapped long command half-ran an apply). See `rules/terraform-prod-apply-safety.md`.

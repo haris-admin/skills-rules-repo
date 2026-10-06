@@ -144,6 +144,16 @@ trying to do, not what it did.
    findings with no new requirement or design gap; fix those findings and verify them directly.
    Origin: AMLHive C522/C523, about six review rounds, 26 to 28 Sep 2026.
 
+8. **Practice checklist (6 Oct 2026).** (a) Verify the subagent's claim yourself before relaying it:
+   `git show --stat <sha>`, recompute a hash, run one cited test. (b) Rate-limit failures kill
+   background agents mid-task and leave partial work: inspect the worktree and git state, then resume
+   the same agent with `SendMessage`, never a cold re-dispatch over partial files (rule 6). (c) Give
+   every agent a standalone denial-of-authority clause. (d) Builders must not copy `.env*` files into
+   scratch copies (`rules/scratch-app-copies-never-include-env-files.md`). (e) After the dispatch,
+   confirm scope with `git status --short` and `git log origin/<branch>..HEAD --oneline`. (f) Test
+   and diff acceptance follows `rules/independent-red-and-diff-review-gate.md`; a builder never
+   approves its own Red tests.
+
 ## Related
 
 - `docs/agent_rules/openspec-tdd-mandate.md` — the "real command/test evidence" requirement this

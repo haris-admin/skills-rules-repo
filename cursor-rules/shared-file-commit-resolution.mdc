@@ -72,3 +72,5 @@ because `dev` is shared.)
   discipline, never a bare `git commit`
 - `docs/agent_rules/commit-message-quality.md` — commits as evidence
 - `docs/agent_rules/pre-checkin-definition-of-done.md` — what must be true before any commit
+
+Prefer staging only your own hunks: `git diff -U0 -- <file>`, keep your hunks, `git apply --cached --unidiff-zero <mine.diff>`, `git diff --cached --stat`, then `git commit` WITHOUT a pathspec and `git show --stat HEAD`. Leave the file uncommitted only when hunks cannot be separated.

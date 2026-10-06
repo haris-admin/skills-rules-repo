@@ -43,3 +43,19 @@ homepage with no consent gating. When a channel is cut:
 Maintain a table of tags and their five guards, but re-verify each guard against the component
 source (and ideally a live page load) before citing it. In the same 2026-09 case the inventory
 showed every guard green while consent gating did not exist in code.
+
+## Edge-injected tags: verify with browser-like requests, disable in the dashboard
+
+Some vendors (worked example: the Cloudflare Web Analytics beacon, AMLHive C519, 6 Oct 2026) inject
+their tag **at the edge**, so the site's code cannot carry guards 2 to 5.
+
+1. **Verify with browser-like headers.** The beacon is injected only for browser-like requests. A bare
+   `curl` (no browser `User-Agent`, no `Accept: text/html`) shows nothing and gives a false "clean".
+   Record the exact headers used.
+2. **Know where the setting lives.** Cloudflare dashboard: Observability > Analytics > Web analytics >
+   Manage site > Real User Measurements (RUM) > Disable. It is not under the zone menu.
+3. **Do not widen a scoped API token** that lacks the scope (the account token had no Web Analytics
+   scope). A dashboard-only setting stays a dashboard step.
+4. **Order of removal.** Disable the setting, verify the beacon is gone with the browser-like request,
+   and only then remove the CSP origin and the `dns-prefetch` hint. Removing the CSP origin first
+   turns a live beacon into a silent CSP violation.

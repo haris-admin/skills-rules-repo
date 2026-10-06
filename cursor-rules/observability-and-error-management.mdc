@@ -125,3 +125,5 @@ evidence, and nothing noticed).
 - **Tests that stub the unit under test cannot prove persistence.** A batch test that replaces the
   per-item service with a stand-in proves the loop runs, not that N items produce N committed rows.
   At least one test per batch path uses a real session and asserts committed rows.
+
+Alarm audit tooling derives its event-style list (`TreatMissingData=notBreaching` and a custom or `AWS/Events` namespace), never a hardcoded list; agent-metric and EC2 alarms stay strict; a new instance needs about 10 minutes before the audit reads `blind=0`.

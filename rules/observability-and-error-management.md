@@ -94,6 +94,13 @@ that could never fire. Both failure classes are now forbidden by construction.
   - **A test that pins a literal dimension value can enforce the wrong value.** Guard tests should
     assert the rule (which keys, no hardware-derived keys), and the live audit proves the values.
   - **A "durable fix pending sign-off" needs an owner and a date**, or it silently never happens.
+  - **Alarm audit tooling derives, never hardcodes.** An audit that held a hardcoded list of
+    event-style alarms drifted and reported two correct event alarms as blind (AMLHive issue-420,
+    6 Oct 2026). An alarm is event-style only when `TreatMissingData` is `notBreaching` **and** its
+    namespace is custom or `AWS/Events`; agent-metric and `AWS/EC2` alarms stay strict (a missing
+    series there is blind whatever the missing-data setting). A newly replaced instance needs about 10
+    minutes of agent data before the audit reads `blind=0`; re-run after the wait. Never pin a
+    hardware-derived dimension such as `device`.
 - Application quality is read from this monitoring plus the TDD suites: test runs gate every
   deploy (the pipeline's test job blocks build/deploy on failure — never bypass it), and the
   monitoring tells us how the shipped code actually behaves. Both signals are required; neither

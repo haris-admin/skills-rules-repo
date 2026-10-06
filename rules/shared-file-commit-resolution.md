@@ -19,7 +19,16 @@ unfinished work into a commit describing something else — and onto `dev`.
 
 Both obvious moves are wrong. That is why this is its own rule.
 
-## The rule
+## Update 6 Oct 2026: stage only your own hunks (preferred)
+
+Interactive `git add -p` is unavailable, but a non-interactive equivalent works and is now preferred:
+`git diff -U0 -- <file>`, keep only your hunks, `git apply --cached --unidiff-zero <mine.diff>`,
+`git diff --cached --stat`, then `git commit` **without a pathspec** and `git show --stat HEAD`. The
+full procedure, and the `git reset --soft HEAD~1` recovery for a commit that swept in another
+session's hunks, is in `rules/git-commit-hygiene-shared-worktree.md`. The steps below are the
+fallback when your hunks cannot be separated from theirs.
+
+## The rule (fallback)
 
 1. **Make your edit.** Sharing a file with another session is not a reason to skip your own work,
    and not a reason to hold the rest of your change hostage.
@@ -43,10 +52,11 @@ Both obvious moves are wrong. That is why this is its own rule.
 
 ## `git add -p` is not an escape hatch
 
-The instinctive answer — stage individual hunks — **is not available to agents in this harness.**
-Interactive git flags (`git add -i`, `git add -p`, `git rebase -i`) are unsupported by the Bash
-tool, and patch mode is interactive. Do not plan around hunk-level staging, and do not simulate it
-by hand-writing a patch against a tree another session is still changing. Step 2 is the answer.
+Interactive git flags (`git add -i`, `git add -p`, `git rebase -i`) are unsupported by the Bash tool.
+Hunk-level staging is still possible non-interactively through `git apply --cached --unidiff-zero`
+on a filtered `git diff -U0` (see the update above), but only when you filter the diff from the
+current tree and verify `git diff --cached --stat` before committing. Do not hand-write a patch
+against a tree another session is still changing and skip that verification.
 
 ## Validated in practice
 

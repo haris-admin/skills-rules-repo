@@ -61,6 +61,18 @@ constants. An import makes an old migration change meaning when the constant cha
 migration with a drift-guard test comparing the live constant to the migrated values (the
 paired-literal pattern in rule 2 above). Origin: AMLHive C523 design section 4.2, 28 Sep 2026.
 
+## Date-dependent and count literals rot
+
+1. A test asserting the timezone abbreviation `'AEST'` failed after the October daylight-saving change
+   (Sydney is on AEDT from the first Sunday in October). A rendered abbreviation depends on the date.
+   Derive the expected value (`ZoneInfo(...).tzname(dt)` or the offset for a fixed instant), or assert
+   the UTC instant and the IANA key. Pin the instant under test, never use "now".
+2. A hardcoded enum member count (`248`) went stale as soon as another session added a member. Derive
+   the count from the enum, or compare against an itemised list; never a bare integer.
+
+Check each new test for a hidden "today": a literal date, a year, a DST-sensitive abbreviation, a
+count, or a version that moves without this file changing.
+
 ## Related
 
 - [issue-187](../../backend/prod_issues/issue-187-schema-contract-expected-revision-hardcoded-stale-literal.md) —

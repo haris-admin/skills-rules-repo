@@ -70,6 +70,19 @@ least-privilege path over "go log into the console."
    ignore the alert. This repo already has the cautionary case: the AWS cost budget sat in `ALARM`
    at 210% of limit for two weeks and produced no response.
 
+## Driving an owner or admin console through a browser agent
+
+Worked example: the Cloudflare dashboard reached through Claude in Chrome (AMLHive C519 D8, 6 Oct 2026).
+
+1. **Sign-in.** The browser extension must itself be signed in to its vendor account (Claude in Chrome
+   needs the extension signed in to claude.ai; a Google login in Chrome is not enough).
+2. **Confirm identity and role before any action** (account menu, members page) and record it. Root,
+   no-ceiling owner, or "cannot tell" is a stop condition.
+3. **Make only the one confirmed change.** Nothing adjacent.
+4. **Screenshot before and after** and keep both as evidence.
+5. **Close the tabs you opened** so the next session does not inherit a logged-in console.
+6. **Do not widen a scoped API token** to avoid the browser step.
+
 ## Applying this beyond AWS
 
 The same reasoning covers any unbounded credential an agent might inherit: a `postgres`

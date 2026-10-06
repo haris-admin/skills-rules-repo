@@ -101,13 +101,44 @@ above (Rules 1-4), but the mental model of "who else might be touching this work
 explicitly include your own dispatched subagents, not just other tools' sessions — it's easy to
 assume a background Task/Agent call is isolated when it usually is not.
 
+## A pathspec commit also sweeps in another session's hunks of the SAME file
+
+Rule 1 (pathspec every commit) is necessary but not sufficient. `git commit -- <file>` commits the
+**whole working-tree content** of that file, including another session's uncommitted hunks of it.
+On 6 Oct 2026 (AMLHive) this happened four times in one day, including inside subagents: each commit
+was labelled with one change and carried someone else's edits to a shared file.
+
+**Procedure for a file that holds hunks that are not yours:**
+
+```bash
+git diff -U0 -- <file> > "$SCRATCH/all.diff"        # zero-context diff, one hunk per change
+# keep only YOUR hunks (and their file header) in "$SCRATCH/mine.diff"
+git apply --cached --unidiff-zero "$SCRATCH/mine.diff"
+git diff --cached --stat                            # must show only your hunks
+git commit -m "..."                                 # NO pathspec: a pathspec would re-add the whole file
+git show --stat HEAD                                # confirm the commit holds only what you meant
+git status --short                                  # the other session's hunks are still unstaged
+```
+
+Check `git diff --cached --stat` before applying and stop if another session has staged files you
+do not own; a commit without a pathspec is safe here only because you just verified the index.
+
+**If you swept in someone else's hunks anyway:** while the commit is local and unpushed and `HEAD` is
+still your commit, run `git reset --soft HEAD~1`, then `git reset -q` to unstage everything (the
+working tree is untouched), and redo the commit with the procedure above. If another session has
+committed on top, or the commit was pushed, do not rewrite: report it and fix forward.
+
+**Subagents:** a dispatch prompt for any builder that commits states this procedure, because
+subagents share the checkout and index unless a separate worktree is used.
+
 ## The shared-file case → its own rule
 
 Rule 3 above covers a file that is *entirely* another session's. For the harder case — **a file you
 must edit that already holds another session's uncommitted changes** (C405 hit this on `CLAUDE.md`,
 12 Aug 2026) — see **`docs/agent_rules/shared-file-commit-resolution.md`**. Short version: make the
-edit, commit everything else, leave that file uncommitted, report it in the commit body and to the
-user. Never stash, restore, or hand-reconstruct their hunks; `git add -p` is unavailable to agents.
+edit, then stage only your own hunks with `git apply --cached --unidiff-zero` (section above); if you
+cannot isolate them, leave that file uncommitted and report it. Never stash, restore, or
+hand-reconstruct their hunks; interactive `git add -p` is unavailable to agents.
 
 ## The shared git-index hazard — plain `git add`/`git rm`/`git commit` can silently no-op
 

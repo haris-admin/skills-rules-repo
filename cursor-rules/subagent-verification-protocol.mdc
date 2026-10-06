@@ -148,3 +148,5 @@ scoped to produce. If the work is substantially there:
   that doc covers not trusting a live-state or "it's absent" claim without checking every store
   yourself; this one covers the specific case of a *stalled or inconclusive* subagent report
   during a dispatched task, and the exact redirect-then-verify-directly protocol to use.
+
+Practice checklist: verify the claim yourself before relaying; resume a rate-limited agent with `SendMessage` after inspecting the tree; standalone denial-of-authority clause; builders never copy `.env*`; acceptance of Red tests follows `rules/independent-red-and-diff-review-gate.md`.

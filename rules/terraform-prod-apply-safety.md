@@ -61,6 +61,19 @@ full, untargeted `terraform plan`.
      relative `cd` fails when the shell's cwd is not the repo root. Use a script or `-chdir=` with
      absolute paths.
 
+7. **A failed `apply` leaves the environment half-migrated.** Terraform stops at the first error and
+   skips every remaining resource in that wave. After any partial apply, re-run a full `plan` and
+   reconcile; independent drift is a finding, cascade drift is expected.
+8. **Apply resets CloudWatch alarm actions to enabled** (6 Oct 2026), even if you silenced the alarm
+   earlier. A deploy-only silence plan must be re-applied after any apply, or the alarms re-enabled on
+   purpose and recorded. After every apply, list alarms with actions enabled and compare with the
+   intended state.
+9. **Profile, lock and command discipline.** `AWS_PROFILE=<named profile>` on every `aws` and
+   `terraform` command (a bare command can hit another company's account and return 403).
+   `-lock=false` only when the state lock table does not exist and you are the sole operator, stated in
+   the script header. When a human runs the apply, give short per-step scripts with absolute paths, one
+   short line each (a wrapped long command split and half-ran an apply on 5 Oct 2026).
+
 ## Quick check before any prod apply
 
 ```bash
