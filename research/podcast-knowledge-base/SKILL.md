@@ -725,7 +725,11 @@ from *patience and rotation*, never from a bigger timeout.
   matches it (766/766, remaining 0, verified 2026-10-03 10:10 after the wrapper was switched to
   `--since-days 3650`). A window narrower than the corpus turns a DRAINED queue into a STARVED one with
   the same summary line — when a lane reports 0 for hours, re-count with the widest window before
-  believing it.
+ believing it. **That check is one command:** `python3
+ ~/.hermes/skills/research/podcast-knowledge-base/scripts/router_coverage_probe.py` prints all-time
+ candidates vs the `done` set and the verdict (`CAUGHT UP` / `STARVED`) — it loads the router's own
+ `pick_ids`/`fetch_episodes`, so its candidate count cannot drift from the lane's, and it carries the
+ cron env guard, so it runs unchanged from a cron tick.
 - **A single `failed=N` is usually TRANSIENT — retry the id once before investigating.** The episode is
   NOT written to `done` on failure, so it re-queues on the next tick by design. 2026-10-03 ep=152 (Logan
   Bartlett, 2273 chars): the maker returned `JSONDecodeError: Extra data: line 1 column 4009` (the model
