@@ -313,6 +313,21 @@ When you see `last_status: error` on a cron, classify before escalating:
   check + `hermes dashboard --status` instead.
 
 ### Real (needs action)
+- **`5b95adcb27d4` (Blog Posts via Codex, Tue/Thu 08:00) — STANDING BLOCK, owner decision pending; do NOT
+  re-derive or re-escalate, and do NOT report it as a fresh red.** It fails its own `git merge origin/dev`
+  pre-flight and BLOCKS by design (nothing written/committed/pushed; tree left clean). 8 consecutive dead
+  runs as of 2026-10-06, last success 10 Sep, ~16 posts not produced; the job delivers its own BLOCKED
+  report to `telegram:-1004485329864` each Tue/Thu, so Haris already sees it. Codex itself is healthy
+  (`codex login status`, `codex --version`) — the blocker is the BRANCH, and only a human A/B/C choice
+  clears it (park the 40 app-code commits + re-baseline `codex_pr`; or retarget at `pluto_pr`; or ship the
+  drafts to the vault). **Re-measure the two numbers before quoting them:** on 2026-10-06 `codex_pr` was
+  **376 behind / 40 ahead** of `origin/dev` (253 on 1 Oct ≈ +25/day, `ahead` frozen at 40 since 24 Sep) with
+  17 unmerged files incl. application code, while `~/code/amlhive1-pluto-pr` carried **2173 dirty entries**
+  — so Option B is NOT the one-line retarget the 1 Oct report called it; its BRANCH is still 0-behind dev,
+  so the only clean path is a FRESH worktree off `pluto_pr`. Same cause blocks `31ac1948416f` (Fri Codex
+  Review). Any future content run must also use the current bundle path `assets/YYYY-MM-DD-<slug>/`, not
+  `assets/blog-migration/<slug>/` (dev moved it 21 Sep). Detail: `environment.md` → "codex_pr IS NO LONGER
+  A CONTENT LANE" + the 2026-10-06 status append.
 - **A paused job's stale `last_status: error` is NOT a current failure — read `enabled` before classifying.**
   `daily_cron_audit.py` and this skill's own standing-fault records both key off `last_status`, so a job
   the owner PAUSED keeps appearing as a live red indefinitely. Seen 2026-09-30: `0e14d2e1095f`,
