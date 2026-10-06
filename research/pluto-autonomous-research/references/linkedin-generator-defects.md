@@ -660,6 +660,44 @@ to its own event and replayed across the prior 12 `research_*.json` days:
 Slate went 1 fresh + 2 repeats → **3 fresh grounded ideas**; auto block re-verified (6/6 CTAs
 distinct, worst fingerprint 0.33, every angle terminal, every delivered blog idea >= 1 subject hit).
 
+## Rule 43 (Oct 7 2026) — a candidate can still fire on ANOTHER subject's vocabulary, and the returning topic's pool is the binding constraint
+
+Two defects on the 7 Oct FinTech day.
+
+**(a) `nhi-agent-identity` fired on `token`.** Rule 29e removed `identity` as generic context, but the
+list still carried `token` — so on a day whose corpus is digital-asset regulation, *wrapped tokens* and
+*tokenised securities* fired an AGENT-IDENTITY candidate, and it took blog slot 3 while
+`non-human identity`, `nhi`, `nist` and `agent identity` each occurred **ZERO** times in the corpus.
+Removing a generic word is not enough — audit EVERY keyword for whether it also belongs to a *different
+subject that recurs in this corpus*. (Same shape as the `rce`/`source` bug in Rule 29e, one level up:
+there the word was generic, here it was another subject's substance.) The list is now
+`["non-human identity", "nhi", "nist", "agent identity"]`. Confirm the fix keeps the TRUE positive —
+the candidate still fires on the 3 Oct Agentic-AI corpus via `agent identity`.
+
+**(b) The FinTech pool was one candidate thinner than the slate needs.** Once (a) was fixed the day held
+only two legitimately fresh grounded candidates (`spf-multiparty-liability`, 3 hits; `surcharge-ban-scope`,
+3 hits) while the day's **#1 signal** — ASIC's lender-conduct review triggered by at least $4bn of suspected
+mortgage fraud, which explicitly covers lenders' use of **referrers** — had no candidate at all. Rule 40's
+route again: add a fresh grounded candidate, never loosen the gate. `referrer-chain-cdd` scores
+**6 hits** (`referrer`, `introducer`, `referral`, `lender conduct`, `mortgage fraud`, `home loan fraud`),
+4 on the 2 Oct corpus, and **0 on every non-FinTech day**. Slate went 2 fresh → **3 fresh grounded ideas**.
+
+**Verification (before/after replay, last 8 research days).** Rebuild the corpus from each
+`research_*.json` alone — the live signals are not reproducible per historical day — then diff the picks
+with the OLD keyword list and WITHOUT the new candidate against the new ones. Expect: identical on every
+non-FinTech day; changed only on FinTech days and only toward grounded ideas. This run: **30 Sep, 1 Oct,
+3 Oct, 4 Oct, 5 Oct and 6 Oct identical**; **2 Oct** `nhi-agent-identity` (fired on `authorisation` — also a
+false positive) → `referrer-chain-cdd`; **7 Oct** as above. 0 unintended regressions.
+
+**Watch item carried forward — not fixed:** `digital-asset-licence-cliff` fires on `tokenised`, which also
+appears in non-FinTech corpora (it did on 5 Oct, an AI-Regulation day). It lost to the 10-day repeat rule,
+so nothing wrong shipped, but it is the same shape as (a) and should be tightened before it wins a slot
+off-topic.
+
+**Process note:** after editing `BLOG_CANDIDATES`, always re-run `main()` and confirm the `# ✅ Curated by
+Pluto` section survives (Rule 17's guard). Re-running twice in one session is normal here (diagnose → fix →
+verify) and must be non-destructive.
+
 ## Rules 8–12 (moved out of SKILL.md 2026-09-29) — generator hardening, remaining items
 
 8. Pillar from `portfolio_hit`, not from regulator keywords.
