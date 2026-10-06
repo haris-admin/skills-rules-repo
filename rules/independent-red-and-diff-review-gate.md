@@ -43,6 +43,15 @@ The party that writes a test also chooses what it proves. One pattern held all d
 
 - Accepting a gate on the builder's own report.
 - A reviewer that keeps a fault-injection edit or leaves the tree unproven after the revert.
+- Treating a retroactive review as if the gate order had been followed (6 Oct 2026). When the independent Red review happens after the build, reproduce the Red from the recorded baselines, record the evidence, and record the broken order as a process finding in the QA report. The evidence stands, the order is not waived.
+- Letting the builder revise an accepted test and call it accepted. A revised test file gets a fresh reviewer (not the earlier reviewer, not the builder) who recomputes the new hash, diffs against the accepted version for dropped or loosened assertions, and proves the revision works on both the full and the reduced case.
+
+## Reviewing a revision to an accepted test (added 6 Oct 2026)
+
+- Show the old version fails where the revision was needed (Red) and the new version passes there and on the full case.
+- Fault-inject against the revised derivation, not the old pin; at least one injection per behaviour the old pin guarded.
+- State what the revision can no longer catch (for example a derived roster cannot catch a deliberate reclassification) and where that is covered, or log it as a follow-up. Do not hide the trade-off.
+- The human confirms the requirement wording before the test changes; the spec, the change record and the new hash are updated in the same commit.
 
 ---
 

@@ -41,6 +41,15 @@ python3 scripts/check_release_isolation.py --repo /abs/path/rel-slug --base <las
 - Pushing and deploying the branch tip because "it is only a small fix".
 - `sed -i` for version bumps on macOS; a verify step that greps the deploy log for remote command output.
 - One long pasted command for the human; dispatching the deploy twice.
+- Shipping an isolated unit whose tests still pin a roster that includes a held item (6 Oct 2026, second release): a contract test asserted a fixed list of 20 scheduled-job names, and a second test required a held job in a name set, so the unit failed 10 tests the moment the held job was left out. The deploy gate ran only the smoke subset, so nothing would have stopped it, which is why it must be checked by hand.
+
+## Building the unit from mixed commits (added 6 Oct 2026)
+
+- When source commits mix code, tests and docs, take only the approved paths with `git show <sha> -- <paths> | git -C <worktree> apply --index --3way`, not a whole cherry-pick, and take the final accepted test files from the accepted commit with `git show <sha>:<path>`.
+- Compare the SHA-256 of every test and source file in the unit with the values the independent review recorded. A mismatch means the unit is not what was reviewed.
+- Run the unit's tests on the reduced roster before shipping: remove the held item's registration in a scratch copy and confirm the unit's own tests pass there, and that the previous versions of any roster-pinning test fail there (proving the revision was needed).
+- Run the deploy workflow's own gate command locally (for example the smoke subset), the migration lint, and lint on the changed paths, using the main environment's interpreter with the worktree as the working directory; never read or copy `.env` files into the worktree.
+- Give each unit a version above every other prepared unit, so tags do not collide, and keep all five version files in sync.
 
 ---
 

@@ -171,6 +171,14 @@ for unused JS) — pulled from the pasted report's Insights section or the JSON'
 expected impact up front and lets a human weigh several findings against each other before picking
 which to act on first.
 
+## Local-run evidence: what it can and cannot show (added 6 Oct 2026)
+
+- Median of three runs per form factor per route is the unit of evidence; report the median and the minimum, and compare the branch against the live base build on the same machine so run noise cancels.
+- A loopback run with a stub backend cannot reproduce origin or CMS latency, edge caching, real TLS and network, or an edge-injected script. It is valid for bundle size, CSP, layout and third-party request checks (assert zero requests to the retired hosts). It is not valid for a server-latency fix such as a data cache; that needs a production run after deploy, from the market's region.
+- Run local checks on a throwaway `git archive` export with every `.env*` file removed (assert a find count of 0), under `env -i` with an explicit allowlist, bound to loopback; never call a publish, revalidate or indexing hook with real keys.
+- If the local TTFB is a few milliseconds and the mobile LCP still misses the floor, the cause is the first-party render path (render-blocking CSS, the LCP element and its discovery), not the origin. Say so, and do not close the gate on a cache change alone.
+- A release unit that is no worse than the base and does not fix the floor is shippable only as a recorded decision; the gate stays open for the change that fixes it.
+
 ## Reference
 
 Founding incident: `frontend/prod_issues/issue-246-turnstile-csp-block-and-lighthouse-perf-regression.md`.

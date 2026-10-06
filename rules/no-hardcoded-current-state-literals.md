@@ -85,3 +85,6 @@ count, or a version that moves without this file changing.
 - `docs/agent_rules/openspec-tdd-mandate.md` — this rule is a specialisation of "tests come from
   requirements, not from code": a hardcoded literal here is a proxy for the requirement, not the
   requirement itself
+- `rules/no-hardcoding-configurable-or-admin-managed.md` (6 Oct 2026) — the wider rule: any value a
+  person might change is admin-managed, configurable or derived, and a hardcode needs a recorded
+  very good reason. This rule is its test-and-gate specialisation.

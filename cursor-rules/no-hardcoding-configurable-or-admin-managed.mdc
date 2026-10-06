@@ -1,0 +1,15 @@
+---
+description: No hardcoding by default. Values are admin-managed, configurable or derived unless a recorded, very good reason applies
+globs: "**/*.py,**/*.ts,**/*.tsx,**/*.mjs"
+alwaysApply: false
+---
+
+# No hardcoding: configurable or admin-managed by default
+
+Canonical: `rules/no-hardcoding-configurable-or-admin-managed.md`
+
+- A value a person might change, review or audit lives in an admin-managed store, in configuration with a documented default, or is derived from the source of truth. In a test, derive it.
+- A hardcode needs a very good recorded reason: a statutory or compliance-immutable value, a security invariant, frozen migration history, or a constant that cannot sensibly vary.
+- Tests never pin rosters, counts, names or indexes of things that grow.
+- No admin surface yet: raise the gap in the plan and ship configuration with a documented default.
+- Not retroactive; remove an existing hardcode when already changing that code or when a task names it.
