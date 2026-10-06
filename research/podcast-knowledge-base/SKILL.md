@@ -721,9 +721,11 @@ from *patience and rotation*, never from a bigger timeout.
   Apr–Jun 2025, 2 × Masters of Scale Aug 2024) that NEITHER lane could ever reach — the daily router runs
   `--since-days 2` and this lane ran `--since-days 400` — so 12 ticks a day printed a clean
   `0 episode(s) queued` while real work sat unqueued. Count candidates with
-  `tf.pick_ids(100000, None, None)`, never `pick_ids(400, ...)`: all-time is **766**, and `done` now
-  matches it (766/766, remaining 0, verified 2026-10-03 10:10 after the wrapper was switched to
-  `--since-days 3650`). A window narrower than the corpus turns a DRAINED queue into a STARVED one with
+  `tf.pick_ids(100000, None, None)`, never `pick_ids(400, ...)`. The all-time candidate count is NOT a
+  fixed number — it GROWS every time the daily ingestion adds an episode (766 at the 2026-10-03
+  verification, 810 at 2026-10-07 08:00), so re-count it each time instead of comparing against a
+  remembered figure; what decides CAUGHT UP is `REMAINING: 0`, never the absolute number. A window
+  narrower than the corpus turns a DRAINED queue into a STARVED one with
   the same summary line — when a lane reports 0 for hours, re-count with the widest window before
  believing it. **That check is one command:** `python3
  ~/.hermes/skills/research/podcast-knowledge-base/scripts/router_coverage_probe.py` prints all-time
