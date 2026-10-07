@@ -698,6 +698,87 @@ off-topic.
 Pluto` section survives (Rule 17's guard). Re-running twice in one session is normal here (diagnose → fix →
 verify) and must be non-destructive.
 
+## Rule 44 (Oct 8 2026) — the subordinate-tail cut ran BEFORE the scaffolding pops, so a hidden tail shipped mid-clause
+
+Delivered hook: `Shinhan Bank loses ~25,000 customer records in an AI-agent-assisted hack as the
+Bank of England` — the title reads on `…as the Bank of England demands a legal right to
+intervene`, so the hook stopped mid-clause.
+
+**Cause:** `_short_title`'s subordinate-tail regex is bounded to `(?:—|…)(?:\S+\s*){1,3}$`
+and runs at line ~905, *before* the `TRAILING_WORDS`/`_WEAK` pop loops (~930). A trailing weak
+token hides the tail from the bound: `…and even ASIC's chair now` is 4 tokens (so `{1,3}` fails),
+and the pops then remove `now` and expose a 3-token fragment that is never re-checked. Three
+different days reproduce it — `…as Tranche 2 enrolment gap` (2 Oct), `…and even ASIC's chair`
+(2 Oct), `…as the Bank of England` (8 Oct).
+
+**Fix (two parts, both required):**
+
+1. Re-apply the cut **after** the pops, widened to 6 tokens.
+2. Gate it on the retained tail carrying **no finite verb** — a tail that can stand alone is a
+   complete clause and must be kept. This is what stops the widening from regressing the 2 Oct
+   hook `ASIC opens a second private credit review and convenes a first-of-its-kind insolvency
+   roundtable` (`convenes` → keep) while cutting `…as the Bank of England` (`England` → cut).
+
+```python
+_SUBORD = (r"(?:while|whereas|as|and|but|or|because|if|since|when|after|before|"
+           r"that|which|who)")
+_IRREG_VERBS = {"is","are","was","were","be","been","has","have","had","do","does",
+               "did","will","would","can","could","may","might","must","says","said", …}
+
+def _tail_has_verb(tail):
+    for tok in re.findall(r"[A-Za-z][A-Za-z'’\-]*", tail.lower()):
+        tok = re.sub(r"['’]s$", "", tok)          # possessive is not a verb ("ASIC's")
+        if tok in _DANGLE_VERBS or tok in _REPORT_VERBS or tok in _IRREG_VERBS:
+            return True
+        if len(tok) > 3 and re.search(r"(?:es|ed|ing|s)$", tok):
+            return True
+    return False
+
+# …after the _WEAK pop loop, before the Rule 32 verb check:
+m = re.search(r"\s" + _SUBORD + r"\s+((?:\S+\s*){1,6})$", sliced, re.IGNORECASE)
+if m and m.start() >= 30 and not _tail_has_verb(m.group(1)):
+    sliced = sliced[:m.start()].rstrip(" ,;:-—–")
+```
+
+`_MEASURE`-style false positives only *preserve* the status quo (a tail kept that could have
+been cut), so the gate is safe in the direction that matters. Harness over the last 8
+`research_*.json` days (48 findings): **3 hooks changed, 3 improvements, 0 regressions**.
+
+**General lesson — a rule that runs before another rule that MODIFIES the string must be
+re-evaluated after it, or the later rule can re-expose the defect the earlier one fixed.**
+The `{1,3}` bound was never the bug on its own; the ordering was.
+
+## Rule 43b (Oct 8 2026) — a candidate can fire on a publication NAME in the corpus, and the day's critical finding may have no candidate at all
+
+Two more instances of the Rule 43 shape, on an Agentic AI & Security day, both caught before delivery.
+
+**(a) `insurer-as-regulator` fired on the byline *Insurance Journal*.** Its keyword list was
+`["insurer", "insurance", "underwriting"]` — correctly subject-bound in intent, but the corpus is
+`signals + finding title + finding CONTENT`, and the content of the day's #1 finding reads
+`…(korea herald, 1 oct; yonhap via insurance journal, 2 oct)`. So bare `insurance` matched *a
+publication name*, while `insurer` and `underwriting` occurred **zero** times. Fix the candidate:
+`["insurer", "underwriter", "underwriting"]` — replays keep the legitimate `insurer` hits on
+5 and 7 Oct and correctly drop 8 Oct.
+
+**Audit rule: when a candidate fires, print the exact keyword that hit and read its context.**
+A source attribution inside a finding's content is not evidence for the post.
+**(b) The day's #1 signal had NO candidate.** Shinhan Bank's AI-agent-assisted breach
+(≈25,000 records, `impact: critical`, `portfolio_hit: AML Hive`) plus the Bank of England's demand
+for a statutory right to intervene had no entry in `BLOG_CANDIDATES`, so the highest-impact
+finding of the run could not produce a blog idea. Added `agent-assisted-breach-evidence`
+(Rule 40 route: a fresh grounded candidate, never a loosened gate) — keywords subject-bound to the
+event (`shinhan`, `agent-assisted`, `ai-agent-assisted`, `legal right to intervene`), verified
+**6 hits on 8 Oct and 0 on the other 7 replayed days**.
+**(c) `agent-memory-poisoning` fired only on `mcp`.** Its own terms — `memory poisoning`,
+`poisoned memory`, `ruflo` — occur **zero** times in every research day on record, so the
+candidate had only ever fired on generic context words. Tightened to
+`["memory poisoning", "poisoned memory", "memory poison", "agent memory", "ruflo"]`;
+no legitimate historical hit is lost.
+
+**Replay summary for the run:** 3 hook changes (Rule 44) + 3 candidate changes, 0 regressions,
+slate went from `egress` / `control-channel` / `memory-poisoning` (one ungrounded) to
+`agent-assisted-breach-evidence` (6) / `egress-containment` (2) / `control-channel` (1).
+
 ## Rules 8–12 (moved out of SKILL.md 2026-09-29) — generator hardening, remaining items
 
 8. Pillar from `portfolio_hit`, not from regulator keywords.
