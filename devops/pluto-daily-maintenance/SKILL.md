@@ -345,12 +345,37 @@ When you see `last_status: error` on a cron, classify before escalating:
   with no names), then a `-q --tb=no -rf` re-run of the newly-failing subset, then the cache as a
   candidate list only. **Fixing the diagnosis writer is the real task**; until it is fixed, every
   "N failed" line in this report is a count with no actionable content.
-- **`044c0bc41e31` (AMLHive Daily Test Suite) has a STEADY standing backlog: 6-8 backend failures every day**
-  (10-01: 8, 10-02: 7, 10-03: 2 + a 0-collected backend run, 10-04: 8). Do not report each day's number as
-  a new incident. The 10-03 `❌ 0 passed, 0 failed (19.3s)` backend leg is the separate
+- **`044c0bc41e31` (AMLHive Daily Test Suite) — baseline backlog is 6-8 backend failures/day
+  (10-01: 8, 10-02: 7, 10-03: 2 + a 0-collected backend run, 10-04: 8, 10-05: 8). Do not report each day's
+  number as a new incident. The 10-03 `❌ 0 passed, 0 failed (19.3s)` backend leg is the separate
   **collection-failure/pytest-cache signature** — 19 s and zero tests collected is never a pass (No Fake
   Pass Rule); it also invalidates that run's count. Escalate only on a change in the COUNT TREND or a
   change in component (frontend/E2E were green through this window).
+  **TWO REAL ESCALATIONS on 2026-10-07 — these are NOT the standing backlog:**
+  (a) **Count-trend break: `7641 passed, 31 failed`** (≈4× the baseline) on the first run after
+  `git merge origin/dev` landed (`03e74c26`, 6 commits ahead of dev; backend deps reinstalled). A merge
+  that raises BOTH the collected count (+232) and the failure count (+23) points at the merged slice, not
+  at the pre-existing 6-8. Report the delta and the merge SHA.
+  (b) **E2E leg produced ZERO tests — a No-Fake-Pass ERROR, not a skip:**
+  `❌ playwright e2e did NOT actually run tests (exit_code=1)` / `❌ 0 passed, 0 failed (2.7s)`, because the
+  Next dev server refuses to boot: `Error: \`experimental.cssChunking: "graph"\` is only supported with
+  Turbopack. Please remove the option or run Next.js with Turbopack in next.config.ts.` The runner
+  launches `next dev --webpack`, so `next.config.ts` and the runner's dev flag are out of sync. E2E was
+  48/48 green on 10-04 and 10-05, so this is a fresh config regression — fix the config/flag mismatch,
+  do not read `0 passed, 0 failed` as green. **The diagnosis writer explains WHY this is easy to miss:**
+  `~/.hermes/reviews/test_diagnoses.log` is written only when a leg fails AND the OpenRouter diagnosis
+  call returns (mtime 2026-10-05 — no entry for the 10-06 or 10-07 runs), so a failing run can leave NO
+  diagnosis behind. Never infer "no failures" from an unchanged diagnosis log.
+- **`e6b671746eaf` (Weekly Test Report — A2Square + AML Hive, Wed 02:00) has a STEADY standing
+  pattern — do NOT report as a new incident.** Every run since at least 2026-09-23 has exited 1 with the
+  SAME two legs: `a2square/portal: ❌ TEST FAILURE — 649 passed, 1 failed` and
+  `amlhive1/backend: ⚠️ ENVIRONMENT BLOCKER — Could not install the locked dependency set for
+  /mnt/c/Code/github/amlhive-tech/amlhive1/backend`. The second leg is a PATH artifact, not a code fault:
+  the weekly report tests the **Windows** clone (`/mnt/c/...`), where the locked backend deps cannot
+  install over 9p — the same suite is green via the WSL clone `~/code/amlhive1` (see `044c0bc41e31`).
+  The 33 git-sync legs all report ✅ and the report file IS written
+  (`~/.hermes/research_outputs/weekly-reports/weekly-report-<date>.md`). Escalate only if the ✅/❌ leg
+  composition changes.
 - **`0320d41d6d71` (A2Square Weekly Test Suite, Mon 02:30) has a STEADY standing pattern of 2-3 failures/errors per week — do NOT report as a new incident.** 2026-10-05: 684 passed / 3 failed-errors (`portal_backend_lambda_eventbridge` 649p/1f; `tapease_portal_fastapi_a2square` **0 passed 0 failed 1 error** = collection failure, No Fake Pass Rule; `tapease_frontend_nextjs_prod` `npm ci FAILED: ic, install-clean, isntall-clean` + 35p/1f). 2026-09-28: 685p/2 (portal 1f + the same `npm ci FAILED` line). The `npm ci FAILED: ic, install-clean, isntall-clean` string is npm's did-you-mean output and has recurred across weeks. Escalate only on a change in the COUNT TREND or a new repo component.
 - **`ModuleNotFoundError: No module named 'chromadb'` in one or more same-morning `no_agent` scripts
   (seen 2026-09-28) — CRON SCRIPT INTERPRETER REGRESSION, not a MemPalace fault.** POSIX `no_agent`
