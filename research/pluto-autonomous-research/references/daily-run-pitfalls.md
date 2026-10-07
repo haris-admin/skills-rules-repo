@@ -84,6 +84,21 @@ The watcher now fails a `.md` input with `needs_contract: true` when the produce
 pipeline's contract gap, not the research pipeline's — report it, do not hand-patch the input files.
 A permanently-retrying file is the tell: `failed` + missing `.done` + unchanged mtime across runs.
 
+## Chamber read-back: never pass an `embedding_function` to `get_collection()` (Oct 8 2026)
+
+The chambers persist `default` as their embedding-function config. Passing
+`embedding_functions.ONNXMiniLM_L6_V2()` into `client.get_collection(name, embedding_function=ef)` therefore
+aborts the whole read-back with `ValueError: An embedding function already exists in the collection
+configuration … new: onnx_mini_lm_l6_v2 vs persisted: default` — so the probe dies before printing a count
+and reads like an empty/failed chamber rather than a code error. `get()`-only reads need no EF at all:
+
+```python
+col = client.get_collection(name="agentic-security")   # no embedding_function
+```
+
+Pass an EF only for `query()`/`add()`. Combine with the standalone-call rule (one chamber read per
+`terminal()` call, never nested in `$( )`) so the traceback is never swallowed.
+
 ## Budget the pipeline in this order
 
 1. Inbox/watcher check (count *actually* pending = no `.done` marker in `.processed/`, never `ls | wc -l`).
