@@ -21,6 +21,8 @@ Keep an error-reporting pipeline from silently losing, over-sharing or mis-filte
 9. **SDK process-global state leaks between tests.** Some integrations add to a global ignored-logger set once per process, so a test asserting that set is unchanged is order-dependent. Assert the absence of the names you must not ignore, and reset the current, isolation and global scopes with `set_client(None)` after closing the client, because a transportless init still leaves an active client.
 10. **A derived roster cannot catch a deliberate reclassification** (for example an hour added to a minute-only cron). Pin per-job schedules in that job's own requirement, never in a roster test.
 
+11. **Hide a value in text, keep it in a controlled store.** SQLAlchemy `hide_parameters` only changes how an error is printed: `exc.params`, `exc.statement` and the driver's `DETAIL` line survive, and the engine flag can be flipped on a running process. A `handle_error` listener still receives the statement and the real parameters while the flag hides them, so privacy in logs and Sentry and evidence for auditors do not conflict if the values go to an encrypted, access-audited, retained record. Copies of the error text also reach database rows, API responses and pickled job results; list and cover every copy.
+
 ---
 
 ## Patterns to Follow

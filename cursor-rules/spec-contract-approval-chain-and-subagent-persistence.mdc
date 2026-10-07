@@ -12,3 +12,4 @@ Canonical: `rules/spec-contract-approval-chain-and-subagent-persistence.md`
 - The human approves the final pinned digest as its own gate; record decisions as question, selected option and description verbatim, nothing else as decided.
 - Implementer brief after the gates: recompute the hash first and stop on mismatch, Red then stop, Green then stop.
 - Commit each spec folder when its author finishes; after a usage limit inspect the tree and resume the same agent; short symlinks for handoff scripts; a push you did not make is reported, never undone.
+- Ask, do not assume: list every open decision as a structured question; restate free or voice text as your reading; when two answers conflict, ask which governs and record both; a requirement change voids the reviews of the changed scope; hiding a value and keeping a record of it are separate requirements.

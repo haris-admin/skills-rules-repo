@@ -21,6 +21,9 @@ How a spec-driven change goes from drafted contract to "ready for the implemente
 9. **A read-only reviewer's report goes into the repo by one of two routes:** a follow-up that lifts the rule for exactly two named report files, or the orchestrator appends the reviewer's text and says so. The text is the reviewer's, quoted, not rewritten.
 10. **Give the human short symlinks for handoff scripts.** A long path wraps in a terminal and splits into two commands. One command per message, the symlink target stays the SHA-pinned script.
 11. **A push you did not make is reported, not undone.** After a session compare `git ls-remote origin refs/heads/<branch>` with local `HEAD`; if they match and you did not push, say so, list what was published, and ask whether it was intended. Never force-push to fix it.
+12. **Ask, do not assume.** List every open decision as a structured question with options and a recommendation. Restate free or voice text as your reading, label it an interpretation, and let the human confirm it (a voice transcript can carry a wrong word). When two answers conflict, ask which governs and record both; the later confirmed answer supersedes the earlier one, which stays visible.
+13. **A requirement change after a review voids the reviews of the changed scope.** Record the earlier risk review, contract acceptance and digest approval as SUPERSEDED, renew them for the new scope, and split a change that has grown into slices with their own contracts, digests, reviews and briefs.
+14. **Hiding a value and keeping a record of it are separate requirements.** When a privacy fix hides values from logs or a vendor, ask what auditors and authorities still need to see and where the controlled copy lives.
 
 ---
 
