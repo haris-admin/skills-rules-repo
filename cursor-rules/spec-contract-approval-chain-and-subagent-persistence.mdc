@@ -1,0 +1,14 @@
+---
+description: Spec contract approval chain, digest supersede and subagent persistence for contract-driven changes
+globs: "**/*"
+alwaysApply: false
+---
+
+# Spec contract approval chain, digest supersede and subagent persistence for contract-driven changes
+
+Canonical: `rules/spec-contract-approval-chain-and-subagent-persistence.md`
+
+- Pin the contract digest only after its final edit, labelled CANDIDATE; any later edit voids it (supersede chain, fresh narrow re-acceptance, classify every changed line).
+- The human approves the final pinned digest as its own gate; record decisions as question, selected option and description verbatim, nothing else as decided.
+- Implementer brief after the gates: recompute the hash first and stop on mismatch, Red then stop, Green then stop.
+- Commit each spec folder when its author finishes; after a usage limit inspect the tree and resume the same agent; short symlinks for handoff scripts; a push you did not make is reported, never undone.

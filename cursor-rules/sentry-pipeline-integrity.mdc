@@ -1,0 +1,14 @@
+---
+description: Sentry pipeline integrity: drop rules, size and privacy, init timing, transactions, fixtures
+globs: "**/*"
+alwaysApply: false
+---
+
+# Sentry pipeline integrity: drop rules, size and privacy, init timing, transactions, fixtures
+
+Canonical: `rules/sentry-pipeline-integrity.md`
+
+- Every drop rule has a drop and a keep fixture; never drop an outage class; match the outermost exception.
+- Initialise Sentry at import time, never in a worker startup hook; no frame locals; bound size with the SDK wire encoder; guard before_send.
+- Transactions bypass beforeSend (use beforeSendTransaction) and carry breadcrumbs, extra, tags, contexts, span query and Referer.
+- In-place scrubbers make shared fixtures vacuous (factory per call); SDK global state leaks between tests; never write 'Sentry saw nothing' without Usage Stats by outcome.

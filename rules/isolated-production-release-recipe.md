@@ -50,6 +50,7 @@ python3 scripts/check_release_isolation.py --repo /abs/path/rel-slug --base <las
 - Run the unit's tests on the reduced roster before shipping: remove the held item's registration in a scratch copy and confirm the unit's own tests pass there, and that the previous versions of any roster-pinning test fail there (proving the revision was needed).
 - Run the deploy workflow's own gate command locally (for example the smoke subset), the migration lint, and lint on the changed paths, using the main environment's interpreter with the worktree as the working directory; never read or copy `.env` files into the worktree.
 - Give each unit a version above every other prepared unit, so tags do not collide, and keep all five version files in sync.
+- Hand the human short symlinks to the pinned step scripts (a long path wraps in a terminal and splits the command), one command per message. After each step read the real result before the next: the pushed SHAs and the integration branch's remote tip (unchanged by an isolated push), every deploy job, health, and the deploy log. At the end of the session compare the integration branch's remote tip with local `HEAD`; an unexplained publish is reported and asked about, never undone.
 
 ---
 

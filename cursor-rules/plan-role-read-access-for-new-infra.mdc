@@ -1,0 +1,13 @@
+---
+description: A new infra resource ships the read access its read-only plan role needs; a plan error is a blind drift check
+globs: "**/*"
+alwaysApply: false
+---
+
+# A new infra resource ships the read access its read-only plan role needs; a plan error is a blind drift check
+
+Canonical: `rules/plan-role-read-access-for-new-infra.md`
+
+- Add the read grant on the exact ARN in the same change as the resource.
+- Dispatch the drift workflow after apply and require exit 0 or 2, never 1; fix a denied read with the exact action, never by widening the role.
+- Page on a red weekly drift run.
