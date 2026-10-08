@@ -779,6 +779,37 @@ no legitimate historical hit is lost.
 slate went from `egress` / `control-channel` / `memory-poisoning` (one ungrounded) to
 `agent-assisted-breach-evidence` (6) / `egress-containment` (2) / `control-channel` (1).
 
+## Rule 45 (Oct 9 2026) — a returning topic whose live pool is one candidate short pads with verbatim repeats
+
+On 9 Oct (Startup & VC Trends — the SAME `date % 5` slot as 4 Oct) the delivered blog slate was
+`compute-securitisation-lockin` (firmus, 1 hit) plus **two verbatim repeats from 4 Oct**
+(`startup-cgt-carveout-draft`, `govt-coinvestment-accountability`). The Startup & ESOP pool holds
+only THREE candidates and one (`vc-barbell-missing-middle`) is RETIRED in `KNOWN_BLOGS`, so the LIVE
+pool is two — and both had shipped five days earlier. `_fresh_hits` held one item, Rule 39 padded with
+repeats, and the day's biggest NEW signals (Diraq's US$51m DARPA tranche, the Breaker/Rheinmetall
+teaming, Metal's ~US$50m stablecoin seed) had no candidate at all.
+
+**Diagnostic — the Rule 42 form of the pool count** printed ONE fresh Startup & ESOP candidate for the
+day, i.e. a two-slot shortfall. Run it the moment a 5-day-cycle topic returns and the slate looks
+familiar.
+
+**Fix — candidates, never the matcher.** Two added, subject-bound, replay-verified 0-hit across the
+prior 7 research days (2–8 Oct):
+
+| key | hits on 9 Oct | other days |
+|-----|---------------|------------|
+| `defence-quantum-capital-route` (Startup & ESOP) | 7 (`diraq`, `darpa`, `rheinmetall`, `boxer crv`, `drone swarm`, `quantum grants`, `national reconstruction fund`) | 0 |
+| `tokenised-rails-licensing` (Australian Fintech Regulation) | 5 (`capital 49`, `tokenised financial`, `stablecoin infrastructure`, `tokenised financial products`, `loong wang`) | 0 |
+
+Slate went 1 fresh + 2 repeats → **3 fresh grounded ideas**, led by the day's own pillar
+(`defence-quantum-capital-route` sorted first on 7 hits + topic-pillar priority). Neither title asserts an
+uncounted figure (Rule 34) — the Diraq US$51m/US$300m and Metal US$50m numbers are all in the corpus.
+
+**The rule:** a 5-day-cycle topic needs **at least one fresh grounded candidate per emitted slot**, and a
+RETIRED candidate (a `KNOWN_BLOGS` key) is not in the pool — count it out, not in (Rule 42). On Startup &
+VC the pool must stay ≥3 live fresh candidates even though the historic ones burn every cycle, because
+**every published post permanently removes one candidate from its pillar's pool.**
+
 ## Rules 8–12 (moved out of SKILL.md 2026-09-29) — generator hardening, remaining items
 
 8. Pillar from `portfolio_hit`, not from regulator keywords.
