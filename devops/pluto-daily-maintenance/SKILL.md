@@ -366,6 +366,23 @@ When you see `last_status: error` on a cron, classify before escalating:
   `~/.hermes/reviews/test_diagnoses.log` is written only when a leg fails AND the OpenRouter diagnosis
   call returns (mtime 2026-10-05 — no entry for the 10-06 or 10-07 runs), so a failing run can leave NO
   diagnosis behind. Never infer "no failures" from an unchanged diagnosis log.
+  **ROOT-CAUSED + FIXED 2026-10-08 — the writer was BROKEN, not merely quiet.** The runner runs on
+  the cron PM env (`python 3.14.7`), whose default multiprocessing start method is **`forkserver`**
+  (changed from `fork` in 3.14); forkserver/spawn must PICKLE the process target, and
+  `codex_diagnose()` passes a local closure — so every failing leg returned
+  `[Diagnosis failed: Can't pickle local object codex_diagnose.<locals>.worker ...]`. Fix applied to
+  `~/.hermes/scripts/amlhive_daily_test_runner.py`: pin `multiprocessing.get_context("fork")` (no
+  pickling; the runner is sequential at that point). Verified by exec'ing the patched function under
+  the PM interpreter itself with a stubbed `chat_with_fallback` → non-error return + log write.
+  **Standing rule for any `multiprocessing` timeout wrapper in a cron script: pin the start method
+  explicitly (`get_context("fork")`) — never rely on the interpreter default, and never pass a
+  closure to a spawn/forkserver context.** Detail: `wsl-cron-test-runner` skill.
+  **2026-10-08 state of the two faults it hid:** (a) the 10-07 E2E `cssChunking`/Turbopack
+  zero-test regression is **RESOLVED** (E2E 48 passed / 2 failed, both whitelisted `reduced-motion`
+  flaky, run 1/3) — do not re-report it; (b) backend count trend still elevated: `7699 passed,
+  38 failed` (10-07: 7641/31, baseline 6-8) on the merged tree — day 2 of the post-`origin/dev`-merge
+  elevation, and vitest's 1 failure has now been escalated from known-flaky to real (3 consecutive
+  runs).
 - **`e6b671746eaf` (Weekly Test Report — A2Square + AML Hive, Wed 02:00) has a STEADY standing
   pattern — do NOT report as a new incident.** Every run since at least 2026-09-23 has exited 1 with the
   SAME two legs: `a2square/portal: ❌ TEST FAILURE — 649 passed, 1 failed` and

@@ -855,20 +855,29 @@ except FileNotFoundError:
                      BACKEND, timeout=900)
 ```
 
-### 120s Diagnosis Timeout (Updated Aug 2026)
+### 120s Diagnosis Timeout (Updated Aug 2026; fork-context fix 2026-10-08)
+
+**Verify the timeout wrapper actually spawns before trusting the pattern.** A `multiprocessing` wrapper whose child never starts (unpicklable target, changed default start method) fails INSIDE the runner's own `except`, so the leg still reports its counts and only the diagnosis text is lost — the run looks merely "undiagnosed", never broken. Proof-of-life for any change to this block: exec the patched function under the CRON interpreter (the PM env python, not `~/.hermes/venv`) with a stubbed `chat_with_fallback` and assert a non-error return.
 
 The `codex_diagnose()` function calls OpenRouter free models via `chat_with_fallback()`. This API call can **hang indefinitely** during provider outages. Must be wrapped in a hard timeout (120s since Aug 2026 — the previous 30s expired before the fallback chain answered and produced misleading "provider timeout" alert text):
 
 ```python
 import multiprocessing
-q = multiprocessing.Queue()
+# PITFALL (2026-10-08): Python 3.14 changed the Linux default start method from `fork` to
+# `forkserver`, and forkserver/spawn must PICKLE the process target. `worker` is a LOCAL CLOSURE,
+# which cannot be pickled — under the cron's PM env (python 3.14.7) every diagnosis died with
+# "[Diagnosis failed: Can't pickle local object codex_diagnose.<locals>.worker ...]", so
+# test_diagnoses.log silently stopped gaining entries while runs still reported "N failed".
+# ALWAYS pin the fork context (POSIX-only, no pickling; safe because the runner is sequential):
+_ctx = multiprocessing.get_context("fork")
+q = _ctx.Queue()
 def worker():
     try:
         diagnosis = chat_with_fallback(prompt, max_tokens=1024)
         q.put(diagnosis)
     except Exception as e:
         q.put(f"[Diagnosis error: {e}]")
-p = multiprocessing.Process(target=worker)
+p = _ctx.Process(target=worker)
 p.start()
 p.join(timeout=120)
 if p.is_alive():
