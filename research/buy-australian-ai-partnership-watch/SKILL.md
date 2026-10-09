@@ -118,7 +118,7 @@ board moves. Full table lives in `docs/market-intel/PARTNERS.md`. `[verify]` = t
 | Tammy Medard | ANZ | Group Exec Business & Private Banking `[verify]` — growth mandate (SME referral entry) |
 | Les Vance | ANZ | Financial-crime lead / Program PACT (ex-Westpac) `[verify]` |
 | Pete Steel | NAB | Group Executive Technology and AI (ex-CBA) |
-| *[identify]* | NAB | CRO — being recruited as at Sep 2026 |
+| Connie Sokaris | NAB | **Group Chief Risk Officer (since 3 Aug 2026**, succeeding Shaun Dooley) — risk-side entry point; her remit covers credit, operational, compliance, liquidity, **financial crime compliance** and insurance |
 | Bronwyn Yam | Cuscal | Chief Product Officer (ex-Tyro CPO) — Financial Crimes managed services + Basiq |
 | Anya FitzGibbon | Cuscal | Head of AI & Data |
 | Angela Powell | Cuscal | Chief Risk Officer |
@@ -182,7 +182,7 @@ A separate weekly cron owns a *deep* per-enterprise note across CBA · Westpac �
    published and read ITS date. Anything outside ~8 weeks goes to a **“Quarantined — stale, not news”**
    section with the real date. Known offenders: Cuscal/Feedzai card-fraud (**Sep 2018**), ANZ “Economic
    Pulse Plus”/Gemini (**Aug 2025**), ANZ record A$240m/A$250m ASIC penalty (**15 Sep 2025**), CBA agentic
-   anti-fraud launch (**Apr 2026**), Westpac real-time AI call assistant (**29 May 2025**), and the **"$1bn
+   anti-fraud launch (**Apr 2026**), Westpac real-time AI call assistant (**29 May 2025**), **NAB's superannuation investment-scam "+389%" finding (25 Aug 2026)**, **ASIC's FY26 takedown tally / deepfake-impersonation release (19,400+ scams, 17 Aug 2026)**, **CBA's "89%/42%" deepfake research (Jan 2026)** and its **"350,000 Pollen Team interactions" figure (Aug 2026 — CBA Annual Report)**, and the **"$1bn
    CBA AI loan fraud" syndication wave** — the self-report is a real continuing thread, but the copies
    circulating (shooterssupply.org, oneturbowash.com, internewscast.com, dailymail.com) carry **no usable
    date** and are content-farm rewrites; cite the originals (AFR) only. Watch the
@@ -207,7 +207,7 @@ A separate weekly cron owns a *deep* per-enterprise note across CBA · Westpac �
    Verify with `git rev-parse HEAD == origin/main`, `git cat-file -e origin/main:<path>`, **and** confirm a
    phantom reports path still exists upstream.
 
-**Source-availability quirks (verified Sep–Oct 2026).** **OAIC ADM-transparency guidance (APP 1.7–1.9) publishes to the MEDIA-CENTRE path + PDFs + the APP 1 Guidelines update — NOT the consultation page.** Polling the consultation page (which changes only via a Squiz CMS "Page generated" stamp) and candidate guidance URLs (which 404) produced three false "still unpublished" runs across Sep–Oct 2026; the guidance actually published 30 Sep 2026. Always also fetch `oaic.gov.au/news/media-centre/...` and the APP 1 Guidelines chapter. `afca.org.au` is **Cloudflare-challenged** for scripted
+**Source-availability quirks (verified Sep–Oct 2026).** **OAIC ADM-transparency guidance (APP 1.7–1.9) publishes to the MEDIA-CENTRE path + PDFs + the APP 1 Guidelines update — NOT the consultation page.** Polling the consultation page (which changes only via a Squiz CMS "Page generated" stamp) and candidate guidance URLs (which 404) produced three false "still unpublished" runs across Sep–Oct 2026; the guidance actually published 30 Sep 2026. Always also fetch `oaic.gov.au/news/media-centre/...` and the APP 1 Guidelines chapter. **ASIC's banking-sector supervisory-priorities letter** (26-232MR, 30 Sep 2026 — commits ASIC to a **banking-sector AI review** on new/proposed AI use cases and a **broker/lending-oversight review** off the mortgage-loan-fraud work) and the **RBA Financial Stability Review** (1 Oct 2026 — frontier AI as a cyber/scam/fraud accelerant) both landed at a weekly-window edge and were missed for a full cycle, so each run must read ASIC's `newsroom/media-releases` index and the RBA FSR chapters, not only the five enterprise newsrooms. `afca.org.au` is **Cloudflare-challenged** for scripted
 fetches — take AFCA consultation closing dates from the AFCA-adjacent legal analyses rather than the site.
 Cuscal's newsroom resolves at **`cuscal.com/newsroom`** (200) while the **`www.cuscal.com.au/newsroom`**
 variant **404s**, and its ASX-announcement feeds (`openbriefing.com`, `company-announcements.afr.com`)
