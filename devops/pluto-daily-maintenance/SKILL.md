@@ -51,7 +51,7 @@ description: Pluto's lightweight daily maintenance engine — 4-task health chec
    frontmatter check, then path-scoped `git add -- <paths>` + `git commit -m "..." -- <paths>` + push.
    (b) **Saturday scope** — a copy that DIFFERS needs a MERGE, because the repo side often carries
    sections the WSL side never had (see the fleet-skill-governance merge pitfall); a blind overwrite
-   a blind overwrite deletes them. Report the differing list, do not bulk-overwrite it from a daily tick.
+   deletes them. Report the differing list, do not bulk-overwrite it from a daily tick.
    **Re-measured 2026-10-01: repo 389 SKILL.md vs WSL 254; 65 WSL-only (excluding `.archive/`) and 97
    content-differing.** Compare by skill NAME, not by path — `devops/fleet-skill-governance` reads as
    repo-absent only because the repo files it under `agent-governance-and-git/` (byte-identical).
@@ -383,6 +383,15 @@ When you see `last_status: error` on a cron, classify before escalating:
   38 failed` (10-07: 7641/31, baseline 6-8) on the merged tree — day 2 of the post-`origin/dev`-merge
   elevation, and vitest's 1 failure has now been escalated from known-flaky to real (3 consecutive
   runs).
+  **2026-10-09 (day 3) — the fork-context fix is CONFIRMED LIVE, not just unit-verified.** Task 4's
+  rule ("run ONE live invocation") applies to the diagnosis writer too: the runner wrote a real entry
+  `[2026-10-09 02:40:31 AEST] frontend vitest FAILURE DIAGNOSIS` (jsdom `Blob` instanceof + the
+  concurrent-signout `window.location` navigation) with NO pickle error. Backend `7770 passed,
+  34 failed` (10-07 7641/31, 10-08 7699/38, baseline 6-8) — day 3 of the elevated post-`origin/dev`
+  band, flat-to-down; still a COUNT-TREND watch, not a new incident. vitest `240 passed, 1 failed` =
+  4 consecutive runs (escalated real on 10-08, unchanged). E2E `47 passed, 3 failed` — all three match
+  the whitelisted `reduced-motion` flaky pattern (counter run 2/3, exit stays green, escalates at 3)
+  → do NOT report E2E as a regression.
 - **`e6b671746eaf` (Weekly Test Report — A2Square + AML Hive, Wed 02:00) has a STEADY standing
   pattern — do NOT report as a new incident.** Every run since at least 2026-09-23 has exited 1 with the
   SAME two legs: `a2square/portal: ❌ TEST FAILURE — 649 passed, 1 failed` and
