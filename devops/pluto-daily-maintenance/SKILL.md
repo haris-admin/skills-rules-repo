@@ -614,6 +614,12 @@ Keep the user-facing report brief (under 5 min runtime target). Only surface wha
 
 ## Pitfalls
 - **Verify chat IDs from gateway logs BEFORE bulk-rerouting cron deliveries (Aug 2026).** When Haris says "use this group for X jobs", do NOT trust `channel_directory.json` — it stores stale internal names (it still said `daily_status_v2` for the AMLHive group after the retitle) and can miss newly-created groups. The session context shows the group's CURRENT title; the real chat ID is in the gateway log: `grep "inbound message" ~/.hermes/logs/gateway.log | tail -20` — the `chat=` on the line matching this session's first user message IS the group's ID. Then confirm with `cronjob action=list` that jobs show `deliver: telegram:<that-id>`. Mistake made 2026-08-13: assumed `-1003834479227` (daily_status_v2) was the AMLHive group, "confirmed" it, and told the user all jobs were already there when they landed in the wrong group. Correct split: AMLHive jobs → `-1004485329864`; general daily + TapEase jobs → `-1003834479227`; DM `5273126730`.
+- **Credential-shape sweep: ONE expected hit, not a finding.** `a2square_test_runner.py:30`
+  `POSTGRES_PASSWORD = "test_password"` is the throwaway credential for the LOCAL test Postgres the
+  runner boots on `:5433` (`test_user`/`test_db`) — matched by the shape regex, but there is nothing to
+  rotate. Report `0 real secrets` when it is the only hit; do NOT raise a rotation alert for it.
+  Sanity-check any other hit by reading the LHS: a `*_PASSWORD`/`*_TOKEN` feeding a 127.0.0.1 test
+  service is a fixture, one feeding a real endpoint is a leak.
 - **Do NOT `grep -i error` on cron output files.** Output files contain false-positive matches on the literal word "error" (JSON keys, section headers, normal output). Use `jobs.json` `last_status` field — it's authoritative.
 - **Never-ran ≠ broken.** Always check `next_run_at` and the cron's schedule frequency before escalating.
 - **Exit code 1 ≠ failure** for alert scripts that email internally. Check the script's design intent.
