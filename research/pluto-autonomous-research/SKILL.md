@@ -30,7 +30,7 @@ allowed-tools: [delegate_task, execute_code, terminal, read_file, write_file, sk
 3. For urgent requests, run manually: `python3 ~/.hermes/scripts/mempalace_watcher.py`
 4. See `pluto-mempalace-bridge` skill → `references/mempalace-inputs.md` for the complete operational workflow
 
-**⚠️ Known gap:** The watcher only globs `*.md` files (line 49 of `mempalace_watcher.py`). JSON files like `pluto-msg-*.json` placed in the inputs directory are invisible to the watcher and accumulate unprocessed. As of June 27, 2026, 17 pluto-msg JSON files (June 2–14) remain unprocessed. See Pitfalls section below.
+**⚠️ Known gap:** JSON files (`pluto-msg-*.json`) in the inputs directory are invisible to the watcher and accumulate. See Pitfalls below.
 
 ### Phase 0b: Gmail Briefing Ingestion (before research — NEW June 3, 2026)
 
@@ -43,11 +43,6 @@ Pull Perplexity Tasks and other automated briefings from `macarthurgarments@gmai
 python3 -u /home/habib/.hermes/scripts/gmail_ingestor_imaplib.py
 ```
 
-**Manual run (deprecated himalaya — broken in sandbox, DO NOT USE):**
-```bash
-# himalaya auth.cmd fails with "No child process (os error 10)" in Hermes sandbox
-/home/habib/.hermes/venv/bin/python3 /home/habib/.hermes/scripts/gmail_briefing_ingestor.py
-```
 
 **What it does:**
 1. Lists recent emails via himalaya (`--output json` returns a JSON array)
@@ -63,9 +58,9 @@ python3 -u /home/habib/.hermes/scripts/gmail_ingestor_imaplib.py
 
 **himalaya JSON parsing note (DEPRECATED as of June 7, 2026):** `--output json` returns a valid JSON array, NOT JSON lines. Parse with `json.loads()`, not line-by-line. The `from` field is a dict: `{"name": "Perplexity Tasks", "addr": "team@mail.perplexity.ai"}`. Message IDs are strings that need `int()` conversion.
 
-**⚠️ Himalaya is deprecated for email reading.** `auth.cmd = "echo <password>"` fails in the Hermes sandbox with `No child process (os error 10)`. Use the imaplib-based `gmail_ingestor_imaplib.py` script instead. See `pluto-gmail-signal-ingestion` skill.
+**⚠️ Himalaya is deprecated for email reading.** `auth.cmd = "echo <REDACTED-SUPABASE-CREDENTIAL-ROTATE-ME>"` fails in the Hermes sandbox with `No child process (os error 10)`. Use the imaplib-based `gmail_ingestor_imaplib.py` script instead. See `pluto-gmail-signal-ingestion` skill.
 
-**Credentials location:** `GOOGLE_GMAIL_APP_PASSWORD_MACARTHUR` in `/mnt/c/Users/habib/.hermes/.env` (Windows side). The himalaya config uses `auth.cmd = "echo <password>"` — not ideal for production but functional for WSL.
+**Credentials location:** `GOOGLE_GMAIL_APP_PASSWORD_MACARTHUR` in `/mnt/c/Users/habib/.hermes/.env` (Windows side). The himalaya config uses `auth.cmd = "echo <REDACTED-SUPABASE-CREDENTIAL-ROTATE-ME>"` — not ideal for production but functional for WSL.
 
 See `references/gmail-briefing-integration.md` for full config, quirks, and troubleshooting.
 
@@ -99,7 +94,7 @@ When Haris shares a structured intel report **in the conversation itself** (e.g.
    Ask or check memory for what the user already pays for. Common subscriptions this user holds: Gemini Advanced ($20/mo), ChatGPT Plus ($20/mo ≈ $35 AUD), ChatGPT Team (~$130 AUD, 2 seats), Codex plan, ElevenLabs credits. Check Honcho memory for up-to-date subscription inventory. Do NOT recommend a new tool until you've confirmed the user doesn't already have equivalent capability through an existing subscription.
 
 2. **Audit existing infrastructure.**
-   Check what infrastructure the user already runs: Vercel deployments, AWS resources (EC2, SES, S3, CloudWatch), Cloudflare (DNS, R2, Workers), Fly.io. A tool that runs on their existing infra is better than one that needs new accounts, new billing, and new vendor management. **Cloudflare Workers + R2 in particular** — the user already has Cloudflare DNS and R2 buckets provisioned. Worker-based solutions (click trackers, redirectors, API gateways) cost $0 to start on the existing plan.
+   Check what infrastructure the user already runs: AWS resources (EC2, SES, S3, CloudWatch, RDS), Cloudflare (DNS, R2, Workers). Note: Vercel and Fly.io were retired Aug 2026 — the fleet moved to AWS. A tool that runs on their existing infra is better than one that needs new accounts, new billing, and new vendor management. **Cloudflare Workers + R2 in particular** — the user already has Cloudflare DNS and R2 buckets provisioned. Worker-based solutions (click trackers, redirectors, API gateways) cost $0 to start on the existing plan.
 
 3. **Check current-date capabilities, not last-known.**
    The user explicitly flags stale data ("we have GPT-5.5 now, not GPT-4"). Before comparing tools, LOOK UP their current feature sets from their official sites — do not rely on cached knowledge more than 30 days old. For AI models: check what's included in the user's existing subscription tier, not just the headline model name. Many models (Veo 3.1, Sora, Imagen 3) may be bundled into subscriptions the user already has.
@@ -107,7 +102,9 @@ When Haris shares a structured intel report **in the conversation itself** (e.g.
 4. **Count total cost correctly.**
    When presenting options, show the TOTAL new cost — not just the price of the new tool. Frame as: "You already have X (paid), Y (paid), and Z (credits). The only gap is [specific gap]. Here's the minimum spend to fill it." Prefer a stacked recommendation (use what you have + one affordable add-on) over a suite of new tools.
 
-Two verified incidents of skipping this checklist (recommending BytePlus while the user already had Veo 3.1 via Gemini Advanced; forgetting already-provisioned Cloudflare/AWS/Vercel infra) are logged in [Audit Before Recommending](references/audit-before-recommending.md).
+**Pitfall — defaulting to "buy new" when the user already has everything:** In July 2026 this user had Gemini Advanced (Veo 3.1 video gen + Imagen 3 images), ChatGPT Plus (Sora video + GPT-5.5 scripting + TTS), ChatGPT Team (more Sora), and ElevenLabs credits (voice). A first-pass recommendation of BytePlus (which would need a new paid subscription, sales call, and China data compliance review) was wrong — the correct answer was "you already have Veo 3.1 in Gemini Advanced, try that first."
+
+**Pitfall — forgetting existing infrastructure:** After fixing the tool recommendation, the user also had Cloudflare (DNS, R2, Workers) and AWS SES already provisioned. A click tracker that runs on Cloudflare Workers ($0 extra, uses existing infra) is better than any third-party tracking SaaS that needs a new account and billing arrangement.
 
 **Reference:** `references/cloudflare-click-tracker-pattern.md` documents the implementation that resulted from this audit-first protocol — a Cloudflare Worker click tracker with KV logging, UTM enrichment, rate limiting, and a frontend tracking component.
 
@@ -115,16 +112,20 @@ Two verified incidents of skipping this checklist (recommending BytePlus while t
 
 ### Phase 1: Research
 
-**Preferred approach: Google News RSS Direct Pipeline** (proven June 2, 2026 — 60 headlines, 5 topics, 2 minutes). This is the most reliable pattern — it avoids all subagent delegation, execute_code subprocess, and cron invocation issues:
+**Preferred approach: Google News RSS Direct Pipeline** (proven June 2, 2026 — 60 headlines, 5 topics, 2 minutes)
 
-1. **Fire 5 Google News RSS queries sequentially** (the `&` backgrounding operator in `terminal()` is actively BLOCKED by the Hermes security scanner — sequential completes all 5 in ~75-90s):
+This is the most reliable pattern. It avoids all subagent delegation, execute_code subprocess, and cron invocation issues:
+
+1. **Fire 5 Google News RSS queries sequentially** (the `&` backgrounding operator in `terminal()` is actively BLOCKED by the Hermes security scanner — do NOT attempt parallel via `&`; sequential completes all 5 in ~75-90s):
    ```bash
    cd /tmp && for q in "AUSTRAC+AML+Tranche+2+compliance+Australia+2026" "Australia+digital+assets+cryptocurrency+ASIC+2026" "ASIC+AI+financial+services+regulation+Australia+2026" "Australia+PSP+payment+provider+licensing+reform" "Australia+CGT+startup+Senate+inquiry+2026"; do
      name=$(echo $q | md5sum | head -c 8)
      curl -sL --max-time 15 -A "Mozilla/5.0" -o "/tmp/gn_${name}.xml" "https://news.google.com/rss/search?q=${q}&hl=en-AU&gl=AU&ceid=AU:en"
    done
    ```
-   **Always use `hl=en-AU&gl=AU&ceid=AU:en`** for Australian news — surfaces local regulatory coverage (SMSF Adviser, Law Society Journal, SmartCompany, ABC, AFR) that US locale queries miss. Shell `md5sum` and Python `hashlib.md5()` hash differently and `/tmp/gn_*.xml` accumulates across sessions — pick *this* run's files via `sorted(glob.glob('/tmp/gn_*.xml'), key=os.path.getmtime, reverse=True)[:5]`, not by recomputing the hash.
+   **Pitfall — md5sum name mismatch:** Shell `md5sum` and Python `hashlib.md5()` produce DIFFERENT hashes for the same input string. If you reference these files from Python later, do NOT compute the hash with hashlib — use `terminal()` grep instead, or store the filenames explicitly. The safe extraction approach (Option B below) reads files by glob pattern, avoiding hash computation entirely.
+   **Pitfall — leftover XML files from prior runs obscure which files are yours:** `/tmp/gn_*.xml` accumulates across sessions (30+ files observed July 3, 2026). The md5sum-based naming doesn't let you identify which 5 files are from *this* run. **Fix:** After firing queries, use `sorted(glob.glob('/tmp/gn_*.xml'), key=os.path.getmtime, reverse=True)[:5]` to pick the N most recently modified files — these are yours. This works reliably because `curl -o` updates mtime on each fetch. Combine with the write_file→terminal pattern: write a parser script to `/tmp/parse_gn.py`, then run `python3 /tmp/parse_gn.py` — it uses mtime sorting internally and saves cleaned headlines to a named JSON file like `/tmp/startup_vc_headlines.json` for synthesis.
+   **Always use `hl=en-AU&gl=AU&ceid=AU:en`** for Australian news — this surfaces local regulatory coverage (SMSF Adviser, Law Society Journal, SmartCompany, ABC, AFR) that US locale queries miss.
 
 2. **Extract headlines with grep** (handles minified XML):
    ```bash
@@ -135,15 +136,144 @@ Two verified incidents of skipping this checklist (recommending BytePlus while t
 
 3. **Synthesize into structured JSON** — write to `~/.hermes/research_outputs/research_YYYY-MM-DD.json` with the standard schema (topic, tags, meta.signal_balance, findings array)
 
-4. **(Optional) Write gumby-brief-input.md** — a secondary cross-reference file for fleet coordination (Gumby, Jonny-Quest). NOT the primary delivery (see Phase 5); skip if time-constrained.
+4. **(Optional) Write gumby-brief-input.md** — a secondary cross-reference file for fleet coordination. This is NOT the primary delivery (see Phase 5) but provides a quick-reference summary that other fleet agents (Gumby, Jonny-Quest) can consume. Written to `~/.hermes/research_outputs/gumby-brief-input.md`. Skip if pipeline is time-constrained — the full briefing MD is the authoritative output.
 
-5. **Skip delegate_task entirely** unless additional depth on a specific finding is needed. RSS headline synthesis alone provides enough signal for medium-to-high confidence findings when cross-referenced across 5+ sources.
+5. **Skip delegate_task entirely** unless additional depth on a specific finding is needed. The RSS headline synthesis alone provides enough signal for medium-to-high confidence findings when cross-referenced across 5+ sources.
 
-**Confidence-tiering for RSS-only findings:** high = 3+ distinct credible publications covering the same event; medium = single credible publication, no cross-reference; low = speculation/second-hand.
+**Confidence-tiering for RSS-only findings:**
+- **high** = 3+ distinct credible publications covering the same event (e.g., ASIC AI scrutiny reported by Norton Rose Fulbright, FinTech Global, and Australian Broker News)
+- **medium** = single publication from a credible source but no cross-reference
+- **low** = speculation, aggregated second-hand reports
 
-**Enrichment: `web_search → web_extract` depth-adding pattern.** Google News RSS article links cannot be curled (HTTP 400), but `web_search` can discover the same article on the publisher's own site, then `web_extract` pulls full content for `high`-confidence findings. Pick 2-4 top-signal headlines after RSS extraction, `web_search(query="<headline> <publisher>", limit=3)`, then `web_extract(urls=[...])` (up to 5 per call). Validated June 17, 2026 (4/4 success). Not needed for every finding — only when a headline deserves verified `high`-confidence content. `web_search` results carry an `untrusted_tool_result` wrapper; the content inside is still real, don't dismiss it. Full pattern with evidence: `references/search-extract-enrichment.md`.
+**Enrichment: `web_search → web_extract` depth-adding pattern (NEW June 17, 2026)**
 
-Legacy per-feed discovery (direct publisher RSS), broad Google News RSS discovery, the minified-XML extraction options (grep vs. Python title+source parsing), the multi-angle parallel-fetch pattern, the `subprocess.run` pitfall inside `execute_code`, the recommended `execute_code` curl-to-file pattern, source-depth confidence tiering, and the `delegate_task` fallback (with its known empty-`tool_trace` failure mode): see [RSS Research Extraction Patterns](references/rss-research-extraction-patterns.md).
+Google News RSS links cannot be curled (HTTP 400 — see Pitfalls), but `web_search` can discover the same article on the publisher's own site. Then `web_extract` pulls the full content for verified deep findings. This pattern bridges the gap between RSS headline synthesis and curl-level article verification:
+
+1. **After RSS extraction, pick 2-4 top-signal headlines** that would benefit from deeper content
+2. **Run `web_search` with the article title + publisher** to find the article on the publisher's own domain:
+   ```
+   web_search(query="Microsoft agentic AI failure taxonomy red teaming 2026", limit=3)
+   ```
+3. **Feed the discovered URLs to `web_extract`** (up to 5 URLs per call):
+   ```
+   web_extract(urls=["https://publisher.com/article-path", ...])
+   ```
+4. **Use the extracted content to enrich finding descriptions** — direct quotes, specific data points, regulatory details
+
+This pattern was validated June 17, 2026 on the Agentic AI & Security topic: 4/4 `web_extract` calls returned rich content (The Weather Report on Microsoft failure taxonomy, MDDI Singapore official press release, Elevate Consult governance data, Fierce Network on IBM cybersecurity). Success rate is higher than curl-based article fetching because `web_extract` handles JS-rendered pages that curl returns empty.
+
+**When to use:** When RSS headlines indicate a high-signal finding that deserves verified content for `high` confidence tiering. Not needed for every finding — RSS headline synthesis alone is sufficient for medium-confidence signals with 3+ source cross-reference.
+
+**Pitfall:** `web_search` results include the `untrusted_tool_result` wrapper — the content inside is real and verified by cross-reference with RSS headlines. Do not dismiss results because of the wrapper. See `references/search-extract-enrichment.md` for the full pattern with this session's evidence.
+
+**Legacy: RSS Feed Discovery Pipeline** (use for deep-dive on specific articles)
+
+1. Discover articles via RSS feeds from Australian/international news sources:
+   ```bash
+   # Key feeds that reliably work:
+   curl -sL -A "Mozilla/5.0" "https://www.startupdaily.net/feed/"        # Australian startups
+   curl -sL -A "Mozilla/5.0" "https://www.innovationaus.com/feed/"        # Tech policy
+   curl -sL -A "Mozilla/5.0" "https://www.smartcompany.com.au/feed/"      # SME/business
+   curl -sL -A "Mozilla/5.0" "https://www.finextra.com/rss/headlines.aspx" # Global fintech
+   curl -sL -A "Mozilla/5.0" "https://techcrunch.com/tag/australia/feed/" # TechCrunch AU
+   ```
+   **Australian Fintech feed (`australianfintech.com.au/feed/`) is dead — returns 0 bytes as of May 29, 2026.** Use Google News RSS queries for Australian fintech coverage instead.
+   Parse with: `re.findall(r'<item>(.*?)</item>', rss, re.DOTALL)` and extract `<title>`, `<link>`, `<pubDate>`, `<description>`.
+   See `references/australian-news-feeds.md` for the full feed catalog.
+
+2. Download articles to temp files and extract text:
+   ```bash
+   curl -sL --max-time 20 -A "Mozilla/5.0" -o /tmp/article.html "URL"
+   ```
+   **Do NOT pipe curl through inline Python** — shell escaping breaks regex. Always curl-to-file first, then parse with a separate Python step.
+
+3. Parse HTML with Python:
+   - Strip `<script>`, `<style>` blocks
+   - Search for `<article>` tag first for main content
+   - Fall back to `<body>` if no article tag
+   - Decode HTML entities: `&#8216;`→`'`, `&#8220;`→`"`, `&#8211;`→`-`, `&amp;`→`&`, etc.
+
+4. Collect 3-6 distinct findings with sources (quality over quantity)
+
+**Complementary: Google News RSS for broad discovery** (use alongside or in place of delegate_task)
+
+Google News RSS search provides excellent discovery across regions and topics — 62-100 results per query, no delegation, no CAPTCHAs:
+```bash
+curl -sL --max-time 15 -A "Mozilla/5.0" \
+  "https://news.google.com/rss/search?q=TOPIC+QUERY&hl=en-US&gl=US&ceid=US:en"
+```
+Parse with the same `re.findall(r'<item>(.*?)</item>', ...)` pattern. Headlines and source attribution are reliable; article links (`news.google.com/rss/articles/...`) redirect to publishers and CANNOT be fetched via curl (see Pitfalls). Use Google News for discovery + headline synthesis, then fetch confirming articles from direct publication RSS feeds when possible.
+
+**Google News RSS is minified XML** — all content is on a single line (70-95KB). `read_file` with line limits will miss content. Two extraction approaches:
+
+**Option A (quick grep — titles only):**
+```bash
+grep -oP '<title>(.*?)</title>' /tmp/gn_query.xml | grep -v 'Google News'
+```
+
+**Option B (Python — titles + source attribution, preferred):**
+This approach extracts both headlines AND publisher attribution by parsing the source from the title string. Google News RSS minified XML does NOT have `<source>` tags inside `<item>` elements — the publisher name is embedded as the final segment of the title text, e.g. "Headline - Publisher Name":
+```bash
+python3 -c "
+import re
+with open('/tmp/gn_query.xml','r') as f:
+    data = f.read()
+items = re.findall(r'<item>(.*?)</item>', data, re.DOTALL)
+for item in items:
+    t = re.search(r'<title>(.*?)</title>', item, re.DOTALL)
+    if t and 'Google News' not in t.group(1):
+        title = t.group(1)
+        if ' - ' in title:
+            parts = title.rsplit(' - ', 1)
+            headline, source = parts[0], parts[1]
+        else:
+            headline, source = title, '?'
+        print(f'{headline} [{source}]')
+"
+```
+Option B gives you publisher names alongside headlines — essential for confidence-tiering and cross-referencing. It works on minified single-line XML because `re.DOTALL` handles the missing newlines. Verified June 8, 2026: 390 headlines across 5 Google News RSS queries, 196 unique sources correctly extracted.
+
+**Multi-angle parallel feed pattern (recommended):** Fire 4-6 Google News RSS queries simultaneously, each targeting a different subtopic angle. This yields 300+ headlines in ~15 seconds with zero delegation failures:
+```bash
+# Run 5 queries in parallel, each covering a distinct angle of the same topic
+for q in "query1" "query2" "query3" "query4" "query5"; do
+  name=$(echo $q | tr ' ' '_')
+  curl -sL --max-time 15 -A "Mozilla/5.0" -o /tmp/gn_${name}.xml \
+    "https://news.google.com/rss/search?q=${q// /+}&hl=en-US&gl=US&ceid=US:en" &
+done
+wait  # all finish in parallel
+```
+Then extract titles + sources from each file using the Python approach above. Synthesize across feeds — duplicate headlines across queries confirm signal strength. This pattern was verified on June 2, 2026 (5 feeds, 340+ headlines, Agentic AI & Security topic).
+
+**CRITICAL: Do NOT use `subprocess.run(["curl", ...])` inside `execute_code` for Google News RSS** — it silently returns 0 results even with correct URLs, User-Agent, and timeout settings. As of May 31, 2026, 6/6 subprocess-run queries returned 0 items from Google News RSS. The same curl commands run directly via `terminal()` return full feeds (10+ items each). Root cause unidentified — likely curl binary path, library resolution, or environment differences between the subprocess and terminal environments.
+
+**Recommended `execute_code` pattern for RSS workflows** (avoids both shell-escaping and subprocess issues):
+```python
+from hermes_tools import terminal
+import re, urllib.parse
+
+# 1. Fetch RSS to /tmp/
+for name, query in queries:
+    q = urllib.parse.quote(query)
+    terminal(f'curl -sL --max-time 15 -A "Mozilla/5.0" -o /tmp/{name}.xml "URL"')
+
+# 2. Parse with grep (handles minified XML)
+result = terminal(f"grep -oP '<title>(.*?)</title>' /tmp/{name}.xml | head -20")
+titles = re.findall(r'<title>(.*?)</title>', result['output'])
+articles = [t for t in titles if 'Google News' not in t]
+```
+This pattern is faster than per-article curl fetching and works reliably with minified RSS XML.
+
+**Confidence-tiering based on source depth:**
+- **high** = you fetched and read the full article content yourself (curl → file → parse)
+- **medium** = credible publication (NYT, Fortune, IAPP, Lawfare, SCMP, InnovationAus) — headline confirmed via RSS but content behind paywall or unfetchable
+- **low** = speculation, aggregated second-hand reports, single-source without verification
+
+**Fallback: delegate_task (when RSS feeds don't cover the topic)**
+
+Use `delegate_task` with `toolsets: ["web", "search"]` to research multiple angles in parallel (up to 3 subagents concurrently). **WARNING:** As of May 25, 2026, 6/6 subagents returned empty `tool_trace` despite explicit instructions. If the first batch all fail, do NOT retry — switch to RSS or direct curl approach immediately. Give each subagent a specific angle, provide rich context, and always cross-check URLs since subagent summaries are self-reports.
+
+See `references/delegation-pattern.md` for proven subagent prompt templates and failure patterns.
 
 ### Phase 2: Synthesize
 
@@ -161,8 +291,6 @@ After collecting findings, run a signal polarity audit. **Adapt the polarity dim
 **Why:** On May 30, 2026, Haris flagged a 35:3 pro-to-anti-regulation blind spot. Research defaults toward amplifying the dominant narrative (more coverage = more signals found). Active counter-balancing is required to produce credible intelligence. On May 31, 2026 (Cloud topic), adapting dimensions to "pro-growth vs caution" yielded a 0.67:1 balance — proving the adaptation pattern works.
 
 **The sweep is NOT optional when imbalance > 5:1.** Run it, document the counter-signals found, and record the post-sweep ratio.
-
-**⚠️ A keyword polarity script can report the WRONG DIRECTION — hand-curate the count (Oct 11, 2026, Cloud).** A keyword classifier over the 11 Oct corpus returned **0.41:1 growth-leaning** while the curated thematic tally was **20 expansion : 23 caution (1:1.15)** — opposite sign, because `invest|investor|plan|boom|demand|growth` saturate caution stories too ("Firmus' $44bn IPO in jeopardy as investors question valuation" matches only growth tokens). Count distinct STORIES by their thrust, state in `meta.signal_balance.note` that the count is curated and why a classifier disagrees, and never publish the raw classifier ratio as the finding. **When the corpus is visibly caution-heavy, sweep the EXPANSION side** — on 11 Oct that returned real findings, not just an audit footnote (AirTrunk's A$43bn Japan expansion became finding 5). And remember a single event CHAIN (Firmus collapse → CDC withdrawal → community opposition → ATO tax) can produce ~30 headlines that look like 30 independent signals; weight by independent policy development, not headline count. Detail: `references/signal-balance-adaptation.md`.
 
 **⚠️ Post-sweep ratio still above 5:1 — when to stop vs loop:** Some topics are inherently skewed. "AI Regulation & Compliance" research will always surface more pro-regulation coverage because that IS the global trajectory (EU, Australia, UK, Canada all legislating). A counter-sweep surfaces the minority view (US deregulation, compliance burden concerns) but won't flip the ratio. **After one counter-sweep, check the `signal_balance.note` field:** if you can credibly explain why the imbalance persists (topic skew vs blind spot), proceed. Do NOT run multiple counter-sweeps trying to hit an arbitrary numeric threshold — one well-documented sweep is sufficient. Verified July 4, 2026: AI Regulation topic had 133:19 (7:1) post-sweep — the US deregulation counter-narrative was found and documented, but global regulatory trajectory means pro-regulation coverage genuinely dominates. The note field explained this, and the pipeline proceeded with credible findings.
 
@@ -222,9 +350,39 @@ The Morning Briefing cron (`c527fed4a1da`, 6:00 AM Mon-Fri) delivers the briefin
 
 ### Phase 7: Weekly Digest (weekend run — cross-topic synthesis)
 
-**PRUNED June 13, 2026** — superseded by the Saturday Weekly Review (`7d24b37a03f2`, Sat 6AM), which covers cross-topic synthesis with performance data. Where still run: query the mempalace for recent topics, load the past 7 days of `research_*.json`, deduplicate/aggregate findings that repeat across days (do NOT treat a single day's `signal_balance` as the week's verdict), synthesize top insights/emerging trends/regulatory watch/focus areas as `findings` entries, and feed the result back to the mempalace with `--source "pluto_weekly"`. Skip the Gumby handoff entirely for weekly runs.
+~~Run once per week via cron `3cde85223e18` (Sunday 23:00 AEST).~~ **PRUNED June 13, 2026** — superseded by the Saturday Weekly Review (`7d24b37a03f2`, Sat 6AM) which covers cross-topic synthesis with performance data. Uses DeepSeek v4 Pro for reliability.
 
-Full cross-day deduplication algorithm, the digest JSON format (`findings` array requirement — do NOT use top-level keys like `top_insights`), and how this differs from daily research: see [Weekly Digest Workflow](references/weekly-digest-workflow.md).
+**Workflow:**
+1. **Query the mempalace** for recent topics and status:
+   ```bash
+   /home/habib/.hermes/venv/bin/python3 ~/.hermes/scripts/gumby_mempalace_query.py --status
+   ```
+2. **Load all research JSONs** from the past 7 days via `search_files(target='files', pattern='research_*.json', path='/home/habib/.hermes/research_outputs/')`, then filter by date.
+3. **Cross-day deduplication (CRITICAL — new step):** Before synthesizing, scan all loaded JSONs for duplicate topics across days. A topic like CGT may appear on 5 separate days (as happened June 1–7, 2026). When the same topic repeats:
+   - **Deduplicate findings:** If a finding's title or topic is substantively the same across days, consolidate into a single weekly insight with the strongest available confidence across all days.
+   - **Signal balance aggregation:** Do NOT use a single day's `meta.signal_balance` as the week's verdict. Aggregate counts across all days for that topic. If `signal_balance` is structured per-dimension (e.g., `pro_compliance: 6, burden_concern: 2`), sum the counts. Re-check the 5:1 threshold against the aggregate, not any single day's snapshot.
+   - **Cross-day weight normalization:** A finding that appeared in 5 daily JSONs is not 5× more important than one that appeared once — it may just mean the topic has sustained media coverage. Weight by novelty and portfolio impact, not frequency alone.
+   - **Mempalace topic vs file-level topic mismatch:** The `recent_topics` from `gumby_mempalace_query.py --status` may use different labels than the actual `topic` field in the daily JSONs (verified June 7, 2026: mempalace returned "EU AI Act 2026" but no daily JSON had that exact topic). Always read the actual file content — do not rely solely on the mempalace topic list for coverage completeness.
+4. **Synthesize across topics** — produce:
+   - **Top 5 insights** across all research (1-2 sentences each with "Why it matters to Haris" — map to a portfolio project)
+   - **Emerging trends** table (trend, momentum: accelerating/building, horizon: 0-3/3-6/6-12 months, portfolio impact)
+   - **Regulatory watch** table (deadline, event, jurisdiction, urgency: critical/high/monitor)
+   - **Recommended focus areas** for the coming week (area, rationale, priority: immediate/high/medium, project)
+5. **Feed back to mempalace** — wrap all synthesized items as `findings` in the JSON:
+   ```bash
+   /home/habib/.hermes/venv/bin/python3 ~/.hermes/scripts/pluto_mempalace_feeder.py \
+     --input /path/to/weekly_digest_YYYY-MM-DD.json \
+     --topic "Weekly Research Digest — Week of ..." \
+     --tags "weekly,digest,..." \
+     --source "pluto_weekly"
+   ```
+6. **Gumby handoff (SKIP for weekly digest):** The `gumby-brief-input.md` is for daily briefings only. For the weekly digest, do NOT write a Gumby handoff — the weekly digest JSON + mempalace feed are the authoritative outputs. Phase 5's Gumby handoff is already marked optional for daily briefings; it is even less relevant on a weekend run with no subsequent daily pipeline.
+
+**Digest JSON format:** The feeder script requires a `findings` array at the top level. Each finding follows the standard schema (`title`, `content`, `confidence`, `type`). Synthesized items like top insights, emerging trends, regulatory watch items, and focus areas all become `findings` entries — do NOT use keys like `top_insights`, `trends`, or `regulatory_watch` at the top level. See Pitfalls below. Use `type: "opportunity"` for recommended focus areas to distinguish them from regulatory findings.
+
+**Output file:** `~/.hermes/research_outputs/weekly_digest_YYYY-MM-DD.json`
+
+**Key difference from daily research:** The weekly digest re-synthesizes already-stored findings into cross-topic intelligence. It does not perform new web research — it produces meta-analysis. Every finding in the digest is a synthesis of multiple daily findings, so `confidence` should reflect the weight of corroborating sources (typically `high` when backed by 2+ daily findings from different sources).
 
 ### Phase 8: LinkedIn & Blog Content Ideation (NEW June 3, 2026)
 
@@ -243,7 +401,7 @@ Runs via cron `ee4e48300826` at 6:45 AM AEST — after all research stages compl
    - The Human-AI Partnership: A Framework for Safe Adoption
    - Resilience Engineering in the Cloud
    - The 2026 Budget Changed the ESOP Question
-4. Maps to Haris's content pillars: AI Agents & Governance, Australian Fintech Regulation, Cloud & Resilience, Startup & ESOP. Gap detection runs against the published inventory (`KNOWN_BLOGS` — 36 posts as of 2026-09-20), refreshed by diffing the live blog index.
+4. Maps to Haris's content pillars: AI Agents & Governance, Australian Fintech Regulation, Cloud & Resilience, Startup & ESOP
 5. Generates 3-5 LinkedIn post ideas (hook + angle + CTA) and 2-3 blog ideas (filling content gaps)
 6. Outputs to `~/.hermes/research_outputs/linkedin-ideas_YYYY-MM-DD.md`
 
@@ -251,161 +409,41 @@ Runs via cron `ee4e48300826` at 6:45 AM AEST — after all research stages compl
 
 **LinkedIn post structure:** Hook (1-2 sentence grabber with specific data), Angle (2-3 sentences connecting to Haris's expertise), CTA (1 sentence engagement prompt referencing specific portfolio offering).
 
-**Generator hardening — condensed rules** (this repo copy is the short form; the full defect log with fixes and
-assertions lives in `references/linkedin-generator-defects.md` — load it before modifying
-`linkedin_ideas_generator.py`):
-1. Blog candidates are gap-checked against `KNOWN_BLOGS` AND rotated against the previous 4 days. Refresh
-   `KNOWN_BLOGS` by diffing the live blog index (HTML-unescape + alphanumeric-normalise both sides) and retire a
-   candidate key when its gap is published under ANY title.
-2. Zero signals from himalaya → fall back to `get_signals_from_files()` (newest gmail-briefing / claude-research /
-   content-ideas files in `~/.hermes/mempalace-inputs/`), never to template hooks.
-3. Hooks lead with the finding's strongest stat only when the stat clause stands alone (`_hook_stat_ok`).
-4. Pillar resolution order: `portfolio_hit` first (FinAI File AU → AI governance, CloudProof AU → cloud,
-   ExitLens AU → Startup & ESOP), then the scoped ecosystem/innovation-policy exception, then word-boundary
-   regulator / cloud / startup keywords, then the remaining `portfolio_hit`.
-5. Every tracked research topic needs `BLOG_CANDIDATES` entries — a missing topic silently degrades that day's
-   blog block to another pillar.
-6. Never slice a hook or an angle at a character limit: cut at a clause boundary, close the cut with terminal
-   punctuation, and balance parentheses AND quotation marks.
-7. A hook stat must be a complete clause, never a bare number — skip numbers inside parentheses.
-8. Order research ideas one-per-pillar before truncating (cap 6); order blog picks by keyword hits, then
-   topic-pillar match, then key.
-9. Pad the blog quota ONLY with candidates whose pillar is already in play (`day_pillars()`) — two relevant ideas
-   beat three — and apply that same pillar gate to MATCHED candidates, not just the padding slot.
-10. A re-run must re-append everything from the `# ✅ Curated by Pluto` marker — never discard hand curation.
-11. The rotation window (4 days) must stay shorter than the research topic cycle (5 days) — but that is exactly
-    why a same-topic day resurfaces the identical slate, so a repeat must LOSE rather than disappear: mark
-    anything proposed within 10 days with `_repeat(title)` and sort `(repeat, -hits, pillar_penalty, key)`
-    (suppressing instead of ranking starves the day's own pillar). `KNOWN_BLOGS` is what retires a candidate for good.
-12. Assert over the written file: every angle ends in terminal punctuation, no hook contains more than one colon,
-    no hook carries an unterminated quote or a dangling function word.
-13. A CTA map keyed only on PILLAR prints one identical CTA on every post of a single-topic day — resolve
-    portfolio → pillar → public alternate through a day-level `seen` list. A tracked topic needs >=5
-    `BLOG_CANDIDATES`: when the day's OWN pillar returns one blog idea, the candidate list is at fault, not the
-    rotation (the FinTech block went 1 → 3 once the scam-liability and digital-asset-cliff candidates were added).
-14. A hook stat must belong to the SAME SUBJECT as the finding: skip a numeric match whose preceding character is a
-    digit or `-–—/` (a range tail like `91%` inside `~86–91%` hooked an R&D tax finding with an unrelated RBA line).
-    And never let a slice strand scaffolding (`…clusters are already`, `…AI agent in five`) or cut inside a
-    coordination (`…tax offset has founders` where the title reads on `and scientists…`): pop trailing scaffolding
-    tokens, and cut a `has|have|had|includes|with` + <=3-word tail only when the original continues with `and `/`or `.
-    Cutting a tail that carries its own content nouns regresses hooks (`…warns AI agents`, `…told a run`) — verify with
-    a before/after harness (import the previous script, diff every hook across the last ~9 days of `research_*.json`;
-    expect intended changes and zero regressions).
-15. A `BLOG_CANDIDATES` keyword list must be SUBJECT-BOUND. `fiig-penalty` fired on `asic`/`cyber`/`enforcement` and
-    reached the DELIVERED slate while `fiig` and `penalty` appeared ZERO times anywhere in the corpus — an unverifiable
-    A$2.5m framing nearly shipped as a blog idea. Never fix this class with a global anchor gate (`keywords[0] in
-    corpus`): tested and reverted the same run, it excluded the day's two best-fit candidates (`agent-incident-register`'s
-    anchor phrase `incident report` never appears — the corpus says "AI incidents") while still admitting others, trading
-    one bad slate for another. Fix the mis-specified candidate's keywords, and before delivering, grep the candidate's own
-    subject term across the day's inputs; zero hits means the candidate is ungrounded and must be dropped.
-16. Padding must be GROUNDED, not merely same-pillar (on a Cloud day every Cloud candidate passes `pillar in
-    wanted`, so a zero-hit FIIG idea rode the padding slot to the delivered slate at `signal matches: 0`) — accept
-    a two-idea slate. And the terminal CTA branch must obey `seen`: pick from a `CTA_FALLBACKS` pool by least-used
-    count, then assert 0 exact duplicates and 0 fingerprint pairs >= 0.4 on every run (five posts on one
-    single-pillar day exhausted the portfolio, pillar and three alternate CTAs and closed two of them identically).
-17. Keyword matching must be word-boundary (with plural tolerance), never plain substring: `rce` matched inside
-    "source"/"force", `log` inside "technology", `aisi` inside "raising", and each phantom put an ungrounded
-    candidate on the slate. On top of that, a candidate needs at least one SUBJECT-bound hit
-    (`_subject_kw_hits()`) against a deliberately SHORT `GENERIC_BLOG_KEYWORDS` — `nhi-agent-identity` shipped on
-    the single word "identity" while "nhi"/"nist"/"agent identity" appeared zero times. Keep the list short: a
-    wider one (payments, licensing, rba, cloud, record, consultation, carve-out, nsw) ate real subject words —
-    `psp-regulated-software` IS about payments licensing — trading one bad slate for another.
-18. A stat-prefixed hook needs balanced brackets, and the clause may not open on a proper-noun subject the title
-    never names WITH a copula/reporting verb in positions 1–2 — that is another actor's sentence
-    (`Transport has assessed that its 5% maximum non-cash taxi fare surcharge is unaffected and continues: …`
-    prefixed South Australia's cap onto an RBA-ban title; `Dabble was hit with more than $1m … (16 September`
-    prefixed a subsidiary operator's fine onto a Star licence story, unclosed bracket included). Require a shared
-    content word with the title too (`if sw and not (sw & tw): reject`). Verify with the hook harness: expect only
-    removals, zero regressions.
-19. Any external command inside a generator is best-effort and must degrade, not kill the run: an unhandled
-    himalaya `TimeoutExpired` aborted a run with NO output file written at all, so `get_signals_from_files()`
-    never got its turn. Wrap it and return "" — the caller already reads empty output as "use the fallback".
-20. A hook must not end on a verb whose object the slice cut away (`MCP exposure ranks LAST among CISO
-    priorities while >6% of enterprise chatbot conversations carry`). A slice ending on a present-tense/base
-    verb is provably unfinished, so gate on a bounded `_DANGLE_VERBS` set and drop the verb — plus the
-    `while|whereas|because|since|as` clause it trailed, since the main clause is the hook. Gate on the VERB,
-    not on clause length: cutting any subordinate clause damages good hooks (`…then shelved after media
-    pushback`). And the scaffolding pop must not leave a bare quantity — `out` sits in `TRAILING_WORDS`, so
-    `…the NIST agent deadline is now three months out` became `…is now three months`; BOTH pop loops
-    (`TRAILING_WORDS` and `_WEAK`) must break when the remainder would end on a `_MEASURE` phrase
-    (`<number> <hour|day|week|month|year|quarter|decade>s`). Guarding one loop leaves the defect live.
-21. The keyword gate protects SELECTION, not the CLAIM: a candidate TITLE is an assertion, so every statistic
-    in it must be countable in the corpus that fired it. `agent-rollback-evidence` shipped "84% of Australian
-    Firms Have Rolled Back an AI Agent" while `84%` and `rollback` occurred zero times — it cleared the subject
-    gate on `auditability`/`pii`, generic context words. Count the figure in the day's inputs before delivering
-    and reword the title rather than widening the gate. When counting, include the `*<YYYYMMDD>*` file names —
-    `mempalace-inputs/*2026-09-28*.md` misses `gmail-briefing-<id>-20260928_<time>.md`, and a "0 occurrences"
-    verdict from the wrong glob is the same mistake in the opposite direction.
-
 **Blog post structure:** Fill gaps in existing content. Each idea notes pillar, gap filled, and companion-post recommendation.
 
 **Output file:** `~/.hermes/research_outputs/linkedin-ideas_YYYY-MM-DD.md`
 
-**Curation is part of the phase:** read the generated file, rewrite the hooks in Haris's voice, and append a
-`# ✅ Curated by Pluto` section — the curated set is what gets delivered.
+**Generator hardening — consolidated rules 1–30** (full defect log, per-item fix detail and
+assertions: `references/linkedin-generator-defects.md`). Read that reference before changing
+`linkedin_ideas_generator.py`: it holds the `KNOWN_BLOGS` gap-check/rotation rules, the
+`BLOG_CANDIDATES` coverage requirement, the pillar-resolution order, the hook/angle boundary
+and hook-stat gates, the grounding gates, and the CTA-dedupe rules. The list was condensed
+here to keep SKILL.md under the 100K limit.
 
-**Rules 35–37 (Sep 29 2026) — hook-path defects fixed in `linkedin_ideas_generator.py`:** a stat prefix must not
-restate the title (parenthetical currency conversions defeated the duplicate check, shipping the same sentence
-twice — harvest the stat's figures with parentheticals stripped); a slice can end on a dangling auxiliary after a
-coordination, which needs `stay`/`stays` in `_DANGLE_VERBS` **and** a dangling-tail pattern that can match tokens
-containing `&` (`R&D`) — a `\w` tail group cannot; and a word-boundary slice must not split a multi-word proper
-noun (`Spark Festival` → `Spark`). Verified by a before/after harness over 48 findings / 8 research days: 3 hooks
-changed, 0 regressions.
+**Review before delivering:** the engine's angle/CTA are still mechanical — read the output, rewrite the hooks in Haris's voice, and append a `# ✅ Curated by Pluto` section to the day's file. Deliver the curated set.
 
-**Rules 38–39 (Sep 30 2026) — a tag shipped as a hook, and a repeat took the leftover slot:** `_short_title`
-splits on `' - '`, so a title the research phase had tagged (`UPDATE - `, `FOLLOW-ON - `) yielded the TAG as the
-hook — 4 of 6 posts on the AI-Regulation day shipped a first line of literally `UPDATE`/`FOLLOW-ON`. Strip the tag
-BEFORE the dash split, and only when a separator actually follows it (making the separator optional rewrote
-`UPDATE to the 12 Sep standards-race feed: …` into a hook opening `to the 12 Sep standards-race feed:` — a tag
-without a separator is a sentence, not a tag). And a within-10-day blog repeat must not merely rank last while
-still taking the leftover slot: on 30 Sep the 24 Sep `aml-data-residency-cloud` idea filled slot 3 because only
-two fresh candidates matched — with >=2 fresh grounded candidates, emit those and pad no further, and padding must
-skip repeats too. A new grounded candidate (`insurer-as-regulator`) was added for the private-enforcement-channel
-gap, and the CTA invariants re-asserted (0 exact duplicates, worst content-word fingerprint overlap 0.17).
+**Rules 24–45 (Sep 22 – Oct 9 2026) — condensed; full defect log + regression harnesses in `references/linkedin-generator-defects.md`:** blog picks need ONE FRESH GROUNDED candidate per slot — count the pool the matcher USES (`_fresh()` also excludes every `KNOWN_BLOGS` key, so each published post permanently removes a candidate from its pillar); a repeat loses to a fresh candidate (10-day `_repeat`) and must not take a leftover slot while ≥2 fresh exist; candidates must be SUBJECT-bound with countable title claims; hook gates (`_DANGLE_VERBS`, no bare quantity after a scaffolding pop, no split proper noun or bare initialism); CTAs dedupe via a day-level `seen` (fingerprint ≥0.4); punctuation-stripping helpers need `_ensure_terminal()`; an external command must degrade, not kill the run. Verify hook changes with the before/after harness (0 regressions) plus a blog-candidate replay.
 
-**Rule 40 (Oct 1 2026) — a hook ended on a bare initialism, and the blog slate recycled wholesale:** a
-100-char word-boundary slice can stop inside a compound noun (`…risks losing A$30bn of AI`), which no existing
-gate catches — `AI` is not a trailing/weak word, not a dangling verb, and Rule 36's proper-noun guard wants BOTH
-tokens capitalised. Pull the next token in when the last retained token is an all-caps acronym of <=4 letters.
-Same run, a whole blog block recycled: on the topic's 5-day cycle the slate was two verbatim repeats of the
-previous cycle plus one idea from four days earlier, because the day's OWN pillar had no un-repeated, grounded
-candidate left (Rule 39 cannot promote what does not exist). Fix the candidate LIST, never the matcher — three
-grounded Cloud candidates were added (`datacentre-permitting-risk`, `datacentre-efficiency-disclosure`,
-`compute-securitisation-lockin`; 6/6/5 subject hits on the day, no spurious firing on other days) and the block
-came back three fresh. Two candidate defects fixed the same way: a candidate whose TITLE asserts a statistic must
-have that statistic in the corpus (`cloud-waste-finops` shipped "The 29% You Are Paying For Nothing" while `29%`
-and `finops` occurred ZERO times — title reworded, keywords trimmed so `capex` stops firing it), and a keyword
-list made of context vocabulary (`record`/`cloud`/`vendor`) re-fires on any cloud day and re-takes a slot for an
-idea already delivered — tighten THAT candidate's list, never widen the global `GENERIC_BLOG_KEYWORDS` blocklist.
-Verified by the before/after hook harness (48 findings / 8 days: 1 change, 0 regressions) and a blog-candidate
-replay over the same days.
+**Rule 44 (Oct 8 2026) — detail in `references/linkedin-generator-defects.md`:** the subordinate-tail cut in `_short_title` runs BEFORE the scaffolding pops, so a trailing weak token hides the tail from the bounded `{1,3}` regex and the hook ships mid-clause — re-apply it after the pops, widened to 6 tokens, gated on the tail carrying NO finite verb. General rule: a rule that runs before another that MODIFIES the string must be re-evaluated after it. An idea can also fire on a publication NAME in a finding's content — print the exact keyword that fired and read its context.
 
-**Rule 41 (Oct 2 2026) — a topic cycle with one fresh candidate re-ships the previous slate:** on the FinTech
-day the blog block came back as one fresh idea (`digital-asset-licence-cliff`) plus two verbatim 27 Sep repeats
-(`surcharge-ban-scope`, `psp-regulated-software`), because the day's own pillars held exactly ONE fresh grounded
-candidate — and the run's highest-impact finding (AUSTRAC's first Tranche 2 infringement notices) had NO candidate
-at all. Rule 39 can only promote what exists, so this is an upstream pool defect, not a sort defect. Diagnose by
-printing FRESH/REPEAT plus the subject-hit count for every candidate whose pillar is in
-`day_pillars(topic, findings)` BEFORE touching the rotation window, the padding gate or
-`GENERIC_BLOG_KEYWORDS`; then add candidates for the day's own pillars. Two were added —
-`austrac-infringement-notices` (5 subject hits: `infringement notice`, `infringement notices`, `section 167`,
-`tranche 2 enrolment`, `enrolment gap`) and `asic-ai-banking-review` (6 hits: `customer-facing ai`,
-`ai in customer-facing`, `banking priorities`, `lender conduct`, `broker oversight`, `referrer arrangement`) —
-each replayed across the prior 7 research days at 0 hits; an earlier draft anchored on
-`designated service`/`reporting entities` was tightened because it fired on any Tranche-2 mention (1–2 hits on
-25/27 Sep). Block went 1 fresh + 2 repeats → 3 fresh. Rule 34 checked: neither new title asserts a statistic.
+**Rule 45 (Oct 9 2026) — detail in `references/linkedin-generator-defects.md`:** a returning 5-day-cycle topic whose LIVE pool is short pads the slate with verbatim repeats. On Startup & VC (same `date%5` slot as 4 Oct) the Startup & ESOP pool had only two live entries, both shipped five days earlier, so two of three ideas repeated while the day's biggest new signals (Diraq/DARPA, Breaker/Rheinmetall, Metal's stablecoin seed) had no candidate. Count the pool the matcher USES (`day_pillars` ∩ `_fresh`) when a topic returns and the slate looks familiar; add fresh subject-bound candidates, never loosen the gate. Keep every 5-day-cycle topic at ≥1 fresh grounded candidate per slot.
 
-**Rule 42 (Oct 6 2026) — the FRESH pool is smaller than the Rule 41 diagnostic reports, because `KNOWN_BLOGS` also excludes candidates:** on the Cloud day the diagnostic showed two FRESH Cloud candidates, but only one reached `scored` — `sovereign-cloud-procurement` had been retired into `KNOWN_BLOGS` when its gap published as "Australia's Cloud-First Policy Is An Architecture Decision…". The real fresh pool was one candidate, so two 1 Oct repeats (`datacentre-efficiency-disclosure`, `compute-securitisation-lockin`) took the leftover slots. `_fresh()` excluding a `KNOWN_BLOGS` key is correct behaviour (the post is written); the defect is counting it as available. Add `and lig._fresh(key, title)` to the diagnostic loop. **The rule: every published post permanently removes one candidate from that pillar's pool, so the candidate list has to grow faster than the blog does.** Three were added this run — `datacentre-state-planning-approval` (5 hits: `community benefit agreement`, `social impact assessment`, `planning scheme`, `council planning`, `non-negotiables`), `datacentre-firb-screening` (4: `firb`, `national security business`, `divestment`, `call-in`), `datacentre-embodied-carbon` (4: `embodied carbon`, `mecla`, `whole-of-life`, `mep systems`) — each 0 hits on every prior research day except one legitimate bare `firb` mention on 1 Oct. Slate went 1 fresh + 2 repeats → 3 fresh grounded ideas.
+See `references/linkedin-content-extraction.md` for content pillar details and `references/gmail-briefing-integration.md` for Gmail signal sourcing.
 
-**Rule 43 (Oct 7 2026) — a keyword can belong to ANOTHER subject, and a returning topic's candidate pool is the binding constraint:** on the FinTech day `nhi-agent-identity` fired on `token` — which in that corpus came from *wrapped tokens* / *tokenised securities* — and took blog slot 3 while `non-human identity`, `nhi`, `nist` and `agent identity` each occurred ZERO times. Rule 29e removed `identity` as generic but left `token`; deleting a generic word is not enough, because the surviving word can be another subject's SUBSTANCE. Audit every keyword against the subjects that recur in this corpus, not just against `GENERIC_BLOG_KEYWORDS`. List is now `["non-human identity", "nhi", "nist", "agent identity"]`, and the fix keeps the true positive (still fires on the 3 Oct Agentic-AI corpus via `agent identity`). With that fixed the day held only two legitimately fresh grounded candidates (`spf-multiparty-liability`, `surcharge-ban-scope`) while the day's #1 signal — ASIC's lender-conduct review from $4bn of suspected mortgage fraud, which names REFERRERS — had no candidate; `referrer-chain-cdd` was added (`referrer`, `introducer`, `referral`, `lender conduct`, `mortgage fraud`, `home loan fraud`; 6 hits on 7 Oct, 4 on 2 Oct, 0 on every non-FinTech day). Slate went 2 fresh → 3 fresh grounded ideas. **Replay as before (corpus rebuilt from each `research_*.json` alone): 30 Sep, 1 Oct, 3 Oct, 4 Oct, 5 Oct, 6 Oct identical; only the FinTech days changed, both toward grounded ideas — 0 unintended regressions.** **Watch item:** `digital-asset-licence-cliff` fires on `tokenised`, which also appears off-topic (it did on 5 Oct, an AI-Regulation day); it lost to the 10-day repeat rule so nothing wrong shipped, but it is the same shape and needs tightening before it wins an off-topic slot. **And after any `BLOG_CANDIDATES` edit, re-run `main()` and confirm the `# ✅ Curated by Pluto` section survived (Rule 17).**
+### Phase 8b: AMLHive Content-Ideas Cron — dedupe and re-feed rules (Sep 14, 2026)
 
-**Rule 44 (Oct 8 2026) — the subordinate-tail cut ran BEFORE the scaffolding pops, so a hidden tail shipped mid-clause:** the hook shipped as `Shinhan Bank loses ~25,000 customer records in an AI-agent-assisted hack as the Bank of England`, while the title reads on `…demands a legal right to intervene`. `_short_title`'s subordinate-tail regex is bounded to `{1,3}` tokens and runs *before* the `TRAILING_WORDS`/`_WEAK` pop loops, so a trailing weak token hides the tail from the bound (`…and even ASIC's chair now` is 4 tokens, so `{1,3}` fails), and the pops then expose a 3-token fragment that is never re-checked. Three days reproduce it (`…as Tranche 2 enrolment gap`, `…and even ASIC's chair`, `…as the Bank of England`). Fix: re-apply the cut AFTER the pops, widened to 6 tokens, gated on a new `_tail_has_verb()` — a retained tail carrying a finite verb is a complete clause and is kept (`…and convenes a first-of-its-kind insolvency roundtable` survives), a verbless fragment is cut. Harness over the last 8 `research_*.json` days (48 findings): **3 hooks changed, 3 improvements, 0 regressions.** **General rule: a rule that runs before another rule that MODIFIES the string must be re-evaluated after it — the `{1,3}` bound was never the bug on its own; the ordering was.**
-**Rules 43b (Oct 8 2026) — a candidate can fire on a publication NAME, and the day's critical finding may have no candidate:** `insurer-as-regulator` fired on bare `insurance` from the byline *Insurance Journal*, which sits inside a finding's *content*, while its own terms `insurer` and `underwriting` occurred zero times — keywords tightened to `["insurer", "underwriter", "underwriting"]` (the legitimate `insurer` hits on 5 and 7 Oct survive). `agent-memory-poisoning` fired only on `mcp` while `memory poisoning`, `poisoned memory` and `ruflo` occur **zero** times on every research day on record — tightened to its own subject terms, losing no true positive. **Print the exact keyword that fired and read its surrounding context before trusting a blog idea: a source attribution inside the content is not evidence for the post.** Separately, the day's #1 signal (Shinhan Bank's AI-agent-assisted breach, ~25,000 records, `impact: critical`) had **no candidate at all**, so `agent-assisted-breach-evidence` was added (`shinhan`, `agent-assisted`, `ai-agent-assisted`, `legal right to intervene`): 6 hits on 8 Oct, 0 on the other 7 replayed days.
+The 5:45 AM AMLHive content-ideas cron writes three files: `research_outputs/content-ideas-YYYY-MM-DD.md`, an appended section in `research_outputs/morning-briefing-YYYY-MM-DD.md`, and `mempalace-inputs/content-ideas-YYYY-MM-DD.md` (watcher feeds it to the `fintech-aml` chamber).
 
-**Rule 45 (Oct 9 2026) — a returning topic whose LIVE pool is one candidate short pads with verbatim repeats:** on the Startup & VC day (the same `date%5` slot as 4 Oct) the delivered slate was one fresh idea (`compute-securitisation-lockin`) plus **two verbatim repeats from 4 Oct** (`startup-cgt-carveout-draft`, `govt-coinvestment-accountability`). The Startup & ESOP pool holds three candidates and one (`vc-barbell-missing-middle`) is RETIRED in `KNOWN_BLOGS`, so the LIVE pool is two — both had shipped five days earlier — so `_fresh_hits` held a single item and Rule 39 padded with the repeats. The day's biggest NEW signals (Diraq's US$51m DARPA tranche, the Breaker/Rheinmetall drone-swarm teaming, Metal's ~US$50m stablecoin seed) had no candidate. Run the Rule 42 pool count (`day_pillars` ∩ `_fresh`) the moment a 5-day-cycle topic returns and the slate looks familiar. Fix — candidates, never the matcher: `defence-quantum-capital-route` (Startup & ESOP; 7 hits: `diraq`, `darpa`, `rheinmetall`, `boxer crv`, `drone swarm`, `quantum grants`, `national reconstruction fund`) and `tokenised-rails-licensing` (FinTech; 5: `capital 49`, `tokenised financial`, `stablecoin infrastructure`, `tokenised financial products`, `loong wang`), each replay-verified **0 hits across the prior 7 research days** and neither title asserting an uncounted figure. Slate went 1 fresh + 2 repeats → **3 fresh grounded ideas**, led by the day's own pillar. **A published post permanently removes one candidate from its pillar's pool (Rule 42), so every 5-day-cycle topic must hold at least one fresh grounded candidate per emitted slot — on Startup & VC that is ≥3 live fresh candidates, counted with RETIRED keys excluded.**
-
-See `references/linkedin-content-extraction.md` for content pillar details, `references/gmail-briefing-integration.md` for Gmail signal sourcing, and `references/linkedin-generator-defects.md` for the generator defect log.
-
+- **Identify each `inbox_*.json` by its own `topic` field — do NOT assume `inbox_*.json` means Perplexity (Sep 21 2026).** The 05:00 inbox dumps are one file PER CHANNEL: on Sep 21 the two files were `topic: "Genspark Briefing: …"` and `topic: "Claude Daily Research: …"`, with no Perplexity-topic file at all. Read every `inbox_<date>*.json` (not just `ls -t | head -1`) and report the source inventory from those `topic` strings; declaring a source "present" from the filename alone misreports provenance to Haris.
+- **Check the last 7 days of ideas before shortlisting — two sources, not one.** The `content-ideas-*.md` files use inconsistent heading formats across days (some `### 1. Title`, older `# 1. Title` under a "Full idea list" heading), so a single heading regex misses titles. Also query the chamber itself: the watcher-fed docs in `fintech-aml` (metadata `topic: AMLHive Content Ideas — <date>`) are the authoritative record of what was already proposed. Reusing an angle from 3 days earlier is the most common failure of this cron.
+- **Keep the mempalace input file to idea headings only — a trailing `## Section` is parsed as a finding (Sep 26 2026).** The watcher accepts any `##` block as a finding, so a metadata section such as `## Shortlist (top 3 delivered to the briefing)` or a dedupe note gets stored too and the chamber count comes back one higher than the idea count (observed: 6 ideas → 7 docs, ids `pluto_<YYYYMMDD>_<HHMMSS>_6`). Put slate metadata in the `research_outputs/content-ideas-<date>.md` file only, then after feeding assert the per-topic doc count and unique-text count both equal the number of ideas and `col.delete(ids=[...])` any extra id.
+- **Re-feeding a corrected file requires deleting the previous docs.** The watcher's `.processed/<stem>.done` marker stops reprocessing, and removing only the marker re-feeds the file — but the FIRST feed's docs stay in the chamber, leaving duplicates. After rewriting an input file that was already fed: (1) `col.delete(ids=...)` the stale docs, (2) remove the `.done` marker, (3) re-run `mempalace_watcher.py --file <path>`, (4) dedupe the chamber by exact document text under that day's `topic` and assert the count equals the number of findings.
+- **`where_document={"$contains": ...}` searches document text, not metadata** — filtering on a `Source:`/`url` substring silently returns 0. Filter by metadata (`where={"topic": ...}`) instead. **And `$contains` on a metadata FIELD is also unsupported/returns 0** (verified 2026-10-04 on chromadb 1.x: `col.get(where={"topic": {"$contains": "AMLHive Content Ideas"}})` returned 0 docs against a 314-doc `fintech-aml` collection holding 6 matching docs) — an unfiltered `col.get(include=["documents","metadatas"])` plus a Python substring scan over the metadatas is the reliable dedupe read, and a bare `0` from a `$contains` metadata filter is a failed check to re-run, never a real "nothing stored".
+- **The content-ideas input file's `tags:` line decides its chamber — keep AMLHive vocabulary there, not the day's research topic (Sep 18 2026).** Tagging the input file with the day's research tags (`agentic-ai`, `agent-security`, `red-teaming`) makes `route_to_chamber()` send the whole idea set to `agentic-security`, so the ideas disappear from `fintech-aml` and the next day's dedupe query (which greps `fintech-aml` for `topic: AMLHive Content Ideas — <date>`) sees nothing. **Sep 30 2026:** file-level tags come from the LAST `Tags:` line only, so put AMLHive vocabulary on EVERY finding and read back `fintech-aml` by topic to confirm routing. Scope tags to `amlhive, content-ideas, real-estate, tranche-2, fintech, compliance` regardless of the research topic. To correct a mis-routed day: `col.delete(ids=...)` the wrong-chamber docs, fix the tags line, remove `.processed/<stem>.done`, re-run `mempalace_watcher.py --file <path>`, then assert the docs exist in `fintech-aml` and NOT in the research chamber (the watcher has no `--chamber` flag — routing is purely tag-driven).
+- **`mempalace_watcher.py --file` resolves RELATIVE TO `mempalace-inputs/` — pass the bare filename (Oct 9 2026).** `--file mempalace-inputs/content-ideas-<date>.md` (run from `~/.hermes`) prints `❌ File not found: /home/habib/.hermes/mempalace-inputs/mempalace-inputs/...` and feeds nothing, while the read-back check (which correctly reports 0 docs) makes it look like a routing/sidecar failure rather than a path bug. Correct form: `scripts/mempalace_watcher.py --file content-ideas-<date>.md`. Always confirm `"status": "processed"` with `fed` == finding count before believing the ideas landed.
+- **Mirror the previous day's input-file HEADING CONVENTION, not just its tags.** Use `## [AMLHive Content Idea] <title>` (one `##` per idea) — matching the prior file makes the chamber dedupe-by-title query (previous bullet) reliable across days, and the watcher's plain `## Finding` fallback drops the convention prefix otherwise. Confirm the file parsed by running `mempalace_watcher.py --file <path>` before finishing; expect `"fed": N, "status": "processed"`.
+- **`Source:` lines become the ChromaDB `url` field.** For ideas with no verifiable external article, use `Source: internal://pluto/content-ideas/<date> (provenance)` rather than a descriptive sentence or a guessed URL — never invent a publisher URL.
+- **When the day's signals carry NO direct AML/AUSTRAC item, derive ideas from the three adjacent signal classes instead of reaching for the same regulator story (Sep 24 2026).** That day's Genspark brief had zero AUSTRAC/Tranche-2/enforcement lines and the day's research topic was Startup & VC, yet three non-repeating ideas still came out of: (a) a **sector breach that exposes the exact documents collected at CDD** (Quest Apartment Hotels: 1,991,613 customers told to reissue passports and replace licences) → verifying an identity, not a document; (b) a **policy thread that will cite that breach** (Privacy Act reform / Digital Duty of Care) → the 7-year retention vs data-minimisation question; (c) a **macro/credit shift that changes how funds arrive** (RBA 29 Sep hike ~86-91% priced) → deposit bonds and guarantees are not cash, so what evidences source of funds. Each still maps to a real estate principal's search intent, so the idea set stays AMLHive-native without inventing a regulator development. Check the last 7 days of `content-ideas-*.md` first — the adjacent-class framing is what keeps a signal-poor day from recycling an angle already used.
 
 ### Phase 9: Email Delivery (NEW June 4, 2026 — Updated June 5, 2026)
 
@@ -473,9 +511,38 @@ See `himalaya` skill → `references/smtplib-fallback.md` for the full smtplib p
 
 ### Phase 10: Podcast Knowledge Ingestion (June 2026 — Updated June 5, 2026)
 
-For building knowledge bases from podcast transcripts. **Backend: Supabase + pgvector (LIVE).** 143 episodes across 15 podcasts as of June 5, 2026. DB-driven pipeline (`podcast_ingestor.py`, Wed+Sun 6AM cron) with description-first content acquisition (YouTube descriptions are not rate-limited; full transcripts are, so those need 90s-delay overnight repair).
+For building knowledge bases from podcast transcripts. **Backend: Supabase + pgvector (LIVE).** 143 episodes across 15 podcasts as of June 5, 2026.
 
-Full script inventory, the content-acquisition priority order, the step-by-step process for onboarding a new podcast tier, and YouTube channel-type quirks (topic channels, flat-playlist date bugs, SINCE_DATE filtering): see [Podcast Knowledge Ingestion](references/podcast-knowledge-ingestion.md), `references/podcast-ingestion-pipeline.md` for full patterns, `references/supabase-podcast-architecture.md` for schema, and `references/youtube-handle-discovery.md` for Tier 2 confirmed handles.
+**Scripts (all in `~/.hermes/scripts/`):**
+- `podcast_ingestor.py` — Full pipeline: DB-driven, queries `podcast_kb.podcasts` for all channels with handles. Uses yt-dlp listing → transcript download → Supabase storage. Wed+Sun 6AM cron.
+- `podcast_ingest_tier2.py` — Description-based ingestion (no transcript API). For new tiers where transcripts are blocked.
+- `podcast_fix_tier2_failed.py` — Targeted fix for channels that returned 0 from main ingest. Handles topic channels, extended date ranges.
+- `podcast_repair_transcripts.py` — Repair missing transcripts with 90s delays overnight. VALIDATED June 5: 7→55 transcripts.
+- `podcast_repair_descriptions.py` — Fill content from YouTube descriptions (NOT rate-limited, use first).
+
+**Content acquisition (priority order):**
+1. **YouTube descriptions** (`yt-dlp --print "%(description)s"`) — NOT rate-limited. Contains timestamped topics, guest names, links. ~2K chars average. PRIMARY source. Use first.
+2. **Full transcripts** (`youtube-transcript-api`) — rich but IP-blocked. Use 90s delays overnight ONLY. Run `podcast_repair_transcripts.py` as a background process.
+3. **Website scraping** — NOT viable (JS-rendered). Skip.
+
+**Adding a new tier (step-by-step):**
+
+1. **Discover YouTube handles:** Three methods in priority order:
+   - **(A) Curl channel page + grep** — `curl -sL "https://www.youtube.com/@HANDLE" | grep -oP '"channelId":"[^"]+"' ` — most reliable, not rate-limited
+   - **(B) YouTube search page** — `curl -sL "https://www.youtube.com/results?search_query=NAME" | grep -oP '/@[a-zA-Z0-9_-]+' | sort | uniq -c | sort -rn` — when exact handle is unknown
+   - **(C) yt-dlp flat-playlist** — may be rate-limited after transcript downloads. Use as last resort.
+2. **Verify:** Curl the handle URL, extract `<title>` and `channelId`/`externalId` from JSON.
+3. **Update DB:** `UPDATE podcast_kb.podcasts SET youtube_handle = '@handle', channel_id = 'UC...' WHERE name = 'Podcast Name'`
+4. **Run ingestion:** Use description-based script first (fast, no rate limits). Follow with transcript repair overnight.
+5. **The ingestor is DB-driven** — no script changes needed. Cron auto-discovers new channels next run.
+
+**YouTube channel types and their quirks:**
+- **Standard user channels:** `flat-playlist` works. `@handle` URL works. Example: All-In, a16z, Lenny's, Logan Bartlett.
+- **Topic channels (auto-generated):** `flat-playlist` returns nothing. `@handle` URL gives "does not have a videos tab". Use channel ID URL: `https://www.youtube.com/channel/UC...`. Example: Masters of Scale, How I Built This.
+- **flat-playlist date issue:** `--flat-playlist` returns `NA` for `upload_date` on some channels (Logan Bartlett). Individual date fetches work: `yt-dlp --print '%(upload_date)s' VIDEO_ID`. Non-flat playlist (`--playlist-end N` without `--flat-playlist`) returns dates but is slower.
+- **SINCE_DATE filtering:** The ingestor filters videos by `SINCE_DATE` (default 2025-12-01). Some channels (Logan Bartlett) had newest videos from Sep 2025 — ALL got filtered. When debugging empty results, check: (1) flat-playlist returned videos? (2) dates are not NA? (3) dates pass SINCE_DATE? Extend to 2024-06-01 for broad discovery.
+
+See `references/podcast-ingestion-pipeline.md` for full patterns, `references/supabase-podcast-architecture.md` for schema, and `references/youtube-handle-discovery.md` for Tier 2 confirmed handles.
 
 ### Phase 11: Daily Learning Sessions
 
@@ -544,45 +611,61 @@ Research outputs must be valid JSON:
   ]
 }
 ```
+**⚠️ `portfolio_hit` shape is consumed by two different normalizers:** the research JSON schema below emits `portfolio_hit` as a **STRING** (`"portfolio_hit": "FinAI File AU"`), but `briefing_improver.py`'s podcast path emits a **LIST** of dicts/strings. Any consumer must handle BOTH shapes — `score_project_heat()` did not (list-only) and silently dropped all research findings from the Portfolio Pulse heatmap until 2026-09-13. Prefer emitting the string form that the schema specifies and let consumers normalize; do NOT switch to a list here without checking every consumer.
+
 **`portfolio_hit` and `impact` are optional but RECOMMENDED** — the v2 briefing improver (`briefing_improver.py`) depends on them for portfolio heatmaps and action checklists. Include both whenever findings map to Haris's portfolio projects (FinAI File AU, AML Hive, PayLicence AU, TokenPilot AU, ExitLens AU, CloudProof AU, Tapease). `impact` values: `critical` (immediate deadline/obligation), `severe` (significant but not imminent), `medium` (trend to monitor). The `sources` array is also recommended — it provides the briefing engine with provenance for confidence-tiering without needing to re-parse the full content field.
 
 ## Phase Verification (Post-Run Guardrail)
 
-After the inline pipeline completes (~5:25 AM AEST), verify all phases actually produced output. **Do not trust `last_status: ok` alone** — phases can silently produce zero output while reporting success (research JSON with 0 findings, stale briefing, mempalace feeder skipped, voice MP3 not generated). If 2+ phases are missing simultaneously, regenerate from Phase 1.
+After the inline pipeline completes (~5:25 AM AEST), verify all phases actually produced output. **Do not trust `last_status: ok` alone** — phases can silently produce zero output while reporting success.
 
-**Pluto is the sole operator of the full morning briefing pipeline as of June 4, 2026** — research, synthesis, LinkedIn/blog ideation, voice overview, email delivery (hhsiddiqui@gmail.com + admin@harishabib.au), and Telegram delivery, with no Gumby forwarding.
+**Verification checklist (run one-liner):**
+```bash
+echo "== Pipeline Phase Verification =="
+echo "1. Research JSON: $(ls -la ~/.hermes/research_outputs/research_$(date +%Y-%m-%d).json 2>/dev/null | awk '{print $5\" bytes\"}')"
+echo "2. Morning Briefing: $(ls -la ~/.hermes/research_outputs/morning-briefing-$(date +%Y-%m-%d).md 2>/dev/null | awk '{print $5\" bytes\"}')"
+echo "3. Mempalace Feed: run --status check"
+echo "4. LinkedIn Ideas: $(ls -la ~/.hermes/research_outputs/linkedin-ideas_$(date +%Y-%m-%d).md 2>/dev/null | awk '{print $5\" bytes\"}')"
+echo "5. Email Delivery: check Python smtplib return value"
+```
 
-The full verification one-liner, per-phase remediation steps, and the separate mempalace-feeder verification check: see [Post-Run Phase Verification](references/post-run-phase-verification.md).
+**Common silent-failure patterns:**
+- Research JSON exists but has 0 findings → RSS queries returned empty
+- Morning briefing exists but is stale (from previous day's data) → Phase 2 synthesis loaded wrong file
+- Mempalace feeder not invoked → the inline step skipped Phase 3 (common — see June 5, 2026: feeder not run despite all other phases ✅). Fix: run feeder manually, add it to the inline cron script.
+- Voice overview MP3 not generated → voice cron ran but found no research JSON to read
+
+**Remediation for missing phases:**
+- **Missing research JSON** → Run Phase 1 inline (Google News RSS + Python synthesis)
+- **Missing mempalace feed** → Run Phase 3 manually with `pluto_mempalace_feeder.py`
+- **Missing email** → Run Phase 9 manually with Python smtplib (the himalaya auth.cmd fallback)
+- **Missing LinkedIn ideas** → Run Phase 8 manually with `linkedin_ideas_generator.py`
+
+If 2+ phases are missing simultaneously, regenerate the full briefing: re-run the research pipeline from Phase 1.
+
+**Mempalace feeder verification** (must be run separately — the `--status` flag shows chamber state, not last-feed state):
+```bash
+# Check if today's topic was stored
+/home/habib/.hermes/venv/bin/python3 /home/habib/.hermes/scripts/pluto_mempalace_feeder.py --status 2>&1 | grep -A3 "$(date +%Y-%m-%d)"
+# Reliable check: look for today's date in chamber finding timestamps
+/home/habib/.hermes/venv/bin/python3 -c "
+import json, datetime
+d = json.loads(open('/home/habib/.hermes/research_outputs/research_$(date +%Y-%m-%d).json').read())
+print(f'Findings in JSON: {len(d.get(\"findings\",[]))} stored for {d.get(\"topic\",\"unknown\")}')
+"
+```
+This second check validates that the JSON file itself is non-empty and correctly structured — a prerequisite for the feeder to work.
+
+**Pluto is the sole operator of the full morning briefing pipeline as of June 4, 2026.** This includes research, synthesis, LinkedIn/blog ideation, voice overview, email delivery to hhsiddiqui@gmail.com + admin@harishabib.au, and Telegram delivery. **No Gumby forwarding — Pluto delivers directly to Haris.** Gumby is fully retired from briefing duties. All 9 cron jobs plus inline briefing/email phases are Pluto's responsibility.
 
 ## Pitfalls
 
-Quick rules that apply on every run:
-- Do NOT generate fake URLs — if no URL, leave empty string
-- Do NOT exceed 10 findings per topic — quality over quantity
-- Always validate JSON before feeding; the feeder needs its ChromaDB ONNX model downloaded (first run is slow)
-- **A generic `/tmp/<prefix>_*.xml` glob silently merges PRIOR runs' feed files into today's corpus** — fetch names of `/tmp/ft_*.xml` picked up 13 leftover `ft_1.xml`…`ft_23.xml` files from the previous FinTech run, inflating "within 25 days" from **204 to 358** and inventing tiers `9`/`23`/`7` (2 Oct 2026). Nothing errors — the parser reports a plausible corpus. Name fetch files with a RUN-SPECIFIC prefix, glob that exact prefix, print the basenames the parser actually consumed, and sanity-check the tier counts against the number of queries fired before trusting any headline total; delete the run's files when done
-- **`stored=N, verified=0, "dedup: N already present"` is DATA LOSS, not an idempotent skip** — a briefing whose blocks are all titled `## Finding` was deduped to zero and re-fed every 5 min forever (28 Sep 2026). Dedup identity is now the EXACT document text and the watcher compares read-back to `findings_added`; verify a feed against the chamber, not the exit status
-- **The pre-draft duplicate check must read the CHAMBER, not just the recent `research_*.json` files** — the 5-day rotation means the same vertical returns, and a chamber also holds findings fed by cross-chamber synthesis / retro runs that never appear in any daily JSON (30 Sep 2026: recent files showed only the 25 Sep set while `regulatory-ai` already held 19 Sep synthesis docs on the same EU enforcement ground as that day's draft). Run `col.get(where={"topic": <topic>})` on the target chamber, read the stored titles, and prefix repeats with `UPDATE - ` / `FOLLOW-ON - ` stating what is genuinely new. Re-feeding a corrected set: `col.delete(ids=...)` that run's `pluto_<YYYYMMDD>_*` docs first, re-feed, then assert docs == unique texts == finding count
-- Research outputs go to `/home/habib/.hermes/research_outputs/`
-- When running as a cron job, check which topics were already covered today before picking a new one
-- **The daily topic rotation is `day-of-month % 5`, not `date.toordinal() % 5`** — the ordinal form silently re-runs the previous day's vertical (verified 29 Sep 2026: `toordinal()%5` returned 3 = the prior day's Agentic topic, while `day%5`=4 matched all six recent files). Sanity-check the pick against the last 5–6 `research_*.json` `topic` fields; a repeat across a month boundary (30→0, 31→1) is normal, a repeat within 1–2 days is not
-- **`write_file`'s stale-file guard is UNSATISFIABLE when the previous file contains a line longer than the read tool's per-line cap** — every read returns `truncated_lines: true` so no re-read clears it and the identical write loops. Archive then recreate (`cp -p x archive/x-<prev-date>.md && rm -f x`) and write the fresh copy to a new path; hit on the daily `gumby-brief-input.md` whose prior `**For Haris:**` line was ~5,000 chars (29 Sep 2026). Never `patch` that file — it is replaced wholesale each morning
-- Staging inbox watcher (`5678a363ce3b`) auto-processes `mempalace-inputs/` every 5 min — no manual steps needed unless urgent
-- Check `/mnt/c/Users/habib/.hermes/.env` for Windows-side credentials if a key is missing
-- Hermes cron uses LOCAL time (AEST), not UTC — always check `next_run_at`'s timezone suffix
-- Time-aware communication: server is UTC, Haris is Sydney AEST — never use time-based greetings without checking current Sydney time first
-
-The full dated incident log — watcher format-mismatch vs. down, research JSON topic collisions, the mempalace feeder being silently skipped, the feeder's topic auto-routing bug, both himalaya email failure modes, cron silently producing zero output, subagent/web-tool failure modes, the three inline-Python/curl-pipe failure modes, JSON/`read_file()` parsing gotchas, the publisher curl reliability lists (which sites work vs. are JS-walled), signal polarity bias, cron scheduling gotchas, model pricing, and podcast/YouTube rate-limiting incidents — is preserved in full at [Pitfalls & Incident Log](references/pitfalls-and-incident-log.md).
+Moved to `references/pitfalls-full.md` (2026-10-11) to keep this file under the 100,000-char ceiling.
+Full catalogue: watcher/feeder format + dedup defects, Supabase URL parsing (`==`, `pgbouncer=true`),
+YouTube transcript/handle discovery, competitor-intel false positives, and the daily-run failure modes.
+Load it before debugging the morning pipeline or the mempalace sync path.
 
 ## Reference Files
-- `references/rss-research-extraction-patterns.md` — Legacy/broad RSS discovery, minified-XML extraction options, multi-angle parallel pattern, subprocess/execute_code pitfalls, delegate_task fallback
-- `references/audit-before-recommending.md` — Case studies behind the Phase 0e tool/subscription/infra audit checklist
-- `references/weekly-digest-workflow.md` — Full Phase 7 cross-day dedup, aggregation, and digest JSON format
-- `references/podcast-knowledge-ingestion.md` — Full Phase 10 script inventory, tier onboarding steps, YouTube channel-type quirks
-- `references/post-run-phase-verification.md` — Full post-run verification one-liner, remediation steps, mempalace feeder check
-- `references/pitfalls-and-incident-log.md` — Full dated incident log (watcher issues, feeder bugs, email failure modes, JSON/parsing gotchas, publisher curl reliability, etc.)
-- `references/watcher-feeder-dedup-defect.md` — Watcher/feeder dedup defect: generic `## Finding` titles deduped a whole 85-item briefing to zero (28 Sep 2026), the two-script fix, and the chamber-level verification recipe
-- `references/daily-run-pitfalls.md` — Operational daily-run pitfalls: the `day-of-month % 5` topic rule, the unsatisfiable `write_file` stale guard on long-line files (archive-then-recreate fix), chamber read-back verification, producer-side `.findings.json` contract failures
 - `references/delegation-pattern.md` — Proven subagent prompt templates
 - `references/australian-news-feeds.md` — RSS feed catalog
 - `references/google-news-rss-patterns.md` — Google News RSS search queries per topic
@@ -601,3 +684,6 @@ The full dated incident log — watcher format-mismatch vs. down, research JSON 
 - `references/js-bundle-pricing-extraction.md` — Extract full pricing from SPA JS bundles when landing pages only show deposits. Technique: curl bundle → grep for `Af=` pricing config → extract `full` vs `reservation` amounts. Verified June 12, 2026 on Monako.ai ($399 full, $19 deposit).
 - `references/cgt-reform-knowledge-bank.md` — Condensed CGT reform knowledge bank: Senate hearing timeline, 9 recommendations from Startup Daily submission, key structural data points (2/3 foreign capital, <0.5% super to VC, Canva CR 2025/34 tax trap), angel investing indexation model analysis. Compiled June 14, 2026.
 - `references/search-extract-enrichment.md` — web_search → web_extract depth-adding pattern: bypass Google News RSS link restrictions by discovering articles on publisher domains, then extracting full content. Validated June 17, 2026 (4/4 success rate).
+- `references/daily-run-pitfalls.md` — Operational daily-run pitfalls: the day-of-month % 5 topic rule, the unsatisfiable `write_file` stale guard on long-line files, chamber read-back verification, producer-side `.findings.json` contract failures.
+- `references/pitfalls-full.md` — The full pitfalls catalogue extracted from SKILL.md 2026-10-11 (watcher/feeder format + dedup defects, Supabase URL parsing, YouTube transcript/handle discovery, competitor-intel false positives). Read this one for history; `daily-run-pitfalls.md` holds the current run-time rules.
+- `references/linkedin-generator-defects.md` — Full defect log for `linkedin_ideas_generator.py` (rules 1–23): blog gap-check/rotation, pillar resolution, hook/angle boundary rules, stat-clause gates, quote balancing, the pillar gate on matched blog candidates, and the file-level verification recipes. Load before modifying the generator; SKILL.md holds the condensed rules.
