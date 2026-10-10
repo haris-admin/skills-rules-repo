@@ -392,6 +392,32 @@ When you see `last_status: error` on a cron, classify before escalating:
   4 consecutive runs (escalated real on 10-08, unchanged). E2E `47 passed, 3 failed` — all three match
   the whitelisted `reduced-motion` flaky pattern (counter run 2/3, exit stays green, escalates at 3)
   → do NOT report E2E as a regression.
+  **2026-10-10 (day 4) — flat backend, but BOTH flaky counters have now tripped escalation.**
+  Backend `7770 passed, 34 failed` (10-07 7641/31, 10-08 7699/38, 10-09 7770/34, baseline 6-8) —
+  day 4 of the elevated post-`origin/dev` band, unchanged, still a COUNT-TREND watch. vitest
+  `240 passed, 1 failed` = **5 consecutive runs**; E2E `47 passed, 3 failed` = **3 consecutive runs**,
+  so the runner now prints `ESCALATED as real failure` for BOTH legs (`4 known-flaky pattern(s) for 5
+  consecutive runs` / `1 known-flaky pattern(s) for 3 consecutive runs`). From here the E2E
+  `reduced-motion` counter is NO LONGER the benign 2/3 shape recorded on 10-09 — treat the next E2E red
+  as a real leg. OVERALL `8057 passed, 38 failed, 0 errors`; the diagnosis writer produced real entries
+  for both the vitest and E2E legs, so the `get_context("fork")` fix still holds.
+- **A skill at ≥99.9% of the 100,000-char SKILL.md cap is effectively UNPATCHABLE — `skill_manage`
+  rejects the whole batch when the RESULT exceeds the cap, so even a correct fix fails.** Seen
+  2026-10-10: `podcast-knowledge-base/SKILL.md` sat at 99,978 chars (22 chars headroom) and a
+  stale-schedule fix was rejected with `content is 100,095 characters (limit: 100,000)`. Workaround for
+  a daily tick: make the edit NET-NEGATIVE (shorter than the text it replaces) so the result fits. The
+  real fix is Saturday scope — move a section into `references/`. Check the cap BEFORE patching:
+  `len(Path(skill).read_text())` vs 100,000.
+- **`daily_cron_audit.py`'s `=== legacy 'fallback_model' config key ===` scan is a DOCUMENTED FALSE
+  POSITIVE — do not "fix" the two hits.** `monitoring-alert-verification` and `llm-cost-routing` name
+  `fallback_model` only to explain it is the LEGACY key merged after the canonical
+  `fallback_providers`. The real signal is `jobs referencing fallback_model: none`. Read the line's
+  context before touching it; deleting it would remove the explanation of the key-shape whose absence
+  broke fallover on 2026-09-15.
+- **The `12:35 AM` ingestion time in `podcast-knowledge-base` was a stale doc, not a live job
+  (fixed 2026-10-10).** No job at `35 0 * * *` exists in `jobs.json` or the WSL crontab; the live
+  ingestion is the 4:00 AM `d4d77c41f6c0`. Same class as the `044c0bc41e31` stale-NAME trap — verify
+  against the live expr, not the prose.
 - **`e6b671746eaf` (Weekly Test Report — A2Square + AML Hive, Wed 02:00) has a STEADY standing
   pattern — do NOT report as a new incident.** Every run since at least 2026-09-23 has exited 1 with the
   SAME two legs: `a2square/portal: ❌ TEST FAILURE — 649 passed, 1 failed` and

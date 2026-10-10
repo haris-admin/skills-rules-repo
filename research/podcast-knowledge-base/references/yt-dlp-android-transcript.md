@@ -49,7 +49,7 @@ if os.path.exists(sub_file):
 - 14-18 successful downloads per IP session
 - Auto-abort at 5 consecutive failures
 - 2-3 second delays between requests
-- The daily cron design (12:35 AM, few episodes per show) aligns with this
+- The daily cron design (4:00 AM ingestion, few episodes per show) aligns with this
 
 ## Dependencies
 

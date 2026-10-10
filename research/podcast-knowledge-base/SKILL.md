@@ -131,7 +131,7 @@ fetches (>=3) must be counted as BLOCKED and returned as **exit 3**, so the retr
 instead of declaring success. Without this, a newly registered channel reports `inserted=0, rc=0` and the
 retry stops — the row exists, no episodes ever arrive, and nothing looks wrong.
 
-This allows the 12:35 AM cron to complete within ~90 minutes and still have buffer before the 5:02 AM insight extractor.
+This allows the 4:00 AM ingestion cron to finish with buffer before the 5:02 AM insight extractor.
 
 ### A just-published episode: captions lag, and the sweep may have run minutes early
 
