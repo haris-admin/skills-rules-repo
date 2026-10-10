@@ -823,3 +823,66 @@ this file. SKILL.md now carries only a pointer to this log — the condensed lis
 duplicated here and SKILL.md had drifted to 100,689 bytes, over its 100K limit (trimmed back to
 ~99.3K on 2026-10-01 by folding Rules 24–30 and 32–40 into pointers, since the detail lives here).
 
+## Rule 46 (Oct 11 2026) — the stat clause was itself a full sentence, so the join restated the news
+
+**Defect (auto block, Cloud & Resilience day):** the AirTrunk finding shipped as a 141-character
+hook that said one fact twice:
+
+> Blackstone-owned AirTrunk will invest up to US$30bn (about A$43bn) in Japan over five years:
+> AirTrunk triples its Japan commitment to ~A$43bn
+
+**Cause — two gates each missed it for a different reason.** (a) The word-overlap ratio
+(`len(sw & tw) / len(sw) > 0.4`) is diluted by stat LENGTH: the stat has ~10 content words and
+shares only 2 (`airtrunk`, `japan`) → 0.2, comfortably inside the gate. (b) The numeric-duplicate
+gate strips parentheticals first (Rule 34, added for currency conversions like
+"$78.5 million (EUR 49m / US$56.22m)"), and here the title's own figure — `A$43bn` — was sitting
+INSIDE the stat's parenthetical `(about A$43bn)`, so the check compared `30` against a title that
+did carry `43` and passed. Rule 34's de-parenthesised comparison is right for conversions and wrong
+when the parenthetical holds the SAME money the title quotes.
+
+**Fix:** in `_hook_stat_ok`, reject the stat when the JOINED hook would exceed 130 characters and
+fall back to title-only (always a complete claim):
+
+```python
+if len(stat) + len(short) + 2 > 130:
+    return False
+```
+
+**Verification (the harness pattern to reuse).** `hook_harness.py` (scratch) rebuilds the
+research-path hook for every finding in the retained `research_*.json` files using the generator's
+own `extract_headline_stat` → `_short_title` → `_hook_stat_ok` chain, prints one JSON row per
+finding, and is run against a COPY of the generator (`gen_before.py`) and then the patched file;
+diffing the two hook columns gives regression evidence. Result on 48 hooks / 8 research files:
+**1 changed, 0 regressions.** Note how few stat-prefixed hooks exist at all (2 of 48) — most hooks
+are title-only, which is why a targeted rule here is cheap.
+
+**The rule:** a joined stat+title hook longer than ~130 chars is not a hook; the stat was a
+sentence, and the title-only fallback always states the claim. Gate on the artefact Haris reads
+(join length), not on a proxy (overlap ratio, which degrades as the stat grows).
+
+## Rule 45 recurrence (Oct 11 2026) — the Cloud pool was one candidate short on the cycle's second Cloud day
+
+**Diagnostic.** Cloud & Infrastructure ran 6 Oct → 11 Oct (the `% 5` topic cycle). Counting the pool
+the matcher USES (Cloud candidates ∩ fresh, i.e. not in `KNOWN_BLOGS` and not proposed in the
+shorter recent window) left exactly ONE fresh grounded candidate (`datacentre-permitting-risk`),
+so the third slot went to `datacentre-efficiency-disclosure` — a proposal from 1 Oct sitting exactly
+on the 10-day boundary.
+
+**Fix:** added `cloud-kinetic-risk` to `BLOG_CANDIDATES` — "When the Region Does Not Come Back:
+Kinetic Risk, Force Majeure and Who Pays for a Dead Cloud Zone" — anchored on the two named
+incidents and the mechanism, NOT contract vocabulary:
+
+| Candidate | Pillar | subject keywords | hits today | hits, 8 prior retained days |
+|---|---|---|---|---|
+| `cloud-kinetic-risk` | Cloud & Resilience Engineering | 6 (`drone strike`, `drone strikes`, `drones struck`, `yandex`, `kinetic risk`, `war damage`) | 6 | 0 on every day |
+
+A first draft carried `force majeure` and `business interruption` alone; both are generic contract
+vocabulary that appears on any resilience day (Rule 27/43a class), so they were dropped from the
+anchor list. Slate went 1 fresh + 1 boundary-repeat → **3 grounded ideas** (kinetic 6, permitting 3,
+efficiency-disclosure 2).
+
+**The rule:** before accepting a padded slot on a returning topic, count the live fresh pool and add
+a subject-bound candidate for the day's biggest UNCOVERED finding — the day's most distinctive story
+(the Yandex/AWS kinetic-risk chain here) is usually the one with no candidate, which is exactly why
+the slot pads with an old idea instead.
+
