@@ -125,6 +125,29 @@ Vendoring pitfalls:
 - **Upstream licences travel with the files** — record the licence in the registry entry rather than
   re-licensing vendored content under ours.
 
+## Adopting a new STANDARD (not just a skill) — it lands on four surfaces
+
+When the ask is "review <external standard> and adopt it" — a design system, a regulatory framework, a
+vendor's API or safety conventions — a skill alone under-serves it. The same content belongs on four
+surfaces, and delivering only the skill is a quarter of the job:
+
+1. **Skill** — `<category>/<name>/SKILL.md` + `references/` in the repo: the procedure and the depth.
+2. **Rule** — `rules/<name>-standards.md` when the standard *constrains how work must be done*. The
+test: a standard everyone must follow is a rule; a standard you consult when relevant is a skill.
+   (Requirements: see `skills-rules-repo`.)
+3. **Vault canonical reference** — `vault/canonical/reference/<topic>-standards.md` in
+   `haris-admin/alexandria`, so machines that read only the vault (other CLIs, other boxes, Claude/
+   Gemini) get the standard without the skill tree.
+4. **Vector store** — copy the same document into `~/.hermes/mempalace-inputs/`; the watcher feeds it to
+   MemPalace within one polling cycle and the vault sync additionally copies it into `vault/inputs/`.
+   **Git alone is not "updating Alexandria"** — the user means the knowledge must be *retrievable*, and
+   that is the vector leg. Prove it landed by querying the palace, not by trusting the copy.
+
+Each surface has its own gate and its own verification (repo: `validate.py` + catalog + catalog-row
+check; vault: frontmatter schema + secret scan + `git ls-remote` read-back). Run them per surface — a
+push to one repo proves nothing about the others, and the four are routinely delivered in separate
+commits by the same session.
+
 ## Pitfalls
 
 - **Always commit with a PATHSPEC — a bare `git commit` lands the whole index, not what you just staged.**
