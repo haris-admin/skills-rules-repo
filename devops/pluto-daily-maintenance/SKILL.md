@@ -52,6 +52,18 @@ description: Pluto's lightweight daily maintenance engine — 4-task health chec
    (b) **Saturday scope** — a copy that DIFFERS needs a MERGE, because the repo side often carries
    sections the WSL side never had (see the fleet-skill-governance merge pitfall); a blind overwrite
    deletes them. Report the differing list, do not bulk-overwrite it from a daily tick.
+   **Reconciling a divergent copy — insert at a CONTENT anchor and prove it with the repo-only count.**
+   The hash scan keys by parent-dir NAME, so it flags real divergences (not just path differences) as
+   `DIFFERS` even when the repo copy simply lacks a section the WSL copy gained. Test before touching:
+   `diff <(sed 's/\r$//' $REPO) <(sed 's/\r$//' $WSL) | grep -c '^<'` — **0 repo-only lines means the repo
+   copy is a strict subset and the change is a pure ADD**: insert the block at a UNIQUE SENTENCE anchor
+   (never at `## Related` or any heading that may appear more than once — anchoring on a heading the first
+   time put the block at the file END and the divergence survived), then re-run the diff and require BOTH
+   counts to read 0 before `git add -- <path>`. Seen 2026-10-11 on `fleet-skill-governance`: WSL ahead by
+   23 lines (`## Adopting a new STANDARD (not just a skill) — it lands on four surfaces`), repo-only 0 →
+   additive mirror, commit `ff21de9`, repo/WSL 0/0 afterwards. If repo-only > 0, it is a MERGE — Saturday scope.
+   **Re-measured 2026-10-11: repo 380 SKILL.md vs WSL 191 by name; 64 WSL-only and 90 content-differing
+   (2026-10-01: 65 and 97) — unchanged in character, Saturday/merge scope.**
    **Re-measured 2026-10-01: repo 389 SKILL.md vs WSL 254; 65 WSL-only (excluding `.archive/`) and 97
    content-differing.** Compare by skill NAME, not by path — `devops/fleet-skill-governance` reads as
    repo-absent only because the repo files it under `agent-governance-and-git/` (byte-identical).
@@ -401,6 +413,15 @@ When you see `last_status: error` on a cron, classify before escalating:
   `reduced-motion` counter is NO LONGER the benign 2/3 shape recorded on 10-09 — treat the next E2E red
   as a real leg. OVERALL `8057 passed, 38 failed, 0 errors`; the diagnosis writer produced real entries
   for both the vitest and E2E legs, so the `get_context("fork")` fix still holds.
+ **2026-10-11 (day 5) — backend flat, and the E2E failure has MOVED OFF the flaky whitelist.**
+ Backend `7770 passed, 34 failed` (day 5 of the elevated band, unchanged). vitest `240 passed, 1 failed`
+ = **6 consecutive runs**; E2E `47 passed, 3 failed` = **4 consecutive runs** — both still escalate. But the
+ E2E diagnosis now names `Login page layout › forgot password shows recovery copy and sign-in link CTA`,
+ which is NOT the whitelisted `reduced-motion` pattern: this is a real functional regression (the
+ forgot-password flow no longer renders the recovery copy). **From here the E2E leg counts as real, not
+ flaky** — the 10-09/10-10 "whitelisted pattern" framing no longer applies. OVERALL `8057 passed,
+ 38 failed, 0 errors`; `pluto_pr` merged `origin/dev` again at `94051bcb`. The diagnosis writer produced
+ real entries for BOTH legs (log mtime 2026-10-11 04:22, 239 KB) — the `get_context("fork")` fix holds.
 - **A skill at ≥99.9% of the 100,000-char SKILL.md cap is effectively UNPATCHABLE — `skill_manage`
   rejects the whole batch when the RESULT exceeds the cap, so even a correct fix fails.** Seen
   2026-10-10: `podcast-knowledge-base/SKILL.md` sat at 99,978 chars (22 chars headroom) and a
