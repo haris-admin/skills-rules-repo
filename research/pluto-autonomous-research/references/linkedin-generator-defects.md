@@ -886,3 +886,38 @@ a subject-bound candidate for the day's biggest UNCOVERED finding — the day's 
 (the Yandex/AWS kinetic-risk chain here) is usually the one with no candidate, which is exactly why
 the slot pads with an old idea instead.
 
+## Rule 47 (Oct 13 2026) — two candidate KEYS covering the SAME gap defeat the title-based repeat gate
+
+**Diagnostic.** Agentic AI & Security ran 8 Oct → 13 Oct (the `% 5` topic cycle). The 13 Oct slate
+shipped `agent-sandbox-escape` — "Your Agent Escaped the Sandbox: Containment Controls for AI Eval
+Environments" (gap text: *eval/sandbox escape, egress control, per-run identity, immutable agent
+audit logs*) — five days after `eval-egress-containment` — "Contain the Blast Radius: Egress Control
+for Every Agent You Run" (gap text: *sandbox-escape timeline … no post covers egress allow-lists,
+per-run identity or immutable agent action logs*). Same gap, two candidate keys, two titles, so
+`_repeat()` — which matched TITLES against the 10-day proposal blob — saw nothing. The newer key
+even won the top slot on a higher hit count (3 vs its twin's 2, because the newer keyword list
+carried `hugging face`).
+
+**Fix:** an explicit subject-twin map consulted by `_repeat(title, key=None)`:
+
+```python
+_SUBJECT_TWINS = {"agent-sandbox-escape": "eval-egress-containment"}
+```
+
+A candidate whose twin's title sits in the 10-day repeat blob is marked a repeat and therefore loses
+to a fresh grounded candidate (Rule 39/45 semantics — it can still pad when nothing fresh is left).
+Call sites updated to pass `key` (`scored.append`, both padding branches).
+
+**Verification (before/after, same corpus):** live window → 3 slots = `autonomy-tiers`,
+`cross-org-agent-accountability`, `psp-regulated-software` (padding), sandbox **absent**;
+counterfactual with an empty repeat history → `nhi-agent-identity`, `agent-sandbox-escape`,
+`autonomy-tiers` … which proves the candidate still fires on this corpus and the twin gate — not a
+blanket removal — is what suppressed it. Keep that counterfactual in any replay: a fix that silently
+kills a candidate is indistinguishable from a fix that dedupes it unless you test both directions.
+
+**The rule:** title-based repeat detection only works while one gap equals one candidate key. When
+adding a candidate for a gap that an existing candidate already covers under different wording,
+register the pair in the twin map (or rewrite the older key's gap) rather than relying on the
+10-day title blob. Diagnostic to run on a returning cycle: diff today's blog slate against the slate
+from `date - 5` and compare the GAP lines, not just the titles.
+
