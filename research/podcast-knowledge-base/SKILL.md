@@ -932,3 +932,15 @@ With 7 of 12 episodes genuinely needing review, the cron would have been RED EVE
 report the pipeline broken daily. The gate DID its job: it ran, produced verdicts, recorded them. Only a
 real script/LLM failure exits non-zero now; `needs_human` prints as a review queue and stays in the
 ledger. **Distinguish 'the job failed' from 'the job found something' before wiring an exit code.**
+
+**Reading that exit code next morning — the log the cron shows you is TRUNCATED.** The daily wrapper pipes
+the verifier through `| tail -60`, so the execution's error field holds only the LAST 60 lines: a page of
+`needs_human` verdicts, the `↻ empty content … retrying` notices, and the summary
+`locked=N | needs_human=N | thin=N | error=N`. The exit code is 1 only when `error>0`, so read the summary's
+`error=` instead of inferring failure from the verdicts around it, and get the offending episode from
+`podcast_kb.capture_ledger` (`status='error'`; `notes` carries the raw exception) — the per-episode
+`❌ error:` line was printed ABOVE the tail window and is gone. Measured 2026-10-12: exit 1 with
+locked=4 / needs_human=7 / error=1, the error being ep 1791 `RuntimeError: unparseable response`
+(malformed maker/checker JSON). The 09:00 chain assertor then reported the leg red correctly, and the row
+re-queues by itself because `fetch_episodes` excludes only `locked` and `needs_human`. A malformed-JSON
+error is transient — do not widen the model pool or the timeout on account of one.
