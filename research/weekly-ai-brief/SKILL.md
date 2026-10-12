@@ -17,10 +17,19 @@ Compile a 2-minute digest for Telegram: agentic AI releases (Google/OpenAI/Anthr
 6. `ISO 42001 <month> <year>` — new certifications (KuCoin, banks, exchanges)
 7. `Australia Office of AI news <month> <year>` — PM&C Office of AI, Australian AI Standards (Parliament early 2027), Senate AI census
 
+## Fleet exposure check (always run — Haris acts on this)
+
+After the security sweep, check our OWN agent runtimes against in-window CVEs and report a `FLEET:` line even with no exploit in the wild:
+- `dsh --version` (fix baseline **0.1.2-alpha.1**, Aug 27 2026, per CVE-2026-82533; `npm view @deepseek-ai/dsh version` for latest)
+- `ss -ltnp | grep :3080` (dsh agent-control API — unauthenticated loopback is the CVE's attack path)
+- OpenClaw / Claude Code / Codex versions; `grep -i "<tool>" ~/.hermes/ops/environment.md` for install record
+- GitSpawn class (CSA note Sep 2026): a malicious `core.fsmonitor` in `.git/config` executes when an agent runs `git status` — *outside* the agent sandbox and approval layer. Check any repo received as an archive/shared folder: `grep -A2 fsmonitor <repo>/.git/config`. Codex (CVE-2026-19592/93), Claude Code 2.1.196, Cursor and Goose 1.44.0 patched; Qwen Code, Grok Build and **Hermes Agent** were reported unpatched/un-triaged.
+Verify whether any cron actually uses the tool before calling it urgent (grep cron scripts), and report the exact upgrade command rather than upgrading mid-brief.
+
 ## Digestion rules
 
 - **Date everything** — "w/e <date>" header. Only surface items from the last ~7 days as new; older items (e.g. GPT-5.6 GA, Office of AI launch) as context/background lines.
-- **Security section is the lead story** — agent incidents (AISI/OpenAI/HF/Anthropic/Meta/Kimi K3) and prompt injection research are what Haris cares about. Include exact numbers (runs, actions, CVEs, dates) — he verifies claims.
+- **Security section is the lead story** — agent incidents (AISI/OpenAI/HF/Anthropic/Meta/Kimi K3) and prompt injection research are what Haris cares about. Include exact numbers (runs, actions, CVEs, dates) — he verifies claims. Runtime-enforcement lesson from CrowdStrike Fal.Con: a hook at the tool-call boundary stopped credential theft that the injected agent had already decided to perform — cite it as the pattern, not a product pitch.
 - **Policy: EU = enforcement dates + fines; AU = Office of AI milestones + federal adoption numbers; ISO = named certifiers.**
 - Tie back to AML Hive angle: evidence pack / audit trail / ISO 42001 / watermarking ("AI decision record, inspection-ready").
 

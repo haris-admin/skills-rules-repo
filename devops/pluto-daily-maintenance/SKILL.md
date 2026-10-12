@@ -421,7 +421,15 @@ When you see `last_status: error` on a cron, classify before escalating:
  forgot-password flow no longer renders the recovery copy). **From here the E2E leg counts as real, not
  flaky** — the 10-09/10-10 "whitelisted pattern" framing no longer applies. OVERALL `8057 passed,
  38 failed, 0 errors`; `pluto_pr` merged `origin/dev` again at `94051bcb`. The diagnosis writer produced
- real entries for BOTH legs (log mtime 2026-10-11 04:22, 239 KB) — the `get_context("fork")` fix holds.
+  real entries for BOTH legs (log mtime 2026-10-11 04:22, 239 KB) — the `get_context("fork")` fix holds.
+ **2026-10-12 (day 6) — backend flat; both flaky counters one deeper.** Backend `7770 passed, 34 failed`
+ (10-07 7641/31, 10-08 7699/38, 10-09 7770/34, 10-12 7770/34, baseline 6-8) — day 6 of the elevated
+ post-`origin/dev` band, unchanged, still only a COUNT-TREND watch. vitest `240 passed, 1 failed` =
+ **7 consecutive runs**; E2E `47 passed, 3 failed` = **5 consecutive runs**, and the E2E diagnosis still
+ names the forgot-password recovery-copy/CTA regression (REAL functional regression, not the
+ `reduced-motion` whitelist). OVERALL `8057 passed, 38 failed, 0 errors`; `pluto_pr` merged `origin/dev`
+ at `2acfb81d`. Diagnosis writer wrote real entries for both legs (log mtime 2026-10-12 04:29) — fork fix
+ still holds.
 - **A skill at ≥99.9% of the 100,000-char SKILL.md cap is effectively UNPATCHABLE — `skill_manage`
   rejects the whole batch when the RESULT exceeds the cap, so even a correct fix fails.** Seen
   2026-10-10: `podcast-knowledge-base/SKILL.md` sat at 99,978 chars (22 chars headroom) and a
@@ -450,6 +458,22 @@ When you see `last_status: error` on a cron, classify before escalating:
   (`~/.hermes/research_outputs/weekly-reports/weekly-report-<date>.md`). Escalate only if the ✅/❌ leg
   composition changes.
 - **`0320d41d6d71` (A2Square Weekly Test Suite, Mon 02:30) has a STEADY standing pattern of 2-3 failures/errors per week — do NOT report as a new incident.** 2026-10-05: 684 passed / 3 failed-errors (`portal_backend_lambda_eventbridge` 649p/1f; `tapease_portal_fastapi_a2square` **0 passed 0 failed 1 error** = collection failure, No Fake Pass Rule; `tapease_frontend_nextjs_prod` `npm ci FAILED: ic, install-clean, isntall-clean` + 35p/1f). 2026-09-28: 685p/2 (portal 1f + the same `npm ci FAILED` line). The `npm ci FAILED: ic, install-clean, isntall-clean` string is npm's did-you-mean output and has recurred across weeks. Escalate only on a change in the COUNT TREND or a new repo component.
+ **2026-10-12: composition moved, and the `0 passed, 0 failed, 1 error` leg is ROOT-CAUSED — it is an
+ INTERPRETER-availability fault, not a code fault.** `685 passed, 2 failed/errors`:
+ `portal_backend_lambda_eventbridge` 649p/1f (steady); `tapease_portal_fastapi_a2square` **0 passed,
+ 0 failed, 1 error** preceded by `⚪ not usable: <python> — <path>: No module named pytest`; and
+ `tapease_frontend_nextjs_prod` is now **GREEN** (`✅ npm ci OK`, 36 passed / 0 failed) — the old
+ `npm ci FAILED: ic, install-clean, isntall-clean` line is GONE, so stop describing it as standing.
+ Cause: the runner resolves its pytest interpreter from `~/.hermes/cache/testenvs/<dir>`, where `<dir>` is
+ `a2square-portal` for `portal_backend_*` but the REPO NAME for everything else — and
+ `~/.hermes/cache/testenvs/tapease_portal_fastapi_a2square` **does not exist** (only `a2square-portal`,
+ `a2square-portal-backend`, `amlhive-backend`, `amlhive1-backend` do). The repo has no `.venv` either, so
+ the runner falls back to `sys.executable` = the cron PM env python, and **none of the four PM envs ships
+ pytest** → the probe exits non-zero → the leg collects 0 tests and reports "1 error" (No-Fake-Pass: this
+ is never a skip/pass). Remediation is OWNER-LEVEL managed state, so alert rather than apply from a daily
+ tick: create that testenv (`python3 -m venv ~/.hermes/cache/testenvs/tapease_portal_fastapi_a2square` +
+ install the repo's test deps incl. pytest), or make the runner report an ENVIRONMENT BLOCKER (as the
+ `unified_weekly_report.py` amlhive leg does) instead of a test error.
 - **`ModuleNotFoundError: No module named 'chromadb'` in one or more same-morning `no_agent` scripts
   (seen 2026-09-28) — CRON SCRIPT INTERPRETER REGRESSION, not a MemPalace fault.** POSIX `no_agent`
   `.py` scripts no longer run on `~/.hermes/venv`: `cron/scheduler_script.py::_posix_cron_script_argv`
