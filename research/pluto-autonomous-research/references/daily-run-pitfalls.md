@@ -23,6 +23,42 @@ that way silently re-runs yesterday's vertical.
 `topic` fields. Expect the sequence to repeat mid-month (30→0, 31→1, then 1 Oct→1), so a repeat across a
 month boundary is normal, not a bug — only flag a repeat *within* the last 1–2 days.
 
+## The palace lives at `/mnt/c/Users/habib/.mempalace/palace` — not under `~/.hermes`
+
+`pluto_mempalace_feeder.py` sets `CHROMA_DB_PATH = "/mnt/c/Users/habib/.mempalace/palace"` (the Windows mount), and that is
+the ONLY store holding the 16 chambers (plus `mempalace_drawers`, `podcast-*`, `stone-chalk-partnership`).
+`~/.hermes/mempalace`, `~/.hermes/chromadb`, `~/.hermes/chroma` and `~/.hermes/data/chromadb` are older/unrelated local
+stores — `~/.hermes/mempalace` in particular answers `list_collections()` with a single collection named
+`fleet_knowledge`, and `get_collection("agentic-security")` there raises `NotFoundError: Collection [agentic-security]
+does not exist`.
+
+That error reads like "the chamber is empty/missing" and sends you chasing a routing bug, when the real fault is the DB
+path. Verified 13 Oct 2026: a dedupe/read-back probe against `~/.hermes/mempalace` reported one collection and no chambers,
+while the same probe against the Windows path found 23 collections and 71 `agentic-security` docs.
+
+**Fix:** always read back from the path the feeder uses — import it rather than retyping it:
+
+```python
+import sys; sys.path.insert(0, "/home/habib/.hermes/scripts")
+from pluto_mempalace_feeder import CHROMA_DB_PATH
+client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
+```
+
+Run these probes with `/home/habib/.hermes/venv/bin/python3` (system python has no chromadb). Also note the palace has a
+near-miss pair in this area: `cloud_infra` (0 docs) vs `cloud-infra` (canonical) — same silent-swallow risk as the section
+below.
+
+## AU-locale Google News is thin on recency — widen the window before concluding "no signal"
+
+The Google News RSS sweep for Agentic AI & Security on 13 Oct 2026 returned 720 raw items across 10 queries but only **15**
+inside a 10-day window (`hl=en-AU&gl=AU`); the same corpus held 55 items inside 21 days, and the strongest theme (MCP
+protocol flaws) peaked on 5–9 Oct. A 10-day cut looks like an empty vertical and tempts you into inventing findings.
+
+**Fix:** parse `<pubDate>` per item, filter at **21 days** for a 5-day-cycle topic, and mix 3 AU-locale with 3 US-locale
+queries per theme — the AU locale surfaces local regulatory coverage, the US locale surfaces the vendor/researcher
+reporting that actually carries the signal. Report the raw→filtered counts in the run summary so a thin day is visible as
+thin rather than as a gap.
+
 ## `write_file`'s stale-file guard is unsatisfiable for files with very long lines
 
 The guard refuses to overwrite a file the session has not fully read. It cannot be cleared when the
