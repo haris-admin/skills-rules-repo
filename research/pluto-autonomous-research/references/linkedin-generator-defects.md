@@ -921,3 +921,104 @@ register the pair in the twin map (or rewrite the older key's gap) rather than r
 10-day title blob. Diagnostic to run on a returning cycle: diff today's blog slate against the slate
 from `date - 5` and compare the GAP lines, not just the titles.
 
+## Rule 48 (Oct 14 2026) — the bookkeeping reference survived the prefix strip and became the hook
+
+**Defect (auto block, Startup & VC day):** the day's #1 finding shipped with a 28-character hook
+that named the pipeline's own bookkeeping and nothing else:
+
+> **Hook:** _UPDATE to the 9 October feed_
+
+Title: `UPDATE to the 9 October feed - Firmus's withdrawn IPO has repriced its listed supplier:
+Maas Group fell 22.4%, …`. `_REPEAT_PREFIX` (Rule 38) matches a tag whose separator follows
+IMMEDIATELY (`UPDATE - `, `FOLLOW-ON — `), so the longer reference with intervening words never
+matched, `raw.split(" - ")[0]` returned the reference itself, and because it was under the 100-char
+limit it was returned unchanged. The reader is told about a feed item they never saw.
+
+**Fix:** in `_short_title`, after the Rule-38 prefix strip, drop a leading ` - `-segment that names
+an earlier feed/brief and carries no fact:
+
+```python
+_FEED_REF = re.compile(
+    r"^(?:UPDATE|UPDATED|FOLLOW[- ]?ON|FOLLOWUP|FOLLOW-UP|NEW)\b"
+    r"[^.!?]{0,60}?\b(?:feed|brief|digest|round-?up)\b[^.!?]{0,20}$", re.I)
+
+
+def _is_feed_ref(seg):
+    s = seg.strip(" -–—:")
+    if not s or re.search(r"\d{3,}", s):   # a real figure means the segment states a fact
+        return False
+    return bool(_FEED_REF.match(s))
+```
+
+The bounded tail (`[^.!?]{0,20}$`) is what protects the Rule-38-era hooks that DO carry a fact in
+the same segment — `UPDATE to the 3 Oct counter-signal feed: value scepticism now matches the
+security narrative` reads on 52 chars past `feed`, and `UPDATE to the 8 Oct agent-identity gap: 95% …`
+never ends near a feed word.
+
+**Verification:** hook harness (48 hooks / 8 retained research days, before vs after) →
+**new hook `Firmus's withdrawn IPO has repriced its listed supplier: Maas Group fell 22.4%`,
+exactly 1 change, 0 regressions.**
+
+**The rule:** when the hook is built by splitting on a separator, every pipeline-added bookkeeping
+form has to be stripped BEFORE the split — and the strip must be defined by what the segment DOES
+NOT contain (a fact), not by an exhaustive list of label spellings.
+
+## Rule 49 (Oct 14 2026) — unbound candidate keywords: a company name and a generic noun are not a subject match
+
+**Defect (two instances, one day).** `_subject_kw_hits` only asks whether a candidate's terms appear,
+so a term that happens to sit in the day's corpus lifts the candidate as if the day were about that
+candidate's subject:
+
+- `agent-runtime-consolidation` (agent-security M&A) fired 3 terms on a day whose evidence was
+  venture-market M&A: `acquisition` ×5 ("195 AI-on-AI acquisitions") and `consolidation` ×2
+  ("consolidation inside the AI cohort"), leaving 1 genuinely subject-bound term (`promptfoo`, the
+  AI-security/evals vendor OpenAI acquired). Prior days it "fired" on `acquired` alone (8 Oct) and
+  `acquisition` alone (10 Oct) — days with no agent-security content at all.
+- `datacentre-energy-grid` fired on `grid` (from **Firmus Grid**, a company name) and `power` (from
+  "modular power equipment", a supplier detail) on a day with zero energy-economics evidence, and its
+  gap asserts an AEMO `34TWh` forecast that appears **nowhere** in the corpus that fired it — a
+  Rule-34 violation created by the weak match.
+
+**Fix:** bind the keyword lists to the subject. Drop bare `acquisition` / `acquired` /
+`consolidation`, bare `grid` / `power` / `water` / `bottleneck`; keep the vendor names
+(`fortinet`, `hiddenlayer`, `virtue ai`, `natoma`, `promptfoo`, `control plane`) and use bound energy
+phrases (`aemo`, `twh`, `2.9gw`, `data cent`, `electricity`, `grid connection`, `grid capacity`,
+`grid constraint`, `energy constraint`, `power constraint`, `energy costs`).
+
+**Verification (both directions, per Rule 47):** replay over the retained research days —
+`agent-runtime-consolidation` 3 → 1 today (still fires, via `promptfoo`, so it is not killed),
+`datacentre-energy-grid` 2 → 0 today (correctly held: the shipped gap asserted a figure the day's
+corpus does not contain) while keeping its genuine `data cent` hit on 11 Oct. A fix that silently
+kills a candidate looks identical to one that dedupes it, so always show the surviving hit.
+
+**The rule:** a candidate keyword must name the candidate's SUBJECT, not a word that merely co-occurs
+with it. Company names that contain a generic noun (`Firmus Grid`, `Power`, `Water Corp`) and bare
+sector nouns are the trap, because they fire hardest on days that have nothing to do with the
+candidate; when a candidate fires, print the terms and READ their context before letting it take a
+slot or its gap text assert figures the corpus does not carry.
+
+## Rule 45 recurrence (Oct 14 2026) — the 5-day-cycle startup pool was empty for the day's #2 signal
+
+**Diagnostic.** Startup & VC returned (the `date % 5` cycle) with a live fresh pool of exactly two
+candidates, neither on the day's own pillar: `vc-barbell-missing-middle` is retired in `KNOWN_BLOGS`,
+`defence-quantum-capital-route` (3 hits) was proposed 5 days earlier so `_repeat` suppressed it, and
+`tokenised-rails-licensing` / `startup-cgt-carveout-draft` / `govt-coinvestment-accountability` all
+scored 0. The auto slate therefore shipped two Cloud ideas on a startup day — while the day's #2
+signal (impact: severe, the AI-cohort acqui-hire wave, and the fintech signal on SME lending with no
+personal guarantee) had no candidate at all.
+
+**Fix:** two fresh, subject-bound candidates (Rule 40/45 pattern, never a loosened gate):
+
+| Candidate | Pillar | keywords | hits today | prior retained days |
+|---|---|---|---|---|
+| `ai-acqui-hire-exit-modelling` | Startup & ESOP | 7 (`acqui-hire`, `acqui-hired`, `liquidity event`, `repeat buyers`, `rollup`, `consolidation inside the ai cohort`, `prices were disclosed for only 12`) | 7 | 0 on all 7 |
+| `lending-no-guarantee-licensing` | Australian Fintech Regulation | 6 (`archa`, `personal guarantees`, `debt facility`, `spending policy`, `spend policy`, `business credit-card`) | 5 | 0 on all 7 |
+
+Note the multi-word phrases (`consolidation inside the ai cohort`, `prices were disclosed for only
+12`) — where a single word would be generic, the phrase is the subject.
+
+**The rule:** on a returning cycle, count the live fresh pool for the day's OWN pillar before
+accepting a slate built from other pillars; add candidates for the uncovered signal rather than
+letting Cloud/Agentic ideas fill a Startup/FinTech day.
+
+
