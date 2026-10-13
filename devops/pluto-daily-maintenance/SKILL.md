@@ -62,8 +62,8 @@ description: Pluto's lightweight daily maintenance engine — 4-task health chec
    counts to read 0 before `git add -- <path>`. Seen 2026-10-11 on `fleet-skill-governance`: WSL ahead by
    23 lines (`## Adopting a new STANDARD (not just a skill) — it lands on four surfaces`), repo-only 0 →
    additive mirror, commit `ff21de9`, repo/WSL 0/0 afterwards. If repo-only > 0, it is a MERGE — Saturday scope.
-   **Re-measured 2026-10-11: repo 380 SKILL.md vs WSL 191 by name; 64 WSL-only and 90 content-differing
-   (2026-10-01: 65 and 97) — unchanged in character, Saturday/merge scope.**
+   **Re-measured 2026-10-13: repo 380 SKILL.md vs WSL 191 by name; 64 WSL-only and 86 content-differing
+   (2026-10-11: 64/90; 2026-10-01: 65/97) — unchanged in character, Saturday/merge scope.**
    **Re-measured 2026-10-01: repo 389 SKILL.md vs WSL 254; 65 WSL-only (excluding `.archive/`) and 97
    content-differing.** Compare by skill NAME, not by path — `devops/fleet-skill-governance` reads as
    repo-absent only because the repo files it under `agent-governance-and-git/` (byte-identical).
@@ -197,7 +197,11 @@ When you see `last_status: error` on a cron, classify before escalating:
   alexandria/contract/palace/feed`) carry the real status. A `verify` leg reporting `locked=N error=1`
   (2026-10-04: 4 locked / 7 needs_human / 1 error) is a **single-episode** maker/checker failure — either
   unparseable JSON from the maker or a 240 s `curl rc=28` timeout — and is written to the ledger for the
-  next run; do not re-escalate it. Escalate only if a leg produces NO locked episodes, or the 09:00
+  next run; do not re-escalate it. **Re-verified 2026-10-12 + 2026-10-13 (2 consecutive days): both times
+  the chain flagged ONLY `verify` while the other 7 legs (`ingest/chunk/export/alexandria/contract/
+  palace/feed`) were ✅, and both times the failure was an unparseable-JSON maker response
+  (`locked=3 | needs_human=8 | thin=0 | error=1`, $0.10895 on 10-13). Still single-episode maker-quality,
+  not a code fault — watch only if it reaches 3+ consecutive days or a leg reports ZERO locked episodes.** Escalate only if a leg produces NO locked episodes, or the 09:00
   assertion flags a stage other than `verify`. Detail: `podcast-knowledge-base` skill.
 - **`pluto_feedback_processor.py` exit code 3** (`59f18c4d557c`, Pluto Feedback Loop 06:10
   `deliver: local`): `sys.exit(3)` is the script's own DEGENERATE-SCORER signal. It means every
@@ -430,6 +434,16 @@ When you see `last_status: error` on a cron, classify before escalating:
  `reduced-motion` whitelist). OVERALL `8057 passed, 38 failed, 0 errors`; `pluto_pr` merged `origin/dev`
  at `2acfb81d`. Diagnosis writer wrote real entries for both legs (log mtime 2026-10-12 04:29) — fork fix
  still holds.
+ **2026-10-13 (day 7) — backend flat, both flaky counters one deeper, E2E diagnosis back on the whitelist.**
+ Backend `7770 passed, 34 failed` (10-07 7641/31 → 10-13 7770/34, baseline 6-8) — day 7 of the elevated
+ post-`origin/dev` band, unchanged. vitest `240 passed, 1 failed` = **8 consecutive runs**; E2E
+ `48 passed, 2 failed` = **6 consecutive runs** (composition moved from 10-12's `47/3`), and the E2E
+ diagnosis now names `a11y-reduced-motion-parity` — the WHITELISTED `reduced-motion` pattern again, not
+ the 10-11/10-12 forgot-password recovery-copy regression. Both legs still print `ESCALATED as real`.
+ OVERALL `8058 passed, 37 failed, 0 errors` (10-12: 8057/38) — flat-to-1-better. `pluto_pr` merged
+ `origin/dev` at `49450bfa`. Diagnosis writer produced real entries for both legs — fork fix holds. The
+ audit's chosen discriminator for this job was `⚪ 'poetry' not found — fallback to venv pytest`, which is
+ the PERMANENT path on this host (poetry is not installed), not a fault.
 - **A skill at ≥99.9% of the 100,000-char SKILL.md cap is effectively UNPATCHABLE — `skill_manage`
   rejects the whole batch when the RESULT exceeds the cap, so even a correct fix fails.** Seen
   2026-10-10: `podcast-knowledge-base/SKILL.md` sat at 99,978 chars (22 chars headroom) and a
