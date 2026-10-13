@@ -1,7 +1,7 @@
 # Podcast Insight Extractor — Production Workflow
 
 > **Status: PROVEN** — running daily since June 2026. Cron `67319a9b2606`, **05:02 AM AEST** (`2 5 * * *`), deliver `origin`.
-> **Last verified run:** 2026-09-25 (15/15 quotes verbatim, md 134 lines / json 49.1 KB, 30 frameworks, 22 connections; 1 of the ranked 15 genuinely new — HBR IdeaCast; freshness-cutoff fallback added).
+> **Last verified run:** 2026-10-14 (15/15 quotes verbatim, md 145 lines / json 57.1 KB, 30 frameworks, 28 connections; 3 of the ranked 15 new; reverify false-negative on inline `>>` speaker markers fixed).
 > Owner: Pluto. Supersedes the June 2026 Claude-extraction draft of this doc.
 
 ## Pipeline Position (verified against the live cron store, 2026-09-20)
@@ -106,6 +106,7 @@ Canonical portfolio set: `ExitLens/CGT`, `PayLicence/PSP`, `TokenPilot/DLT`, `Fi
 | Escaped titles | `\$40 Trillion`, `startups''` | `fix_title()` / `unesc()` already handle this on publish |
 | Reverify false `NOT FOUND` on multi-line transcripts | quote is verbatim in the DB but `reverify_quotes_from_db` reports `NOT FOUND in transcript` | **Fixed 2026-09-21** in `podcast_insights_daily.py`: the reverify SQL now wraps the transcript in `replace(..., chr(10), ' ')`. Transcripts contain raw newlines, and `run_sql` output was split per line, so only the transcript's first fragment reached `quote_verified()` (only bit long, newline-bearing transcripts — e.g. We Study Billionaires 2026-09-20, 1236 lines). Any repeat means the `chr(10)` replace was lost |
 | Model-paraphrased quote | extract-time `quote_verified: False`, or a reverify `NOT FOUND` that survives the `chr(10)` fix | `quote_overrides` with a verbatim line mined from the transcript. 2026-09-21: Lenny's `97LRJUUPy_w` and CoreWeave `cQQbJqvZkpo` |
+| Reverify false `NOT FOUND` on inline speaker markers | quote is verbatim in the DB but `reverify_quotes_from_db` reports `NOT FOUND in transcript`; the stored text carries `>>` turn markers **inside** a sentence | **Fixed 2026-10-14** in `podcast_insights_daily.py`: `norm()` now strips `>+` runs on both sides before comparing (a16z `3Q1mdn5ZGvM`: `...bleederboard >> where we keep track...`). Any repeat means the `re.sub(r">+", " ", s)` line was lost |
 | ASR-garbled quote wins a slot | quote is verbatim in the DB but is broken English from the source captions (`"...like we are bad capital allocators..."`) or carries `uh`/`you know um` filler mid-clause | `quote_overrides` (per-episode) and/or `other_quotes` (runner-up slots) with a clean verbatim line mined from the same transcript. 2026-09-22: All-In `VTF6p0U98ek`, This Week in Startups `6748oCo7Z_M` |
 | Guessed speaker name | host labelled `Jay (host)`, guest name spelled two ways in one transcript (`Audi` vs `Addy`) | Attribute to the confirmed name or the role label. Confirm hosts from on-air address forms in the transcript (a preceding segment asking "what do you think, Jason?" fixes the monologue as Jason Calacanis). Never pick one of two competing spellings — use `Agent Mail co-founder` instead |
 | Low-signal auto runner-ups | the auto-built `other_quotes` fallback takes per-episode quotes in episode order, so soft or filler-laden lines reach the published section | Curate `other_quotes` — they are not run through `quote_verified()` by `publish()`, so verify them yourself before writing the override (see the pre-publish check below) |
@@ -189,5 +190,6 @@ no `\$`/`''` leaking into the published md.
 | 2026-09-21 | 1301 | 66 | 31 | 15 | 31 | 27 | 15/15 (2 quote_overrides; reverify `chr(10)` fix) |
 | 2026-09-22 | 1317 | 67 | 30 | 15 + 0 extras | 30 | 20 | 15/15 (3 quote_overrides; curated QOTD + 3 runners-up) |
 | 2026-09-25 | 1364 | 58 | 24 | 15 + 0 extras | 30 | 22 | 15/15 (1 of the ranked new; freshness cutoff self-healed) |
+| 2026-10-14 | 1842 | 102 | 37 | 15 + 0 extras | 30 | 28 | 15/15 (3 of the ranked new; inline-`>>` reverify false negative fixed) |
 
 (Pipeline switched from Claude to DeepSeek Flash during 2026; the June table in git history is historical only.)
