@@ -311,6 +311,26 @@ per-enterprise section is the point of the note — a roster of news without it 
   procurement/InfoSec pack, intro capital. Converters always had revenue + an internal champion
   with a costed P&L problem + a regulatory deadline (AMLHive has 1 and 3; find the champion).
 
+## Engagement routes (operator side)
+
+Separate from the partner reps: how to reach **Stone & Chalk itself**.
+
+- **`ai@stoneandchalk.com.au`** — the AI programmes inbox. **S&C confirmed on 13 Oct 2026 that 1:1
+  meetings for business guidance and support are available, explicitly NOT limited to the program**
+  ("Yes, of course. Please email ai@stoneandchalk.com.au and a member of the Stone & Chalk team will
+  be in touch with you." — Olivia Grandjean-Thomsen). This is the lowest-friction entry point into
+  S&C's network: use it for advice, introductions and business support, independently of the digital
+  track (12 Oct – 4 Dec 2026) and the intensive accelerator (Feb–Mar 2027).
+- **Do not conflate operator and partner.** "No named pilot/RFP/problem statement" is the *partner*
+  posture (ANZ/CBA/Cuscal/NAB/Westpac). The operator has opened the door **on request** — different
+  door, different posture.
+- **Be evidence-led, never promotional.** Lead with the artefact — the record set that answers both
+  OAIC **APP 1.8** and the **ASIC banking-sector AI review (Q2 2026-27)** — and name the outcome
+  wanted (advice / introduction / sounding board). No reliance claim, no partnership implied, no
+  endorsement.
+
+Standing record: `alexandria/vault/refined/stone-chalk-market-intel/ENGAGEMENT.md`.
+
 ## Pitfalls
 
 - Counting ten articles about one launch as ten developments.
