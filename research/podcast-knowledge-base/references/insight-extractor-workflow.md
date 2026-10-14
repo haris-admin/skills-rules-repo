@@ -1,7 +1,7 @@
 # Podcast Insight Extractor — Production Workflow
 
 > **Status: PROVEN** — running daily since June 2026. Cron `67319a9b2606`, **05:02 AM AEST** (`2 5 * * *`), deliver `origin`.
-> **Last verified run:** 2026-10-14 (15/15 quotes verbatim, md 145 lines / json 57.1 KB, 30 frameworks, 28 connections; 3 of the ranked 15 new; reverify false-negative on inline `>>` speaker markers fixed).
+> **Last verified run:** 2026-10-15 (17/17 quotes verbatim, md 164 lines / json 64.5 KB, 35 frameworks, 35 connections; 8 of the ranked 15 new; curated QOTD + 3 runners-up — the auto-picker repeated the previous day's lead-episode quote on a 3-day-window overlap).
 > Owner: Pluto. Supersedes the June 2026 Claude-extraction draft of this doc.
 
 ## Pipeline Position (verified against the live cron store, 2026-09-20)
@@ -110,6 +110,8 @@ Canonical portfolio set: `ExitLens/CGT`, `PayLicence/PSP`, `TokenPilot/DLT`, `Fi
 | ASR-garbled quote wins a slot | quote is verbatim in the DB but is broken English from the source captions (`"...like we are bad capital allocators..."`) or carries `uh`/`you know um` filler mid-clause | `quote_overrides` (per-episode) and/or `other_quotes` (runner-up slots) with a clean verbatim line mined from the same transcript. 2026-09-22: All-In `VTF6p0U98ek`, This Week in Startups `6748oCo7Z_M` |
 | Guessed speaker name | host labelled `Jay (host)`, guest name spelled two ways in one transcript (`Audi` vs `Addy`) | Attribute to the confirmed name or the role label. Confirm hosts from on-air address forms in the transcript (a preceding segment asking "what do you think, Jason?" fixes the monologue as Jason Calacanis). Never pick one of two competing spellings — use `Agent Mail co-founder` instead |
 | Low-signal auto runner-ups | the auto-built `other_quotes` fallback takes per-episode quotes in episode order, so soft or filler-laden lines reach the published section | Curate `other_quotes` — they are not run through `quote_verified()` by `publish()`, so verify them yourself before writing the override (see the pre-publish check below) |
+| Repeated Quote of the Day | the same quote (or a worse-truncated copy of it) headlines the digest on consecutive days | **Expected, not random:** the 3-day window keeps yesterday's lead episode in the ranked set, and `qotd()` takes the FIRST verified quote in episode order, so it re-wins every day until it ages out. Curate `quote_of_the_day` from a `🆕` episode — the QOTD slot is the one Haris reads in the briefing, so a repeat reads as a stale feed. Seen 2026-10-15 (`znstX7x9zZo`, Fintech Insider, second day running, and truncated mid-clause vs the previous day's copy) |
+| Truncated quote chosen for QOTD | quote ends mid-clause (`...waiting to be invented`, `...saving trillions of dollars`) | `quote_overrides` with the completed sentence — but the stored transcript often carries the speaker's stutter (`for the for the world`), so prefer a different, cleanly-bounded line from the same episode rather than publishing the stutter verbatim |
 | Freshness flags all false | header reads `0 of the ranked` and no 🆕 markers, even though the 4 AM ingest wrote rows | **Fixed 2026-09-25** in `podcast_insights_daily.py`: a publish timestamp from *today* is ignored, the cutoff then falls back to the raw snapshot's `prev_run_cutoff` (same-day re-run) or a rolling 24h. Any repeat means the same-day check or the raw reuse was bypassed — check the `[prev]` log lines |
 
 Candidate-quote mining recipe (read-only, one pass):
@@ -191,5 +193,6 @@ no `\$`/`''` leaking into the published md.
 | 2026-09-22 | 1317 | 67 | 30 | 15 + 0 extras | 30 | 20 | 15/15 (3 quote_overrides; curated QOTD + 3 runners-up) |
 | 2026-09-25 | 1364 | 58 | 24 | 15 + 0 extras | 30 | 22 | 15/15 (1 of the ranked new; freshness cutoff self-healed) |
 | 2026-10-14 | 1842 | 102 | 37 | 15 + 0 extras | 30 | 28 | 15/15 (3 of the ranked new; inline-`>>` reverify false negative fixed) |
+| 2026-10-15 | 1877 | 107 | 43 | 15 + 2 extras | 35 | 35 | 17/17 (8 of the ranked new; curated QOTD + 3 runners-up, all re-verified verbatim) |
 
 (Pipeline switched from Claude to DeepSeek Flash during 2026; the June table in git history is historical only.)
