@@ -201,7 +201,10 @@ When you see `last_status: error` on a cron, classify before escalating:
   the chain flagged ONLY `verify` while the other 7 legs (`ingest/chunk/export/alexandria/contract/
   palace/feed`) were ✅, and both times the failure was an unparseable-JSON maker response
   (`locked=3 | needs_human=8 | thin=0 | error=1`, $0.10895 on 10-13). Still single-episode maker-quality,
-  not a code fault — watch only if it reaches 3+ consecutive days or a leg reports ZERO locked episodes.** Escalate only if a leg produces NO locked episodes, or the 09:00
+  not a code fault — watch only if it reaches 3+ consecutive days or a leg reports ZERO locked episodes.**
+  **2026-10-14: CLEARED — the chain returned to SILENT GREEN** (201-byte output, the same size as the
+  10-09/10-10/10-11 green runs; 10-12 and 10-13 were the only red days: 865/867 bytes). The 2-day verify
+  watch is reset to zero — do NOT carry the "verify red" line forward again without a fresh red run. Escalate only if a leg produces NO locked episodes, or the 09:00
   assertion flags a stage other than `verify`. Detail: `podcast-knowledge-base` skill.
 - **`pluto_feedback_processor.py` exit code 3** (`59f18c4d557c`, Pluto Feedback Loop 06:10
   `deliver: local`): `sys.exit(3)` is the script's own DEGENERATE-SCORER signal. It means every
@@ -444,6 +447,15 @@ When you see `last_status: error` on a cron, classify before escalating:
  `origin/dev` at `49450bfa`. Diagnosis writer produced real entries for both legs — fork fix holds. The
  audit's chosen discriminator for this job was `⚪ 'poetry' not found — fallback to venv pytest`, which is
  the PERMANENT path on this host (poetry is not installed), not a fault.
+ **2026-10-14 (day 8) — backend flat, both counters one deeper, chain verify recovered.** Backend
+ `7770 passed, 34 failed` (10-07 7641/31 → 10-14 7770/34, baseline 6-8) — day 8 of the elevated
+ post-`origin/dev` band, unchanged, still only a COUNT-TREND watch. vitest `240 passed, 1 failed` =
+ **9 consecutive runs**; E2E `48 passed, 2 failed` = **7 consecutive runs**, diagnosis on the whitelisted
+ `reduced-motion`/CSS-media-query pattern (not the 10-11/10-12 forgot-password regression). Both still
+ print `ESCALATED as real`. OVERALL `8058 passed, 37 failed, 0 errors` (10-13: 8058/37) — flat.
+ `pluto_pr` merged `origin/dev` at `49450bfa` AGAIN (no new dev commits since 10-13). Diagnosis writer
+ produced real entries for both legs — fork fix holds. Same `⚪ 'poetry' not found` discriminator (the
+ permanent path, not a fault).
 - **A skill at ≥99.9% of the 100,000-char SKILL.md cap is effectively UNPATCHABLE — `skill_manage`
   rejects the whole batch when the RESULT exceeds the cap, so even a correct fix fails.** Seen
   2026-10-10: `podcast-knowledge-base/SKILL.md` sat at 99,978 chars (22 chars headroom) and a
