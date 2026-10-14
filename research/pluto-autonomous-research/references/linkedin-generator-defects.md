@@ -1021,4 +1021,140 @@ Note the multi-word phrases (`consolidation inside the ai cohort`, `prices were 
 accepting a slate built from other pillars; add candidates for the uncovered signal rather than
 letting Cloud/Agentic ideas fill a Startup/FinTech day.
 
+## Rule 50 (Oct 15 2026) — `_balance_fragment` resolved parentheses in ONE pass
+
+**Symptom.** The day's #1 hook shipped as `EU AI Act enforcement is live, and two duties bite on
+2 December 2026 (Article 50` — an unclosed "(" and a proper noun cut in half.
+
+**Cause.** `_balance_fragment` cut once at the LAST unbalanced "(" — but the fragment held a "(" nested
+inside a number (`Article 50(2)`). `s.rfind("(")` found the INNER opener, `s = s[:idx]` removed it and
+left the OUTER "(" still open. Single pass, no re-check.
+
+**Fix.** Resolve iteratively, with a guard, until the fragment is balanced:
+
+```python
+_guard = 0
+while s.count("(") != s.count(")") and _guard < 6:
+    _guard += 1
+    if s.count("(") > s.count(")"):
+        _idx = s.rfind("(")
+        if _idx <= 0:
+            break
+        s = s[: _idx].rstrip(" ,;:-—–")
+    else:
+        _idx = s.find(")")
+        if _idx < 0:
+            break
+        s = s[_idx + 1:].lstrip(" ,;:-—–")
+```
+
+**Verification.** Hook harness over 48 findings / 8 retained research days: **1 changed** (15 Oct #0,
+now `…on 2 December 2026`), **0 regressions**.
+
+**The rule:** a cleanup helper that mutates text must LOOP until its invariant holds. One pass is only
+correct when the removal cannot expose the same defect again — and cutting at the last opener inside a
+nested pair does exactly that.
+
+## Rule 51 (Oct 15 2026) — the research pipeline folded its novelty note INTO `content`
+
+**Symptom.** Two of six angles shipped as `UPDATE.` (7 chars) and
+`UPDATE (the 2 December 2026 Article 50.` (39 chars, unbalanced). 15 Oct is the FIRST day any retained
+research JSON had findings whose `content` opens with a bookkeeping tag — 6/6 that day, 0/6 on the seven
+prior days — so this is a producer-side format change, not a recurrence.
+
+**Cause.** The angles are built with `_trim_angle(f.get("for_haris") or content)`. Today's findings have
+no `for_haris`, and `content` opens `UPDATE (the 2 December 2026 Article 50(2) date was noted 19 and
+29 Sep; delta today is …). From 2 August 2026 …`. The aside's own "(" makes `_balance_fragment` cut the
+text back to the opener, leaving the label — `UPDATE.` / `UPDATE (… Article 50.`.
+
+**Fix.** Strip a leading bookkeeping aside before trimming, with a nested-paren-tolerant pattern and a
+tag-only fallback so a tag plus nothing never yields an empty angle:
+
+```python
+_LEAD_ASIDE = re.compile(
+    r"^\s*(?:UPDATE|UPDATED|NEW|FOLLOW[- ]?ON|FOLLOWUP|FOLLOW-UP|FORMALISATION|"
+    r"FORMALIZATION)\b[^()\n]{0,80}?"
+    r"\([^()]*(?:\([^()]*\)[^()]*)*\)\s*[.!?]?\s*", re.IGNORECASE)
+_LEAD_TAG = re.compile(
+    r"^\s*(?:UPDATE|UPDATED|NEW|FOLLOW[- ]?ON|FOLLOWUP|FOLLOW-UP|FORMALISATION|"
+    r"FORMALIZATION)\b\s*[—–\-:]\s*", re.IGNORECASE)
+
+def _strip_lead_aside(text):
+    t = _LEAD_ASIDE.sub("", text, count=1)
+    if t == text:
+        t = _LEAD_TAG.sub("", text, count=1)
+    return t.strip() or text.strip()
+```
+
+`[^()\n]{0,80}?` is required because the aside is not always adjacent to the tag — finding 5 reads
+`NEW to the chamber (first capture today). The White House …`. `_trim_angle` now starts
+`t = re.sub(r"\s+", " ", _strip_lead_aside(text or "")).strip()`.
+
+**Verification.** Angle harness over 48 findings / 8 days: **6 changed, all on 15 Oct, 0 regressions.**
+The angles now lead with substance ("From 2 August 2026 the European Commission's AI Office…",
+"Assistant Minister Andrew Charlton told the Sydney Safety Festival…").
+
+**The rule:** the novelty/delta note is INTERNAL chamber history — the reader never saw the previous
+entry — so it must never reach reader-facing text. Rules 38/48 established this for hooks; this extends
+it to angles. When a producer-side field changes shape, re-run the before/after harness rather than
+assuming the consumer still fits.
+
+## Rule 52 (Oct 15 2026) — the last bare LOCATION noun, third instance on the same candidate
+
+`datacentre-energy-grid` fired **only** on `data cent`, matched from a Bill TITLE — "AI Kill Switch and
+**Data Centre** Control Bill 2026" — on a corpus with aemo/twh/grid/energy all at **0**. Its gap also
+asserted an AEMO 34TWh / 13%-by-2036 forecast absent from the corpus (Rule 34).
+
+`data cent` survived Rule 49's tightening because the 11 Oct page genuinely mentions data centres; but
+the phrase is a location noun shared by permitting, outage, tax and kill-switch stories. Replaced with
+power-supply economics only, and the gap now asserts **no figure**:
+
+```python
+["aemo", "twh", "2.9gw", "non-retrospective", "electricity", "grid connection",
+ "grid capacity", "grid constraint", "energy constraint", "power constraint",
+ "energy costs", "power purchase", "gigawatt", "power-hungry", "renewable-powered"]
+```
+
+**Verification (both directions).** 11 Oct keeps **4** genuine hits (`power purchase`, `gigawatt`,
+`power-hungry`, `renewable-powered`) — not killed; 15 Oct drops to **0** — false positive gone.
+
+**The rule:** a candidate may fire on its OWN subject vocabulary. For a *constraint* candidate the
+subject is the economics (supply, price, grid), never the thing being constrained: "data centre" alone
+appears in every data-centre story, so it can never ground an energy-economics idea. If a gap text
+asserts a figure, that figure must be in the corpus that fired it — otherwise delete the figure.
+
+## Rule 53 (Oct 15 2026) — a generic vendor phrase grounded a records-residency slot
+
+`aml-data-residency-cloud` was today's blog idea #2 on a single hit: `offshore vendor`, from
+"practical read for **offshore vendors**: US state patchwork risk persists" — an AI-regulation sentence
+with nothing about where AML records sit. Same class as Rule 49: the phrase occurs, the subject does not.
+
+Fix — drop the generic phrase, keep phrases that NAME records location:
+
+```python
+["data residency", "record-keeping", "records retention", "aml record",
+ "aml/ctf record", "records must live", "offshore hosting"]
+```
+
+**Verification (both directions).** Still fires on its genuine days — 10 Oct (`data residency`),
+11 Oct (`aml/ctf record`), 13 Oct (`record-keeping` + `aml record`) — and is correctly silent on 15 Oct.
+
+**The rule:** a two-word phrase is not automatically "subject-bound". Test it by reading the sentence it
+fired in; if that sentence is about a different domain, the phrase is context vocabulary.
+
+## Rule 45/52 practice (Oct 15 2026) — add a candidate, do not loosen a gate
+
+With Rules 52 and 53 applied, 15 Oct had exactly **one** grounded candidate left for the day's pillar
+(`agent-incident-register`, 3 hits) and the day's NEW signal — the US National Policy Framework seeking
+preemption while the EU defers — had none. Rather than ship a two-idea slate or pad with an ungrounded
+template, one subject-bound candidate was added for the uncovered signal:
+
+| Candidate | Pillar | keywords | hits (15 Oct) | retained days it also fires |
+|---|---|---|---|---|
+| `ai-regulatory-fragmentation` | AI Agents & Governance | 6 (`preemption`, `patchwork`, `dormant commerce clause`, `litigation task force`, `state ai law`, `two-speed`) | 6 | 8 Oct (`two-speed`), 10 Oct (`preemption`, `state ai law`) |
+
+**The rule:** when a day's grounded pool is too thin, add a candidate bound to that day's own vocabulary.
+Never relax a grounding or repeat gate to reach a quota — and check the new candidate fires on other
+retained days too, so it is not a one-day artefact.
+
 
