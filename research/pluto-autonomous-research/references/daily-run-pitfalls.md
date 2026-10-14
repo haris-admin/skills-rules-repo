@@ -97,6 +97,43 @@ The feeder's `{"status": "stored", "findings_added": 6}` is a self-report. Confi
 `pluto_<YYYYMMDD>_` exist, (c) `len(set(texts)) == len(texts)` (no duplicate documents), and (d) the
 other chambers gained **zero** `pluto_<YYYYMMDD>_` ids (no misroute into `pluto_research`).
 
+### Match today's feed by ID PREFIX — the metadata `date` is UTC, so an AEST date filter returns 0 (Oct 15 2026)
+
+A read-back filtered with `[m for m in metas if '2026-10-15' in str(m)]` returned **0**, which reads exactly like
+"the feeder reported stored but stored nothing". It had stored all 6. The feeder stamps `date` with
+`datetime.utcnow()` — the 05:07 AEST run carries `2026-10-14T18:07:35+00:00` — so a local-date substring match
+**always** misses for any run before 11:00 AEST. On the ~05:00 daily cron that is every single run.
+
+**Fix:** verify by id prefix, never by date string:
+
+```python
+today = [i for i in col.get(limit=100000)["ids"] if i.startswith("pluto_20261015_")]
+assert len(today) == n_findings
+```
+
+`col.get(limit=100000)['ids']` needs no `include=` argument. Treat a 0 from a *date-keyed* filter as an
+unverified check to re-run with the id prefix, never as evidence the feed failed.
+
+### Re-feeding CORRECTED findings needs an explicit delete first — the feeder dedupes on document text (Oct 15 2026)
+
+When a run is re-fed after the findings are edited (e.g. novelty labels added, titles rewritten), the feeder's
+dedup compares **document text**, so every edited finding no longer matches its stored copy and is added again.
+The chamber then holds **both** versions for that date — 12 docs for a 6-finding run — and the next run's
+dedupe sees the stale copy too. The `.processed/*.done` re-feed recipe solves this only for the **watcher**
+path; a direct `pluto_mempalace_feeder.py` feed has no marker to remove.
+
+**Fix — delete by today's id prefix, then re-feed, then assert:**
+
+```python
+stale = [i for i in col.get(limit=100000)["ids"] if i.startswith(f"pluto_{YYYYMMDD}_")]
+col.delete(ids=stale)
+# re-run: pluto_mempalace_feeder.py --input <corrected.json> ...
+# then assert len(ids-with-prefix) == finding count AND len(set(texts)) == finding count
+```
+
+Prefer getting the content right the first time: run the chamber repeat-check **before** drafting, so the
+novelty labels are in the JSON on the first feed.
+
 ## A near-miss chamber name can swallow a whole feed (Oct 6 2026)
 
 The palace holds **both** `cloud_infra` (**0 docs**, empty duplicate) and `cloud-infra` (**canonical**, 123
