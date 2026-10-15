@@ -1,7 +1,8 @@
 # Podcast Insight Extractor — Production Workflow
 
 > **Status: PROVEN** — running daily since June 2026. Cron `67319a9b2606`, **05:02 AM AEST** (`2 5 * * *`), deliver `origin`.
-> **Last verified run:** 2026-10-15 (17/17 quotes verbatim, md 164 lines / json 64.5 KB, 35 frameworks, 35 connections; 8 of the ranked 15 new; curated QOTD + 3 runners-up — the auto-picker repeated the previous day's lead-episode quote on a 3-day-window overlap).
+> **Last verified run:** 2026-10-16 (18/18 quotes verbatim, md 182 lines / json 77.9 KB, 38 frameworks, 46 connections; 5 of the ranked 15 new + 3 fresh extras; QOTD curated off the repeat onto 🆕 No Priors; compute-market speaker attributed to Evan/San Francisco Compute from the transcript; all 7 portfolio labels normalised to canonical).
+> Prior: 2026-10-15 (17/17 quotes, 35 frameworks, 35 connections — the auto-picker had repeated the previous day's lead-episode quote on a 3-day-window overlap; the SAME repeat recurred on 2026-10-16, so curating QOTD from a 🆕 episode is now the standing step, not an occasional repair).
 > Owner: Pluto. Supersedes the June 2026 Claude-extraction draft of this doc.
 
 ## Pipeline Position (verified against the live cron store, 2026-09-20)
@@ -194,5 +195,6 @@ no `\$`/`''` leaking into the published md.
 | 2026-09-25 | 1364 | 58 | 24 | 15 + 0 extras | 30 | 22 | 15/15 (1 of the ranked new; freshness cutoff self-healed) |
 | 2026-10-14 | 1842 | 102 | 37 | 15 + 0 extras | 30 | 28 | 15/15 (3 of the ranked new; inline-`>>` reverify false negative fixed) |
 | 2026-10-15 | 1877 | 107 | 43 | 15 + 2 extras | 35 | 35 | 17/17 (8 of the ranked new; curated QOTD + 3 runners-up, all re-verified verbatim) |
+| 2026-10-16 | 1905 | 116 | 49 | 15 + 3 extras | 38 | 46 | 18/18 (5 of the ranked new; curated QOTD off the repeat → 🆕 No Priors; compute-market quote attributed from the transcript; label normalisation applied) |
 
 (Pipeline switched from Claude to DeepSeek Flash during 2026; the June table in git history is historical only.)
