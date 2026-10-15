@@ -632,10 +632,11 @@ see `references/insight-extractor-workflow.md`.
 position with live cron timings, runner/CLI, curation-layer keys and rules, known extractor defects + fixes,
 post-run verification checklist, recent run metrics. (The older Claude-era steps in git history are historical.)
 
-**State tracking:** Store last run date in `~/.hermes/research_outputs/.podcast_monitor_state.json`:
-```json
-{"last_run": "2026-06-04T20:30:00+10:00", "episodes_processed": 146}
-```
+**State tracking:** `~/.hermes/research_outputs/.podcast_monitor_state.json` belongs to the **INGESTOR**
+(new/blocked/backlog counters — overwriting it destroys ingest state; it has not been written since
+June 2026). The INSIGHT EXTRACTOR keeps its own state elsewhere: `generated_at` in
+`podcast_insights.json` and the `prev_run_cutoff` field in `/tmp/podcast_insights_raw.json`. There is no
+separate extractor state file to update.
 
 ## YouTube Data API v3 — Live (June 14, 2026)
 
