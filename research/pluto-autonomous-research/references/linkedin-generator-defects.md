@@ -1157,4 +1157,42 @@ template, one subject-bound candidate was added for the uncovered signal:
 Never relax a grounding or repeat gate to reach a quota — and check the new candidate fires on other
 retained days too, so it is not a one-day artefact.
 
+## Rule 47 recurrence (Oct 16 2026) — a second twin pair, and how to verify the fix BOTH ways
+
+`datacentre-permitting-risk` ("The Project That Walked") shipped on **11 Oct**; five days later, on the same
+`date % 5` Cloud slot, `datacentre-state-planning-approval` ("Two Approvals, One Process") returned and took
+auto-slate **slot #2** — grounded on the same evidence (Queensland's state-level assessment, social licence,
+Victoria's conditions; the fired terms `community benefit agreement` + `social impact assessment` sit inside
+the same paragraph). Two keys, one approvals gap. `_SUBJECT_TWINS` is per-key and hand-maintained, so a
+candidate added later that re-covers an existing gap is invisible to the title gate.
+
+Fix — register the pair:
+
+```python
+_SUBJECT_TWINS = {
+    "agent-sandbox-escape": "eval-egress-containment",
+    "datacentre-state-planning-approval": "datacentre-permitting-risk",
+}
+```
+
+Verification, both directions — **and exclude the day being replayed**:
+
+| Window | twin title in window | `twin_repeat` | `own_title_repeat` | fires on today's corpus |
+|---|---|---|---|---|
+| live 10 days (16 Oct) | True | **True** — suppressed | — | 2 hits |
+| counterfactual: 11 Oct **+ 16 Oct** excluded | False | **False** — still fires | False | 2 hits |
+
+Without excluding today's own file, the candidate's own title text sets `own_title_repeat=True` and the
+counterfactual proves nothing about dedupe-versus-kill.
+
+Refilling the slot: with the twin demoted, the fresh Cloud pool held one grounded candidate
+(`datacentre-energy-grid`, 5 hits) while the day's #3 signal (RBA FSR focus topic + BoE SIMEX26) had none.
+Added `cloud-concentration-resilience` with bound phrases only — bare `concentration` is excluded because it
+fires on AEMO's NSW/Victoria load note and the published VC-concentration post. Replay: 5 hits on 16 Oct,
+0 on all eight retained prior research days.
+
+**The rule:** register the twin whenever a new candidate's gap overlaps an existing one (diagnose a
+returning cycle by diffing GAP lines against `date - 5`, not titles), and when the twin rule costs a slot,
+add a grounded candidate rather than relaxing a gate.
+
 
