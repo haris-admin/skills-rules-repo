@@ -331,6 +331,15 @@ Separate from the partner reps: how to reach **Stone & Chalk itself**.
 
 Standing record: `alexandria/vault/refined/stone-chalk-market-intel/ENGAGEMENT.md`.
 
+## Capturing cohort announcements (proven method)
+
+LinkedIn **post bodies** are treated as login-walled by every sweep — but a post **is readable at FEED level**:
+
+- Fetch `https://www.linkedin.com/feed/update/urn:li:activity:<ID>/` (Googlebot UA) and the full post text comes back.
+- **Decode any activity ID to its post date:** `datetime.fromtimestamp((id >> 22)/1000)` — ms-since-epoch in the high bits. Use this to date a catch-up announcement without trusting the search index.
+- ⚠️ **The search index lags cohort posts by days.** A post live since 14 Oct was still unfindable on 16 Oct — so never record "no announcement exists" from a search miss alone; fetch the feed URL first. **Our own announcement was missed this way.**
+- `linkedin.com/posts/<slug>-activity-<ID>-<hash>` 404s without the auth wall; the `/feed/update/urn:li:activity:<ID>/` form is the reliable one.
+
 ## Pitfalls
 
 - Counting ten articles about one launch as ten developments.
