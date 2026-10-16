@@ -456,6 +456,15 @@ When you see `last_status: error` on a cron, classify before escalating:
  `pluto_pr` merged `origin/dev` at `49450bfa` AGAIN (no new dev commits since 10-13). Diagnosis writer
  produced real entries for both legs — fork fix holds. Same `⚪ 'poetry' not found` discriminator (the
  permanent path, not a fault).
+ **2026-10-15/16 (days 9-10) — backend still flat, both flaky counters one deeper.** Backend
+ `7770 passed, 34 failed` on BOTH days (10-07 7641/31 → 10-16 7770/34) — day 10 of the elevated
+ post-`origin/dev` band, unchanged, still only a COUNT-TREND watch. 10-15: OVERALL `8057 passed,
+ 38 failed` (vitest 10 consecutive, E2E `47/3` = 8 consecutive). 10-16: `8058 passed, 37 failed`
+ (vitest **11 consecutive**, E2E `48/2` = **9 consecutive**); E2E diagnosis back on the whitelisted
+ `reduced-motion` CSS pattern, not the 10-11/10-12 forgot-password regression. `pluto_pr` merged
+ `origin/dev` at `49450bfa` on BOTH days (no new dev commits since 10-13) — the merge prints ✅ while
+ the suite still measures the elevated band, so the merge alone is not the fix. Diagnosis writer
+ produced real entries for both legs — fork fix holds.
 - **A skill at ≥99.9% of the 100,000-char SKILL.md cap is effectively UNPATCHABLE — `skill_manage`
   rejects the whole batch when the RESULT exceeds the cap, so even a correct fix fails.** Seen
   2026-10-10: `podcast-knowledge-base/SKILL.md` sat at 99,978 chars (22 chars headroom) and a
@@ -640,6 +649,13 @@ record):
    string matches are INTENTIONAL — so no future agent re-audits or re-enables.
 
 ## Cron self-scheduling note
+- **A provider stall kills THIS job, and its only durable signature is a MISSING
+  `~/.hermes/reviews/daily/maintenance-<date>.json`.** Seen 2026-10-15: the run started 14:00:51, stalled
+  600 s on `[Errno 104] Connection reset by peer` (`bytes=0 chunks=0`, `attempt 3/3, not retryable`), and
+  aborted at 15:01 with `Provider has been unresponsive … 6 consecutive stale attempts`. `last_status:
+  error` at an odd time (15:01, not 14:00) plus no dated JSON file is the whole trace — so when asked
+  "did the daily maintenance run?", check for the dated file before blaming the scheduler, and do NOT
+  backfill the missed day: the next on-time run covers the same checks.
 - A catch-up fire is not a config error: the 2026-09-17 run executed at **23:38** instead of its
   14:00 slot (the gateway was restarted at 23:38 after the state.db repair) and the 2026-09-18 run
   fired at 14:00:24 on time. Before flagging a wrong-time run, check whether a gateway
