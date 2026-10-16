@@ -58,3 +58,10 @@ python3 scripts/check_release_isolation.py --repo /abs/path/rel-slug --base <las
 
 - The release summary contains the isolation check's `RESULT` line, the pinned SHA, the run id and the direct migration check output.
 - Related: `rules/release-image-from-clean-export.md`, `rules/terraform-prod-apply-safety.md`, `rules/aws-profile-and-secret-recovery.md`, `rules/github-cli-multi-account-scope.md`, `rules/deploy-state-needs-independent-reads.md`, `skills/incremental-version-bumping`.
+
+## Handing the human SQL files and secrets (lessons 16 Oct 2026)
+
+- **A `.sql` path is not a command.** The human typed `/private/tmp/dev-create-migrator-role.sql` and got `permission denied`. Hand the exact `psql` line (`psql "$DEVURL" -v ON_ERROR_STOP=1 -f <short symlink>`), and say the file is read by psql, not executed.
+- **Secrets are entered by the human, silently.** Give `read -s "DEVURL?prompt: "; export DEVURL` as its own line, never ask them to paste a connection string or password into chat, and let the SQL file prompt for new passwords (`\prompt`).
+- **One command per message, no trailing punctuation.** A trailing comma made the shell look for `cw-check.sh,`. Put the command on its own line with nothing after it.
+- **Read-only checks against another account get their own script that prints the account first,** so the human sees which account answered before trusting the result.

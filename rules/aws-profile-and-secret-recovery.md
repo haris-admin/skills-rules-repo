@@ -47,3 +47,9 @@ plausible but is silently wrong, which is worse than an honest rotation.
 - [no-secret-masking.md](no-secret-masking.md) — never derive a "safe" display string from a
   credential-bearing field
 - `.claude/skills/handling-sensitive-data/` — packages the rotation workflow end-to-end
+
+## Lessons 16 Oct 2026 (a metrics loop wrote to the other company's account)
+
+- **Application startup code can emit to the default AWS profile.** The DB pool metrics loop calls CloudWatch `PutMetricData` with no profile and no environment gate; any local run that starts the lifespan or worker startup writes to whichever account the default profile resolves to (here another company's). Confirmed by a read-only `list-metrics` in both accounts: the other account held two of the three production metrics.
+- **Install the refusing botocore plugin before the first run, not after.** Test harnesses for code that starts the real lifespan must refuse every botocore call and every non-loopback connect from the start; a run before the plugin existed is a possible external write you can only prove with the other account's own access.
+- **Check by listing, not by deleting.** CloudWatch metrics cannot be deleted and expire on their own; a read-only `list-metrics` (default profile, then `--profile amlhive`) shows what landed. Log the finding as a prod issue and fix the gate in its own small change.

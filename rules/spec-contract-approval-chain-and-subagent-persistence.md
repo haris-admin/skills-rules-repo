@@ -47,3 +47,12 @@ How a spec-driven change goes from drafted contract to "ready for the implemente
 - Recompute every pinned digest from the file on disk before relaying it, and confirm `git status --short` shows only the paths the agent was scoped to.
 - Related: `rules/independent-red-and-diff-review-gate.md`, `rules/no-fabricated-human-decisions.md`, `rules/subagent-dispatch-authorization-boundary.md`, `rules/subagent-verification-protocol.md`, `rules/isolated-production-release-recipe.md`.
 - Origin: six to eight Oct 2026, four spec-driven Sentry changes taken from proposal to ready-for-implementer by subagents and reviewers.
+
+## Lessons 16 Oct 2026 (C531 slice 1 revision 3.9, five passes)
+
+- **Sweep every Red/Green classification against the code in one pass.** A reviewer found one wrong "already Green" cell per round (an assertion on a counter, then on a property that did not exist yet) until the author grepped every identifier each case names (fields, constants, files, migrations) against the code under test and listed the result in the changed-lines file. Do the whole sweep before the first re-acceptance.
+- **A contract oracle must be able to pass on a correct implementation.** Reason each oracle through against the code and the database profile: a reject-first trigger whose counter rolls back with the aborted transaction refuses every later insert; an enum injection on a column that is plain `text` in the test profile never fails. Match on the text form of a column so the injection works for either type.
+- **State which answers a candidate digest assumes.** When the human answers a question differently from the recommendation the candidate assumed, the digest is void: list every voided digest in the supersede chain and batch all open questions into one round before the narrow re-acceptance.
+- **When the approved file must stay byte-identical, write the revision as a new file** and point the implementer brief's hash check at it only after the human approves the new digest; keep a changed-lines file that classifies every line against the approved base and reproduces the diff hunk headers.
+- **Label author-drafted values.** A range, literal or name the human did not decide gets an author-specification number, and the digest approval names it, so a drafted default is accepted on purpose.
+- **A second reviewer is a second opinion.** A concurrent session may record its own independent verdict on the same digest; keep both, check that each is independent of the author and builder, and never undo either.

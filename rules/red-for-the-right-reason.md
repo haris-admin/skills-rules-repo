@@ -123,3 +123,8 @@ These are the highest-value tests in the repo and the easiest to write vacuously
 - `docs/agent_rules/openspec-tdd-mandate.md` — the Red → Green → Refactor mandate
 - `docs/agent_rules/test-doubles-vs-assertions.md` — when a test may legitimately be touched
 - `.claude/skills/prod-db-perf-audit/SKILL.md` Step 5e — leave a drift guard behind, not just a fix
+
+## Lessons 16 Oct 2026 (C531 Phase A2 Red acceptance)
+
+- **A Red or Green result can depend on the environment, not the code.** An S1-33 "no row written" test passed on the old code because `AWS_PROFILE` was set to an empty string (boto3 raised `ProfileNotFound` while the code under test imported a module that builds a client at import time), so the audit write failed silently and the test saw no row. With the variable unset the Red appeared. Run Red and Green under the same environment, unset (not empty) any variable the code reads, and show that the swallowed-error warning is absent from the Green run.
+- **When a test asserts that something was not written, prove the write path could have run.** Break the production code once and watch the row appear, in the same environment as the Green run.

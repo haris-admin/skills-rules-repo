@@ -32,3 +32,8 @@ two different answers, because the human didn't realize it was the same question
 # same question. Which is correct?" — then record the answer as a new,
 # explicitly-superseding entry.
 ```
+
+## Lessons 16 Oct 2026 (concurrent sessions under the human's identity)
+
+- A concurrent session may commit under the human's git identity (a Codex session committed a re-check report and three status lines while this session ran). Read what it changed before relying on or contradicting it, report it to the human, and never undo or rewrite it. Its verdict is a second opinion, not a substitute for your own independent review.
+- Do not delete shared test-service state you cannot attribute. Eight stray queue entries from one run were indistinguishable from forty-nine others in a shared local Redis, so cleanup was withheld and the human asked.
