@@ -672,6 +672,19 @@ print(f'Findings in JSON: {len(d.get(\"findings\",[]))} stored for {d.get(\"topi
 ```
 This second check validates that the JSON file itself is non-empty and correctly structured — a prerequisite for the feeder to work.
 
+**Direct chamber read-back — the ChromaDB path is fixed, do not guess it.** The feeder's palace lives at `/mnt/c/Users/habib/.mempalace/palace` (Windows-side). Pointing a client at `~/.hermes/mempalace` raises `Collection [fintech-aml] does not exist`, which reads as a routing failure but is only a wrong path. Read back by id prefix (`pluto_<YYYYMMDD>_`) so a stored-but-mis-grounded feed is visible, and run it under `env -u PYTHONPATH` — a foreign `PYTHONPATH` shadows the venv's compiled extensions and kills `import chromadb` (see env.md 'Cron env guard'):
+```bash
+cd ~/.hermes && env -u PYTHONPATH /home/habib/.hermes/venv/bin/python3 -c "
+import chromadb
+col = chromadb.PersistentClient(path='/mnt/c/Users/habib/.mempalace/palace').get_collection('fintech-aml')
+res = col.get(include=['documents','metadatas'])
+print('docs from this run:', [i for i in res['ids'] if i.startswith('pluto_$(date +%Y%m%d)_')])
+"
+```
+Expect one id per finding (`..._0` … `..._(N-1)`) with `source: pluto_autonomous`.
+
+**Wire-in check after a research run (cheap end-to-end proof the output is consumable):** `python3 scripts/briefing_improver.py --dry-run` must print the day's portfolio projects under 🔥 HOT / 🌤 WARM. If the heatmap is empty while the checklist names projects, the `portfolio_hit` type mismatch has returned (string vs list — see `pluto-morning-briefing-v2`); if the day's own topic does not appear anywhere, the improver loaded the wrong-date file.
+
 **Pluto is the sole operator of the full morning briefing pipeline as of June 4, 2026.** This includes research, synthesis, LinkedIn/blog ideation, voice overview, email delivery to hhsiddiqui@gmail.com + admin@harishabib.au, and Telegram delivery. **No Gumby forwarding — Pluto delivers directly to Haris.** Gumby is fully retired from briefing duties. All 9 cron jobs plus inline briefing/email phases are Pluto's responsibility.
 
 ## Pitfalls
