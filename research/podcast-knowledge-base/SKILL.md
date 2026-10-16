@@ -619,7 +619,15 @@ Queries Supabase for episodes from last 3 days, extracts key themes/frameworks/q
 **Runner (current):** `python3 ~/.hermes/scripts/podcast_insights_daily.py` — Supabase window query →
 keyword-dense transcript sampling (~30k chars/ep) → parallel DeepSeek Flash extraction → verbatim quote
 verification against stored transcripts → md + json. `--publish` re-publishes from `/tmp/podcast_insights_raw.json`
-and re-verifies quotes (no LLM calls). Optional curation layer `/tmp/podcast_insights_overrides.json`
+and re-verifies quotes (no LLM calls).
+
+**Empty-row repair:** a long multi-talk compilation can come back with a *parseable but entirely empty* JSON
+(`error: null`, log line `ok`, blank Key Theme in the md). Re-extract it block-wise — coverage instead of
+density — with `python3 ~/.hermes/scripts/podcast_insights_re_extract.py <youtube_id> [--empty] [--publish]`
+(promoted from the 2026-10-17 AI Engineer NYC `jiUC6IUMdvc` repair; `--empty` auto-selects blank rows in the
+raw snapshot). See `references/insight-extractor-workflow.md`.
+
+Optional curation layer `/tmp/podcast_insights_overrides.json`
 (quote selection, project-label normalisation, rationale completion) is auto-applied at publish and archived
 per-day so it cannot bleed across runs. The `new_since_last_run` / 🆕 baseline resolves defensively
 (a publish timestamp from today is ignored → the raw snapshot's `prev_run_cutoff` on a same-day re-run →
