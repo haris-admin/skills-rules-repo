@@ -182,7 +182,7 @@ A separate weekly cron owns a *deep* per-enterprise note across CBA · Westpac �
    published and read ITS date. Anything outside ~8 weeks goes to a **“Quarantined — stale, not news”**
    section with the real date. Known offenders: Cuscal/Feedzai card-fraud (**Sep 2018**), ANZ “Economic
    Pulse Plus”/Gemini (**Aug 2025**), ANZ record A$240m/A$250m ASIC penalty (**15 Sep 2025**), CBA agentic
-   anti-fraud launch (**Apr 2026**), Westpac real-time AI call assistant (**29 May 2025**), **NAB's superannuation investment-scam "+389%" finding (25 Aug 2026)**, **ASIC's FY26 takedown tally / deepfake-impersonation release (19,400+ scams, 17 Aug 2026)**, **CBA's "89%/42%" deepfake research (Jan 2026)** and its **"350,000 Pollen Team interactions" figure (Aug 2026 — CBA Annual Report)**, and the **"$1bn
+   anti-fraud launch (**Apr 2026**), Westpac real-time AI call assistant (**29 May 2025**), **NAB's superannuation investment-scam "+389%" finding (25 Aug 2026)**, **ASIC's FY26 takedown tally / deepfake-impersonation release (19,400+ scams, 17 Aug 2026)**, **CBA's "89%/42%" deepfake research (Jan 2026)** and its **"350,000 Pollen Team interactions" figure (Aug 2026 — CBA Annual Report; *restated* to shareholders at the 14 Oct 2026 AGM, so quote both dates)**, **APRA's licence conditions + A$50m operational-risk add-on on Bendigo and Adelaide Bank (18 Aug 2026 — delivered jointly with AUSTRAC after a Deloitte root-cause analysis; re-surfaced Oct 2026 through news.com.au / perthnow / theasianbanker / brokernews — usable only as regulatory precedent, never as news)**, **NAB's "AI-generated images of high-profile Aussies" investment-scam warning (Jan 2026; its own notes date the dataset to 1 Jul–30 Dec 2025)**, and the **"$1bn
    CBA AI loan fraud" syndication wave** — the self-report is a real continuing thread, but the copies
    circulating (shooterssupply.org, oneturbowash.com, internewscast.com, dailymail.com) carry **no usable
    date** and are content-farm rewrites; cite the originals (AFR) only. Watch the
@@ -216,6 +216,29 @@ index is JS-rendered but **individual media-release URLs fetch fine**, so enumer
 and extract the release URLs directly. `bankingday.com` is the highest-yield dated feed for partner
 conduct/pricing moves (its article sidebars list same-edition items **with timestamps** — use them to date
 items you find elsewhere). AFR is paywalled: headlines, standfirsts and search summaries only.
+
+**Dated-feed enumeration when a newsroom is a JS shell (verified 17 Oct 2026 — the four methods below each
+recovered in-window items that extractor-based fetches missed).** Read them with `python urllib` +
+a browser UA, not `curl` (WAF-blocked on aph.gov.au) and not the extract backend.
+- **ANZ** — `anz.com.au/newsroom/media/archive/2026/` is a JS shell to extractors but its **raw HTML carries
+the whole dated list**: `YYYY-MM-DD 00:00 --> --> <Type> <Title>`. Regex the `(\d{4}-\d{2}-\d{2}) 00:00` hits
+and print the following ~320 chars per hit. This is how ANZ's **13 Oct** Smith Family scam-awareness release
+was found (a prior run had it as 8 Oct) and how the archive's true newest item is established.
+- **NAB** — `nab.com.au/sitemap.xml` (657 KB, 200 OK) lists every `/news/` URL with a `<lastmod>`: regex
+`<loc>…</loc>\s*<lastmod>(…)</lastmod>` and filter `lastmod` to the window. Recovers post dates (13/14/16 Oct)
+when the newsroom and `news.nab.com.au` are both shells.
+- **Westpac** — media releases are slug-addressed `…/media/media-releases/2026/<D>-<month>`; **probe the
+candidate days** (`8-october`, `13-october`…) and read the `<title>`. 404 = no release that day, which is
+itself a usable null.
+- **Cuscal** — `cuscal.com/newsroom/` carries `Published <DD Mon YYYY>` stamps for the whole list; regex them
+to state the newest item's date and prove a null week.
+- **CBA AGM-grade numbers live in the ASX PDFs, not the wires**: the CEO/Chair address media releases and the
+**AGM Results** PDF (which carries the poll table *and* the "resolved but NOT put to the meeting" reason — the
+detail that explains a resolution's absence and that wire coverage omits). Read those at source.
+- **aph.gov.au JSCAI hearings**: the working URL is the **doubled path**
+`/Parliamentary_Business/Committees/Joint/Artificial_Intelligence/ArtificialIntelligence/Public_Hearings` —
+the single-path `/Artificial_Intelligence/Public_Hearings` **404s**. It gives Past/Upcoming tables with
+transcript (HTML & PDF) / "Not yet available" per date.
 
 **House rules for this deliverable.** All five are public reporting only — never imply a partnership,
 customer relationship or inside knowledge. **Never name ANZ as a partner, pilot site or reference for
@@ -340,8 +363,47 @@ LinkedIn **post bodies** are treated as login-walled by every sweep — but a po
 - ⚠️ **The search index lags cohort posts by days.** A post live since 14 Oct was still unfindable on 16 Oct — so never record "no announcement exists" from a search miss alone; fetch the feed URL first. **Our own announcement was missed this way.**
 - `linkedin.com/posts/<slug>-activity-<ID>-<hash>` 404s without the auth wall; the `/feed/update/urn:li:activity:<ID>/` form is the reliable one.
 
+## Cohort tracking — the per-company capture contract
+
+Haris's standing ask (16 Oct 2026) defines what each cohort sweep must capture. Names and dates alone
+are **not** a sweep. For **every** participant company, capture and keep current:
+
+1. **Announcement** — date · platform · the post/page URL. Own-site > company social > third-party >
+   search-index only; label which.
+2. **What it is** — one line on the product, in the company's own words.
+3. **What it makes PUBLICLY AVAILABLE for review** — the dimension that was missing, and the most useful
+   one for competitive reading: website, product/docs page, live demo, pricing, whitepaper, GitHub repo,
+   trust/security/compliance page, certification claims (**verify an ISO/certification claim on the
+   company's own site — never repeat it from a social post alone**), media kit.
+4. **Lane** — `evidence/governance/compliance` · `other-AI` · `services/consulting` · `unknown`, plus the
+   sub-type: governance-policy tooling vs runtime agent control/authorisation vs evidence/audit record.
+   The runtime-control and evidence-record clusters are the ones adjacent to AMLHive.
+5. **Evidence quality + what a reader must not over-read.**
+
+Deliverables: the rolling view is `refined/stone-chalk-market-intel/PARTICIPANTS.md`; the dated, sourced
+record stays the chamber table. On request (or when the list changes materially) also emit a **standalone
+markdown document** suitable for handing to Notion — same content, no vault-relative links.
+
+### Regeneration is a UNION, not a re-search
+`PARTICIPANTS.md` is regenerated from search each sweep, which silently loses names the chamber already
+carries with dates. On 16 Oct 2026 four dated entries (**Rivanorth, Whitehot, Paxmod, Seer Data/metiora**)
+were absent from the view file while present and dated in the chamber. **Diff the chamber table against the
+view file and restore the union before publishing any count** — and always state the count with its rule
+(named vs excluded-as-unverified) so a drifting number is visible.
+
+### Notion hand-off
+There is no Notion connector in the agent's own profile. A valid integration token exists in the Windows
+fleet env (`/mnt/c/Users/habib/.hermes/.env`: `NOTION_TOKEN`, `NOTION_DATABASE_ID`); the bot is
+`connecting_openclaw`. As of 16 Oct 2026 it authenticates (`/users/me` → 200) but has **no page access** —
+`/search` returns empty and the configured database returns `object_not_found` until the target page is
+shared with the integration inside Notion. Until then, deliver the standalone markdown document instead of
+claiming a Notion update.
+
 ## Pitfalls
 
+- **Counting only names and dates.** A cohort entry without "what they make publicly available" is an
+  incomplete record for this watch.
+- **Regenerating the view file from search alone** — see the union rule above.
 - Counting ten articles about one launch as ten developments.
 - Advancing the cutoff past a failed source, silently losing coverage.
 - Conflating **PSP "Tranche 2" (ePayments Code)** with **AML/CTF "Tranche 2"**.
