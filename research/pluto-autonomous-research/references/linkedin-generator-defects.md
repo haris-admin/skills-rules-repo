@@ -1196,3 +1196,50 @@ returning cycle by diffing GAP lines against `date - 5`, not titles), and when t
 add a grounded candidate rather than relaxing a gate.
 
 
+## Rule 54 — keyword vocabulary drift on a returning event (Oct 17 2026)
+
+**Symptom.** A candidate that exactly describes the day's signal returns 0 hits, the day's own-pillar fresh
+pool looks empty, and the blog slate falls back on repeats — while the candidate sits in `BLOG_CANDIDATES`
+the whole time.
+
+**Case.** `asic-ai-banking-review` was added for ASIC's 30 Sep 2026 banking-AI review, keyed on the 7 Oct
+coverage vocabulary: `customer-facing ai`, `banking priorities`, `lender conduct`, `broker oversight`,
+`referrer arrangement`. On 17 Oct the *same* event returned as the day's #6 finding reported in entirely
+different words — "the banking sector's use of AI in dealing with customers", "customer dealings",
+"formal review", "nine roundtables" — so `_subject_kw_hits` returned 0 and the candidate never fired.
+
+**Fix.** Extend the existing candidate's list with the vocabulary the event is actually reported in today:
+`customer dealings`, `banking sector`, `banks use ai`, `formal review`. Verified with the generator's own
+matcher: 4 hits today; **0 hits on all six prior retained research days** (10–16 Oct).
+
+**Rule.** An event that recurs does not recur in the same words. When a returning signal has no firing
+candidate, check whether one already covers that gap under the OLD vocabulary before adding a second —
+adding a twin is the Rule 47 defect, and extending is the smaller change. Keyword lists are a living
+description of how an event gets covered, not a snapshot of the day the candidate landed.
+
+## Rule 55 — the repeat window is capped by file retention, and the Rule 45 recurrence (second FinTech instance)
+
+**The auto-slate shipped 3/3 blog ideas as verbatim repeats on 17 Oct 2026** — "Fined for Not Enrolling"
+and "The 1 October Cliff" had both been delivered in the 12 Oct curated set, five days earlier, on the same
+`date % 5` slot. Cause: the day's own-pillar (Australian Fintech Regulation) fresh pool was empty — every
+candidate had either shipped inside the window or been retired in `KNOWN_BLOGS`.
+
+**Fix, per Rule 40/45 practice — add grounded candidates, never loosen a gate.** Added
+`dap-custody-capital-bar` (keywords `cp 392`, `net tangible assets`, `self-custody`, `third-party
+custodian`) and `aml-readiness-evidence-gap` (`readiness report`, `pep screening`, `beneficial ownership`).
+All three lists replay 0 hits on the six prior retained research days and ground today (4/4/3 hits); the
+before→after slate diff replaces all three blog slots with 0 regressions to the LinkedIn ideas.
+
+**Retention cap.** `recently_proposed_blog_titles(days=10)` filters `0 <= age <= days`, but
+`research_outputs/` retained only `linkedin-ideas_*.md` from 10 Oct onward on 17 Oct — so the **effective
+repeat window is ~7 days, not 10**. The 1 October surcharge candidate (last proposed ~7 Oct) therefore
+returned un-suppressed. This is not a gate bug: do not widen or backfill the window. The durable defence is
+that every candidate must carry its own fresh grounding. When a returning candidate looks un-suppressed,
+check the retention boundary before assuming the gate is broken.
+
+**Harness.** `cache/scratch/replay_blog_fix_1017.py` — imports the generator by path (so `main()` does not
+run), then uses the module's own `get_signals_from_files()`, `load_research()` and `_subject_kw_hits()` to
+assert (A) grounding today, (B) 0 prior-day false groundings, (C) in-window repeats still suppressed. Print
+the real exit code: piping through `tail` masks it.
+
+
