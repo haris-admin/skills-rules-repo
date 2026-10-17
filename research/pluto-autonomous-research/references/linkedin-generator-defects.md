@@ -1242,4 +1242,75 @@ run), then uses the module's own `get_signals_from_files()`, `load_research()` a
 assert (A) grounding today, (B) 0 prior-day false groundings, (C) in-window repeats still suppressed. Print
 the real exit code: piping through `tail` masks it.
 
+## Rule 56 — the bookkeeping reference can be joined by a COLON, not only by a dash
+
+**Case (18 Oct 2026).** Finding #3 was titled `FOLLOW-ON to the 23 Sep AgentCore feed: one prompt took over
+every Bedrock AgentCore agent in the account — then poisoned agent memory`. Rule 48's `_is_feed_ref()` only
+inspected segments produced by `raw.split(" - ")`, and this title has no spaced hyphen — the reference is
+joined by `": "`. The hook shipped as the 98-char meta-reference, naming a feed the reader never saw and
+carrying no fact.
+
+**Fix.** `_LEAD_SEP = re.compile(r"\s*:\s+|\s+[–—-]\s+")` + `_strip_leading_feed_ref()`, called in
+`_short_title` AFTER the `_REPEAT_PREFIX` strip and BEFORE the `" - "` split. It splits on the FIRST
+separator and drops the head only when `_is_feed_ref(head)` is true, so `Agent trust becomes a certificate:
+Workday Agent Passport goes GA…` is untouched. New hook: `one prompt took over every Bedrock AgentCore agent
+in the account — then poisoned agent memory`.
+
+**Rule.** A separator-specific fix is only as general as the separators the pipeline actually emits —
+enumerate them from the corpus, not from the last incident. Harness (`cache/scratch/hook_harness.py
+before|after`, 48 hooks over 8 research days): 2 changed, both references (18 Oct colon variant and the
+13 Oct `UPDATE to the 18 Sep KYA feed: …` that the dash-only split also missed), 0 mid-claim regressions.
+
+## Rule 57 — a company NAME is not the subject of a listing story
+
+**Case (18 Oct 2026).** `compute-securitisation-lockin` (the Firmus float) took blog slot #3 on an Agentic-AI
+day. Its only hit was bare `firmus`, inside a hedged Genspark line — *"Firmus' float issues"* — while the gap
+asserted a live **A$7bn ASX float** the pipeline's own 14 Oct record says was **withdrawn** (shelved 9 Oct,
+reopening as a private round). `bookbuild`, `prospectus`, `data#3` and `vendor lock-in` were all ZERO.
+
+**Fix.** Keywords rebound to the listing ACTION or the named repriced supplier: `firmus ipo`, `firmus float`,
+`firmus listing`, `firmus withdraw`, `firmus shelves`, `firmus pulls`, `maas group`, `bookbuild`,
+`prospectus`, `data#3`, `vendor lock-in`. Gap rewritten to the state the record supports, with both asserted
+figures removed. Replay: 11 Oct (`firmus shelves its a$7bn asx float`) and 14 Oct (`firmus's withdrawn ipo …
+maas group`) still fire; the 18 Oct hedge does not.
+
+**Rule.** When an entity has a STORY TYPE (listing, acquisition, breach), the keywords must name the story,
+not the entity — a bare company name guarantees firing on every passing, retrospective or hedged mention
+long after the story moved on. Note the curly apostrophe: the hedge would not have matched a `firmus float`
+bound phrase anyway, which is luck, not defence.
+
+## Rule 58 — a candidate's gap may cite only evidence the day actually carries
+
+**Case (18 Oct 2026).** Blog pick #3 `nhi-agent-identity` shipped the gap *"NIST's agent identity/authorisation
+work and NHI sprawl have no dedicated post."* The corpus that fired it had `nist` 0×, `non-human identity` 0×
+and `nhi` 0× — the single hit was `agent identity`, inside the AppViewX product sentence.
+
+**Fix.** Gap restated around the firing evidence: AppViewX shadow-agent discovery, the AI Bill of Materials
+covering reachable skills, JIT access, the kill switch, and the CSA 82%-unknown-agent figure that sentence
+carries. The NIST reference was removed rather than "verified": with no web tool in the cron run, an uncited
+source is a fabrication risk and the post would be written from the gap.
+
+**Rule.** Rule 34 covers FIGURES; this is the same defect for SOURCES. Before a candidate takes a slot, read
+the sentence its keyword fired in and confirm every source and figure in the gap appears in the day's corpus.
+If the gap only works on evidence from an earlier day, re-ground it or leave the candidate for a day that
+carries its sources.
+
+## Rule 45 recurrence (18 Oct 2026) — the OWN pillar starves while adjacent pillars look full
+
+On the Agentic-AI cycle (same `date % 5` slot as 13 Oct) the AI-governance pool held two fresh grounded
+candidates once repeats were excluded (`autonomy-tiers` and `agent-incident-register` both inside five days;
+`agent-sandbox-escape` is a registered twin of 8 Oct's egress idea). Fixed per practice, twice:
+
+1. **Added** `mitre-attack-agent-controls`, bound to ATT&CK v20's own vocabulary (`t1698`, `t1699`, `t1700`,
+   `t1608.007`, `det0927`, `mitre attack`, `attack v20`, `detection strategy`) — 6 hits today, 0 on every
+   prior day in the replay window.
+2. **Demoted** the auto counter-signal to spare: it led with Gartner's 40%+ cancellation forecast, exactly
+   what the 13 Oct counter-signal post led with. The rewritten spare leads with CERT-In's "conventional
+   weaknesses" line.
+
+**Diagnostic.** It is the day's own pillar that starves, not the adjacent ones — the Cloud pillar still had
+grounded candidates, and that is exactly how the stale Firmus repeat reached slot #3 (Rule 57). Count the
+own-pillar fresh pool first; a full slate built from other pillars is the warning sign.
+
+
 
