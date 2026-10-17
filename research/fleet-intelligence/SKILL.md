@@ -238,7 +238,7 @@ As of June 1, 2026, Pluto is the primary fleet agent. Gumby (OpenClaw/Windows) i
 | Performance Tracker | 11:30 PM | Daily cron/perf data → feeds Sat review |
 | MemPalace Cleanup | 11:55 PM | Archive old files, compact DBs |
 | MemPalace Watcher | Every 5 min | Auto-process mempalace-inputs/ |
-| Vercel Monitor | 5:05 AM/PM | AML Hive deployment health |
+| ★ AML Hive AWS Monitor | 5/11/17/23 | AMLHive AWS health (amlhive_prod_monitor.py) |
 
 **Honcho peers (June 13):**
 - `haris` — human collaborator. Peer card populated via `honcho_profile` with 7 facts (role, location, portfolio, preferences). Queries now work.
@@ -261,9 +261,9 @@ Fleet health degrades — duplicate crons, stale pipelines, credential drift. Pr
 
 **Jun 13 prune removed:** Podcast KB Ingestion (IP-blocked), Voice & Task Processor (paused), Podcast Chunking (dead downstream), A2Square Git Syncs (never executed), Weekly Research Digest (superseded), Old Saturday "About Haris" Briefing (replaced).
 
-### Vercel Monitor — Fixed (Jun 13)
+### Vercel Monitor — Fixed (Jun 13), RETIRED (Aug 8)
 
-Previously false-alerted "no deployments in 12h" on stable live apps. Now only alerts on real deployment errors (ERROR/BLOCKED state). Current: 10 deployments, all READY, 0 errors. Healthy.
+Previously false-alerted "no deployments in 12h" on stable live apps. Now only alerts on real deployment errors (ERROR/BLOCKED state). Current: 10 deployments, all READY, 0 errors. Healthy. **⚠️ RETIRED 2026-08-08 — Vercel no longer used; cron removed, script archived. AML Hive health now via `amlhive_prod_monitor.py` (AWS, 4x daily).**
 
 ### Git Sync — Stale Repos Skipped (Jun 13)
 
@@ -292,6 +292,70 @@ KNOWN_DEAD_REPOS = {'ideas-ndis', 'ideas-exitlens', 'ideas-gridpass', 'ideas-pit
 
 **Hermes config repo:** Pluto's scripts, skills, build queue, and cron config are backed up to `C:\Code\gitlab\hermes-pluto-config\` (`git init` June 1, 2026). Push to GitLab pending fresh PAT. Live scripts run from `~/.hermes/scripts/`, custom skills from `~/.hermes/skills/research/`.
 
+## Whole-stack inventory ("what do we have?" / "research our setup")
+
+Asked periodically — "do a research of what we have?", "what's going on", "get up to speed" — and
+before ANY adoption decision (new orchestrator, new runtime, consolidation). Answer with MEASURED
+counts from live sources, never from a skill's tables or memory: cron IDs, job counts and error states
+change weekly, and any table in a skill (including this one) is a point-in-time snapshot.
+
+| What to count | Where it actually lives |
+|---|---|
+| Scheduled jobs — the authoritative count | the cron API list (`cronjob_manage action=list`), not the CLI text render |
+| Job shape: script vs agent, skills declared, delivery target | same registry fields, aggregated in code |
+| Run outcomes | `~/.hermes/cron/executions.db` (SQLite — open read-only via `file:...?mode=ro`) |
+| Durable failures | `hermes cron incidents` (and `hermes cron runs` for attempts) |
+| Agent / skill / script / session counts | `~/.hermes/{skills,scripts,sessions}`, the profile `skills/` dirs |
+| Repos and worktrees | `find /mnt/c/Code/github/<org> -maxdepth 1 -type d`, `git worktree list` per repo |
+| Knowledge legs | Alexandria markdown count, `pluto_mempalace_feeder.py --status`, Honcho peers |
+| Cost / quality gates | CMDB cost monitor, provider cost sync, test / security / review crons |
+
+Interpretation rules — each of these has produced a wrong number in a real report:
+
+- **`executions.db.status` is `completed` / `failed`, NOT `ok`.** A `status != 'ok'` filter reports a
+  ~100% failure rate on a healthy fleet. The table is also **rotated (~1k rows)**, so it is a rolling
+  window: quote it as "last N hours", never as an all-time rate.
+- **Incident states are `alerted` / `detected` / `resolved`.** OPEN = `alerted` + `detected`; count
+  distinct JOBS, not rows — one recurring job emits many rows.
+- **Report BOTH ledgers.** A clean run ledger (hundreds completed, a handful failed) routinely coexists
+  with several jobs holding open incidents, because a recurring failure that self-recovers between
+  ticks leaves a clean run history and a stale incident. The incident ledger is the durable signal —
+  never let a good run count stand as "the fleet is healthy".
+- **Job IDs are not always hex.** A `[0-9a-f]{12}` segmentation pattern misses named IDs (e.g. a
+  `pluto_<thing>_daily` job) and silently undercounts the CLI text render — trust the API count.
+- Use Python's `sqlite3` module, not the CLI binary (it may not be installed in WSL).
+
+Deliver the inventory as counts by FUNCTION (research/content · venture and product monitors ·
+compliance watch · knowledge base · chief-of-staff and reminders) plus the delivery-channel split and
+the open-incident list — the shape is what gets read, not the full list of job names.
+
+## Adoption review (a new orchestrator, platform or agent runtime)
+
+When the inventory above is being taken because something new is being considered — "I'm thinking of
+running X here, see the use case for Hermes/Codex" — the deliverable is a GAP MAP, not an opinion.
+The standing preference is to adopt the mechanism that fills a real gap and skip what we already have.
+
+1. **Inventory first** (section above), from live sources.
+2. **Capability table**: each advertised feature → our nearest equivalent → verdict
+   **duplicate / partial / gap**. State the MECHANIC, not the vibe — our atomic task ownership is
+   convention-enforced, so it stays `partial` even though the capability "exists".
+3. **Only `gap` rows justify adoption**, and only for a pilot. Recurring genuine gaps in this stack:
+   budget *enforcement* (we measure spend, we never stop it), one dashboard, managed secrets, and an
+   approvals gate that blocks rather than a convention that asks nicely.
+4. **Price the adoption, not the licence**: a second scheduler (double-fire on work both loops already
+   claim), a second source of truth when a SOR already exists, and a second place to edit whenever a
+   procedure changes. Name the duplication explicitly rather than reporting only the upside.
+5. **Check the adapter seam for governance loss.** A headless orchestrator drives the CLIs with
+   approvals/permissions skipped and can inherit the host CLI's login into every spawned agent home,
+   so "it just runs our agents" means our credentials, our spend and our production access, with the
+   permission gate relocated into the new tool's config. State which directory each agent would work
+   in and keep credential-bearing paths out of it.
+6. **Recommend a scoped pilot or nothing**: loopback only, one or two agents, capped budgets,
+   approvals on, a scratch workspace, PARALLEL with the existing fleet, with a stated review point —
+   never a one-step migration.
+7. **Order the advice honestly.** When the fleet's own open incidents outrank the new tool, say so
+   before the evaluation; the ranking is the most useful part of the answer.
+
 ## Key Fleet Facts (cross-reference with memory)
 
 - **Timezone:** Australia/Sydney (AEST/AEDT)
@@ -305,6 +369,10 @@ KNOWN_DEAD_REPOS = {'ideas-ndis', 'ideas-exitlens', 'ideas-gridpass', 'ideas-pit
 - **WSL to Windows bridge:** `/mnt/c/Users/habib/`
 - **Credential verification:** When API calls fail, sweep ALL credential locations (6+) — different locations can hold completely different key sets. See `references/credential-verification.md`.
 - **gstack methodology:** Garry Tan's AI product development workflow (23+ skills: plan/build/ship/secure layers). 4 OpenClaw-native skills already packaged for Gumby. Full review and fleet project mapping in `references/gstack-product-development.md`.
+
+### Forcing user-requested content into the next morning brief (cross-agent)
+
+Any fleet agent can make the 6:00 AM brief carry a requested section by writing `~/.hermes/research_outputs/briefing_requests.md` — `save_briefing()` in `briefing_improver.py` merges that file verbatim after the generated content on every 5:20 run. Do NOT pre-seed `morning-briefing-YYYY-MM-DD.md` or the dated pipeline JSONs: the improver regenerates the briefing with `write_text()` and the 5:05–5:15 crons overwrite the dated files, so anything pre-seeded there is lost. Remove/empty the request file after delivery — while present it merges into every briefing. (`--dry-run` does not call `save_briefing`, so it does not prove the merge.) Full detail lives in the morning-briefing skill under "Injecting user-requested topics"; this is the pointer for non-briefing-owner agents.
 
 ## Cron Bridge Verification (Honcho Signal Bridge)
 
@@ -364,7 +432,7 @@ The competitor intel pipeline (`competitor_intel.py`, cron `1a13a2d49682`) gener
 
 For **high-impact findings** before surfacing in a briefing: run them past another agent for verification.
 
-1. **Credentials & System Health** — Delegate to Gumby (OpenClaw) to check `.env` token validity, Vercel deployment states, AWS health from his Windows vantage.
+1. **Credentials & System Health** — Delegate to Gumby (OpenClaw) to check `.env` token validity and AWS health from his Windows vantage.
 2. **Competitor/Regulatory Signals** — Dispatch to Gumby GC (Genspark, 10K credits) for a lightweight verification: "Confirm this competitor move / regulatory deadline" — watch for email reply at macarthurgarments@gmail.com.
 3. **Briefing Content Coverage** — Before the 6:00 AM delivery, verify all 3 sources contributed: Gmail (Perplexity/Genspark), YouTube/podcast, and Pluto's own web research. Note gaps explicitly.
 4. **Tag validated findings** in the briefing with `[Cross-validated by Gumby GC]` or `[Verified by Gumby/OpenClaw]` so Haris knows what level of assurance each item carries.
@@ -398,6 +466,7 @@ if verdict['verdict'] == 'FALSE-POSITIVE':
 - Any `no_agent` cron showing a model name → the model field is ignored.
 - **"Pluto Feedback Loop exit code 3 / degenerate scorer"** (job `59f18c4d557c`) → RESOLVED 2026-09-27. Root cause was structural, not transient: the scorer waited for Gumby to emit `USED:`/`SKIPPED:` markers, and Gumby has been stood down since June, so no marker could ever arrive and `skipped_count` was never written — every finding accumulated the same inferred `used_count`, so no signal could be demoted. `pluto_feedback_processor.py` now measures usage deterministically from the *delivered* brief (`measure_delivered_usage()`: distinctive-token match of each `research_<date>.json` finding title against `morning-briefing-<date>.md`, threshold ≥3 hits and ≥50% of tokens), records both the used AND skipped half, and is idempotent per date (`last_measured`). Verified on the scheduled 06:09:55 run 2026-09-27: exit 0, utilisation 50% (3/6), incident flipped to `resolved`. Do not re-report this job.
 - **"A2Square Weekly Test Suite NameError: ensure_test_db"** (job `0320d41d6d71`) → fix already applied 2026-09-25 12:24 (entrypoint moved below the helper definitions); the open incident is a stale pre-fix record that self-heals on the next Wed 02:00 run. Do not report as an action item.
+- **"AML Hive Daily Test Suite 3x failed"** (job `044c0bc41e31`) → the headline count is mostly a **SQLite-vs-PostgreSQL suite artefact, not a product regression**. Measured 2026-10-18: of 34 backend failures, **30 are PG-gated** (27 assert `requires TEST_DATABASE_URL`, 2 fail binding `UUID` on aiosqlite, 1 needs `pg_roles`) — the issue-134 class of integration tests that never run against real Postgres. The **4 genuine** ones were `test_c426_review_platform_user_id` (`assert actor_type == "AI"`, got `HUMAN` — stale against the C522 HUMAN_DECISION change) and one dict-mismatch in `test_audit_details_capture`. Don't quote the raw 39-failure line as product breakage; run `.venv/bin/pytest --lf -q --tb=line` and count the `<abs path>:<line>:` tb-lines. The runner now classifies this itself (`classify_pg_gated()`, patches to `codex_diagnose(tail=True)`) — but the suite still exits 1 by design, so a red status here is expected until `TEST_DATABASE_URL` is wired.
 
 - **`no_agent` script crons: `last_status: ok` is NOT sufficient verification.** See "Cron Bridge Verification" above. The Honcho Signal Bridge (`pluto_honcho_bridge_daily`) is the canonical example — always verify by running `--list` and checking actual pending files, not the cron status.
 - **sqlite3 CLI not installed:** The `sqlite3` binary may not be available in WSL. ALWAYS fall back to Python's `sqlite3` via `execute_code`. Never fail with "command not found."
