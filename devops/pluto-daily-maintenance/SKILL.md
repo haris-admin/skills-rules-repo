@@ -465,6 +465,13 @@ When you see `last_status: error` on a cron, classify before escalating:
  `origin/dev` at `49450bfa` on BOTH days (no new dev commits since 10-13) — the merge prints ✅ while
  the suite still measures the elevated band, so the merge alone is not the fix. Diagnosis writer
  produced real entries for both legs — fork fix holds.
+ **2026-10-17 (day 11) — unchanged band; the vitest DIAGNOSIS now times out.** Backend
+ `7770 passed, 34 failed` (day 11 at 7770/34), vitest `240 passed, 1 failed` = **12 consecutive**,
+ E2E `48 passed, 2 failed` = **10 consecutive** (whitelisted `reduced-motion` diagnosis again);
+ OVERALL `8058 passed, 37 failed, 0 errors`. Both legs still `ESCALATED as real`. New wrinkle: the
+ vitest leg printed `Diagnosis: [Diagnosis skipped: timed out after 120s]` while E2E produced a real
+ diagnosis — so "the diagnosis writer wrote something" no longer proves it covered EVERY failed leg;
+ read per-leg lines before assuming names are available for the vitest failure.
 - **A skill at ≥99.9% of the 100,000-char SKILL.md cap is effectively UNPATCHABLE — `skill_manage`
   rejects the whole batch when the RESULT exceeds the cap, so even a correct fix fails.** Seen
   2026-10-10: `podcast-knowledge-base/SKILL.md` sat at 99,978 chars (22 chars headroom) and a
