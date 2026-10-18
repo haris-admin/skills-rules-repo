@@ -45,6 +45,18 @@ without the human saying so is the failure mode this rule blocks.
 6. **Always pass `--comment "<what>"` on `aws ssm send-command`** so the action is
    identifiable in `aws ssm list-commands`.
 
+7. **A push to `dev` cannot deploy production; a push to `main` does.** The CI job `deploy-to-ec2` has the condition
+   `github.ref == 'refs/heads/main'`. Before pushing, check the branch name (`git branch --show-current`) and push an explicit
+   `origin dev`. Never put `[skip deploy]` in a `dev` commit message: it travels with the commit if `dev` is later fast-forwarded to
+   `main` and silently skips the production deploy. Production needs its own, explicit request.
+8. **Facts about the staging box that change how you configure it** (details in `tapease-backend-deploy`): the container reads
+   `/opt/tapease/.env` through Compose `env_file`, and `docker restart` does not re-read it, so a changed `.env` needs
+   `docker-compose up -d --no-deps --force-recreate backend`; the box has the standalone `docker-compose`, not the plugin.
+9. **The POS terminal backend (`mapp` repo, GitLab, not the Portal) has its own path** (added 19 Oct 2026). Staging: commit, push `origin dev`, then
+   run `backend/scripts/deploy_docker.sh dev` on the staging box over SSM (instance `i-0f9a6ec659e6aab83`), after tagging the current image and
+   dumping the database. Production runs on a different instance whose host cannot reach GitLab: new commits must be loaded into the host's local
+   bare repo first, and production is built only after the user approves staging. See the `mapp` repo's `doc/clover-release-handoff.md`.
+
 ## Patterns to Follow
 
 ```bash
@@ -66,4 +78,4 @@ aws secretsmanager get-secret-value --secret-id portal/clover-sync/dev
 ## Related
 
 - Skills: `tapease-backend-deploy`, `tapease-pos-clover-shift-sync`, `deploy-frontend`, `nginx-change`, `api-endpoints`
-- Rules: `terraform-prod-apply-safety.md`, `security-and-secrets.md`, `deployed-vs-local-code-parity.md`
+- Rules: `terraform-prod-apply-safety.md`, `security-and-secrets.md`, `deployed-vs-local-code-parity.md`, `secrets-in-query-strings-never-logged.md`, `integration-config-change-verify-and-rollback.md`

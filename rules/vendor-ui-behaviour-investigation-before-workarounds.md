@@ -1,0 +1,21 @@
+# Vendor ui behaviour investigation before workarounds
+
+When a third-party UI screen cannot be controlled through documented settings, read the vendor app's own logs and code on the device before concluding or building a workaround.
+
+**Scope:** any agent integrating with a vendor app that draws its own screens (payment terminals, kiosks, SDK activities).
+
+## Why this exists
+
+Added 19 Oct 2026 (TapEase POS). Clover's "All Done! Thank you for your purchase" screen stayed up until touched. Several request settings were tried over days and did nothing. Reading the device log and the vendor APK's bytecode (`dexdump`) showed in one pass that the extra we set is only read by the tip and card-vault flows, and that the screen is Clover's customer-mode handoff.
+
+## Core Directives
+
+1. **Log first.** Capture the device log around the screen (activity starts, state changes) and name the exact vendor activity and state.
+2. **Then read the vendor code read-only.** Pull the vendor APK into a scratch folder, dump it, and find where each setting you send is actually read. Do not install, patch or repackage it.
+3. **Prove a setting does something** before relying on it. A constant that exists is not proof; find its readers.
+4. **Label the result as evidence, not proof.** Vendor code is obfuscated; say what was and was not found.
+5. **Record it and ask the vendor.** Put the finding in `docs/` and the question in the vendor email. Prefer a supported setting over an app-side workaround that races the vendor's result.
+
+## Verification & Guardrails
+
+- Never modify system settings on the device to test a theory; give the user the setting to try.

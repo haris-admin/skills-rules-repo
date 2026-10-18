@@ -1,0 +1,27 @@
+---
+description: A diagnostic probe must call the same endpoint, version and parameters the failing code uses, and must be able to tell the competing explanations apart before anyone runs it.
+globs: *
+alwaysApply: false
+---
+
+# Diagnostic probes must use the production path and discriminate
+
+A diagnostic probe must call the same endpoint, version and parameters the failing code uses, and must be able to tell the competing explanations apart before anyone runs it.
+
+**Scope:** every agent writing a status probe, curl check, health script or one-off diagnostic, especially against vendor APIs.
+
+## Why this exists
+
+Added 19 Oct 2026 (TapEase Portal Clover OAuth). The Portal failed at `POST /oauth/v2/token` with HTTP 401. The first probe tested the old v1 `GET /oauth/token` endpoint, and a wrong-secret control used a random string that failed Clover's format check, so it could not show whether the real secret was accepted. Two rounds of the user's time went on a probe that could not answer the question.
+
+## Core Directives
+
+1. **Same path as production.** Read the failing code first. Use the same HTTP method, path, API version, host and body shape.
+2. **A control must differ in exactly one respect.** A wrong-secret control must have the right shape (same length and format) so the vendor reaches the secret comparison.
+3. **State before running what each outcome means.** If two hypotheses give the same answer, the probe is inconclusive; say so and change the probe, not the story.
+4. **Report inconclusive honestly.** Do not present a probe that cannot discriminate as evidence for either side.
+5. **Status only.** Probes that touch secrets print status codes and shapes, never values, and run on the host that owns the secret.
+
+## Verification & Guardrails
+
+- Write the outcome table (outcome A means X, outcome B means Y) in the reply before asking for the run.
