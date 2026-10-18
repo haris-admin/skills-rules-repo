@@ -472,6 +472,24 @@ When you see `last_status: error` on a cron, classify before escalating:
  vitest leg printed `Diagnosis: [Diagnosis skipped: timed out after 120s]` while E2E produced a real
  diagnosis — so "the diagnosis writer wrote something" no longer proves it covered EVERY failed leg;
  read per-leg lines before assuming names are available for the vitest failure.
+ **2026-10-18 (day 12) — backend flat, but the E2E COMPOSITION BREAK is the finding.** Backend
+ `7770 passed, 34 failed` (day 12 at 7770/34, unchanged); vitest `240 passed, 1 failed` = **13 consecutive**
+ with a REAL diagnosis back (jsdom `Blob` instanceof + concurrent `signOut` — the 10-17 timeout did not
+ repeat); E2E **`46 passed, 4 failed` = 11 consecutive, composition CHANGED from 10-17's `48/2`** — two
+ fewer passing, two more failing, and the diagnosis names the **forgot-password recovery-copy/CTA**
+ assertion plus the **NFR load-timing benchmark**, i.e. at least 3 failures are NOT the whitelisted
+ `reduced-motion` pattern. OVERALL `8056 passed, 39 failed, 0 errors` (10-17: 8058/37). This is a
+ composition change, not the standing flat band — treat the E2E leg as REAL until it returns to `48/2`.
+ `pluto_pr` still merged `origin/dev` at `49450bfa` (no new dev commits since 10-13), so the merge is not
+ a factor. Diagnosis writer produced real entries for BOTH legs — fork fix holds for the 13th day.
+ **Also 2026-10-18 06:03 — `amlhive_daily_test_runner.py` was PATCHED (issue-134 work) AFTER its own run:**
+ new `classify_pg_gated()` splits SQLite-vs-PostgreSQL suite gaps out of the backend failure count, and
+ the `codex_diagnose` call now takes `tail=True` (pytest's failures sit at the END of the output; the head
+ slice was feeding the model progress dots). Unit-exercised here: 3/3 synthetic tb-line failures counted,
+ summary `E ` repeats correctly ignored; `get_context("fork")` still at line 352. **Expect the next 03:40
+ run to print `⚪ N/34 … suite gaps (issue-134)` and to skip backend diagnosis routing — a changed output
+ SHAPE, not a fix and not a fake pass.** The 06:03 edit was never exercised by the 04:27 run, so the first
+ real proof is 10-19.
 - **A skill at ≥99.9% of the 100,000-char SKILL.md cap is effectively UNPATCHABLE — `skill_manage`
   rejects the whole batch when the RESULT exceeds the cap, so even a correct fix fails.** Seen
   2026-10-10: `podcast-knowledge-base/SKILL.md` sat at 99,978 chars (22 chars headroom) and a

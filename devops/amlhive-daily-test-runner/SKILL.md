@@ -40,11 +40,27 @@ amlhive_known_flaky.json`): the recurring frontend set (Blob/JSDOM issue-279
    fail/error).
 
 ## Pitfalls
-- As of W32 (Aug 16): **11 failing tests** (6,320 passed) — 9 backend pytest,
-  1 frontend `signOut` double-call race, 1 E2E `a11y-reduced-motion-parity`.
-  Backend also shows `poetry not found → venv fallback`. These are REAL
-  regressions, not infra — route to Codex/dev for root-cause (see
+- **Current baseline (2026-10-18, day 12): `8056 passed / 39 failed`** — 34 backend pytest, 1 frontend
+  vitest (`Blob` instanceof in jsdom + concurrent-signOut race), 4 Playwright E2E. The old "11 failing,
+  6,320 passed" figure (W32, Aug 16) is SUPERSEDED — do not quote it. The 34-failure backend band has
+  been flat since 2026-10-09 (post-`origin/dev`-merge elevation, ~4× the 6-8 pre-merge baseline) and is a
+  COUNT-TREND watch, not a per-day incident; escalate only on a trend change or a new component. The E2E
+  leg DOES move: it sat at `48 passed / 2 failed` (whitelisted `reduced-motion`) from 10-13 to 10-17 and
+  jumped to `46/4` on 10-18 with the diagnosis naming a **forgot-password recovery-copy/CTA** assertion and
+  an **NFR load-timing benchmark** — read the per-leg diagnosis before calling E2E "the usual flake".
+  Backend always shows `poetry not found → venv fallback` — that is the PERMANENT path on this host, never
+  a fault. Real failures here are REAL regressions, not infra — route to Codex/dev for root-cause (see
   `coding-agent-delegation`).
+
+**From 2026-10-19 the backend leg classifies SQLite-vs-PostgreSQL suite gaps** (`classify_pg_gated()`,
+added 2026-10-18 06:03 after the issue-134 investigation). It matches ONLY pytest's `--tb=line` form
+(`^/\S+\.py:\d+: ` + one of `requires TEST_DATABASE_URL` / `no such table: pg_roles` / `type 'UUID' is not
+supported`), prints `⚪ N/<failed> are SQLite-vs-PostgreSQL suite gaps (issue-134), not product
+regressions`, and stops routing to OpenRouter when every failure is PG-gated. **Expect a new ⚪ line and
+a SILENT backend diagnosis from the next run — that is not a fix and not a fake pass** (failures are still
+counted, exit code still reflects them). If the ⚪ count exceeds the failed count, or a NORMAL
+`AssertionError: assert 1 == 2`-shaped failure lands in it, the classifier has over-matched — fix the
+regex, do not accept the masking.
 - **backend/.venv drifts from pyproject.toml → 54 collection errors (Aug 18).**
   `poetry` is NOT installed on this host, so the runner's "venv fallback"
   (`backend/.venv/bin/pytest`) is the real backend path. When a new dep is added
