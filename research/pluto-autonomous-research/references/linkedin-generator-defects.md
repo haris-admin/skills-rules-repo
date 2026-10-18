@@ -1159,14 +1159,20 @@ retained days too, so it is not a one-day artefact.
 
 ## Rule 47 recurrence (Oct 16 2026) — a second twin pair, and how to verify the fix BOTH ways
 
-`datacentre-permitting-risk` ("The Project That Walked") shipped on **11 Oct**; five days later, on the same
-`date % 5` Cloud slot, `datacentre-state-planning-approval` ("Two Approvals, One Process") returned and took
-auto-slate **slot #2** — grounded on the same evidence (Queensland's state-level assessment, social licence,
-Victoria's conditions; the fired terms `community benefit agreement` + `social impact assessment` sit inside
-the same paragraph). Two keys, one approvals gap. `_SUBJECT_TWINS` is per-key and hand-maintained, so a
-candidate added later that re-covers an existing gap is invisible to the title gate.
+**What happened.** `datacentre-permitting-risk` ("The Project That Walked: Permitting and Social Licence
+Now Price AI Infrastructure") shipped in the curated slate on **11 Oct**. Five days later, on the same
+`date % 5` Cloud slot, `datacentre-state-planning-approval` ("Two Approvals, One Process: When
+Data-Centre Planning Moves to the State") returned and took **slot #2** of the auto-slate — grounded on the
+same evidence (Queensland's state-level assessment, social licence, Victoria's conditions; the fired terms
+`community benefit agreement` + `social impact assessment` are named inside the same paragraph). Two keys,
+one approvals gap, two Cloud candidates: Haris would have been shown the same idea twice inside one cycle.
 
-Fix — register the pair:
+**Why the title gate missed it.** `_SUBJECT_TWINS` is per-key and maintained by hand, so a candidate
+added later that re-covers an existing gap is invisible to `_repeat` — the titles genuinely differ
+("Two Approvals…" vs "The Project That Walked…"). **Diagnostic on a returning cycle:** diff today's slate
+against `date - 5` and compare the **GAP lines**, never the titles — the gap text is what collides.
+
+**Fix.** Register the pair, same as Rule 47's first instance:
 
 ```python
 _SUBJECT_TWINS = {
@@ -1175,25 +1181,28 @@ _SUBJECT_TWINS = {
 }
 ```
 
-Verification, both directions — **and exclude the day being replayed**:
+**Verification (both directions — and exclude the day you are replaying).**
 
-| Window | twin title in window | `twin_repeat` | `own_title_repeat` | fires on today's corpus |
+| Window | `permitting_title` in window | `twin_repeat` | `own_title_repeat` | fires on today's corpus |
 |---|---|---|---|---|
 | live 10 days (16 Oct) | True | **True** — suppressed | — | 2 hits |
 | counterfactual: 11 Oct **+ 16 Oct** excluded | False | **False** — still fires | False | 2 hits |
 
-Without excluding today's own file, the candidate's own title text sets `own_title_repeat=True` and the
-counterfactual proves nothing about dedupe-versus-kill.
+Excluding **today's own file** from the counterfactual is essential: without it the candidate's own title
+text (present in the day being replayed) sets `own_title_repeat=True` and the counterfactual proves nothing
+about whether the twin rule dedupes or kills.
 
-Refilling the slot: with the twin demoted, the fresh Cloud pool held one grounded candidate
-(`datacentre-energy-grid`, 5 hits) while the day's #3 signal (RBA FSR focus topic + BoE SIMEX26) had none.
-Added `cloud-concentration-resilience` with bound phrases only — bare `concentration` is excluded because it
-fires on AEMO's NSW/Victoria load note and the published VC-concentration post. Replay: 5 hits on 16 Oct,
-0 on all eight retained prior research days.
+**Refilling the slot.** With the twin demoted, the fresh Cloud pool held one grounded candidate
+(`datacentre-energy-grid`, 5 hits) and the day's #3 signal — the RBA's October Financial Stability Review
+making cloud concentration its focus topic, plus the Bank of England's SIMEX26 — had no candidate. Added
+`cloud-concentration-resilience` with bound phrases only (`substitutability`, `cloud concentration`,
+`concentration risk`, `financial stability review`, `portability`, `critical third party`, `exit plan`) —
+bare `concentration` is excluded because it fires on AEMO's NSW/Victoria load note and on the published
+VC-concentration post. **Replay: 5 hits on 16 Oct, 0 on all eight retained prior research days.**
 
-**The rule:** register the twin whenever a new candidate's gap overlaps an existing one (diagnose a
-returning cycle by diffing GAP lines against `date - 5`, not titles), and when the twin rule costs a slot,
-add a grounded candidate rather than relaxing a gate.
+**The rule:** when you add a candidate whose gap overlaps an existing candidate's gap, register the twin in
+the same change — and when the twin rule costs you a slot, add a grounded candidate rather than relaxing a
+gate.
 
 
 ## Rule 54 — keyword vocabulary drift on a returning event (Oct 17 2026)
@@ -1202,22 +1211,22 @@ add a grounded candidate rather than relaxing a gate.
 pool looks empty, and the blog slate falls back on repeats — while the candidate sits in `BLOG_CANDIDATES`
 the whole time.
 
-**Case.** `asic-ai-banking-review` was added for ASIC's 30 Sep 2026 banking-AI review, keyed on the 7 Oct
-coverage vocabulary: `customer-facing ai`, `banking priorities`, `lender conduct`, `broker oversight`,
+**Case.** `asic-ai-banking-review` was added for ASIC's 30 Sep 2026 banking-AI review and keyed on the
+7 Oct coverage vocabulary: `customer-facing ai`, `banking priorities`, `lender conduct`, `broker oversight`,
 `referrer arrangement`. On 17 Oct the *same* event returned as the day's #6 finding reported in entirely
 different words — "the banking sector's use of AI in dealing with customers", "customer dealings",
 "formal review", "nine roundtables" — so `_subject_kw_hits` returned 0 and the candidate never fired.
 
-**Fix.** Extend the existing candidate's list with the vocabulary the event is actually reported in today:
-`customer dealings`, `banking sector`, `banks use ai`, `formal review`. Verified with the generator's own
-matcher: 4 hits today; **0 hits on all six prior retained research days** (10–16 Oct).
+**Fix (17 Oct 2026).** Extend the existing candidate's list with the vocabulary the event is actually
+reported in today: `customer dealings`, `banking sector`, `banks use ai`, `formal review`. Verified with the
+generator's own matcher: 4 hits today; **0 hits on all six prior retained research days** (10–16 Oct).
 
 **Rule.** An event that recurs does not recur in the same words. When a returning signal has no firing
-candidate, check whether one already covers that gap under the OLD vocabulary before adding a second —
-adding a twin is the Rule 47 defect, and extending is the smaller change. Keyword lists are a living
-description of how an event gets covered, not a snapshot of the day the candidate landed.
+candidate, check whether a candidate already covers that gap under the OLD vocabulary before adding a
+second one — two candidates for one gap is the Rule 47 defect, and extending is the smaller change. Keyword
+lists are a living description of how an event gets covered, not a snapshot of the day the candidate landed.
 
-## Rule 55 — the repeat window is capped by file retention, and the Rule 45 recurrence (second FinTech instance)
+## Rule 55 — the repeat window is capped by file retention, and the Rule 45 recurrence (second instance on FinTech)
 
 **The auto-slate shipped 3/3 blog ideas as verbatim repeats on 17 Oct 2026** — "Fined for Not Enrolling"
 and "The 1 October Cliff" had both been delivered in the 12 Oct curated set, five days earlier, on the same
@@ -1233,84 +1242,122 @@ before→after slate diff replaces all three blog slots with 0 regressions to th
 **Retention cap.** `recently_proposed_blog_titles(days=10)` filters `0 <= age <= days`, but
 `research_outputs/` retained only `linkedin-ideas_*.md` from 10 Oct onward on 17 Oct — so the **effective
 repeat window is ~7 days, not 10**. The 1 October surcharge candidate (last proposed ~7 Oct) therefore
-returned un-suppressed. This is not a gate bug: do not widen or backfill the window. The durable defence is
-that every candidate must carry its own fresh grounding. When a returning candidate looks un-suppressed,
-check the retention boundary before assuming the gate is broken.
+returned un-suppressed. This is not a gate bug and does not justify widening or backfilling the window:
+the durable defence is that every candidate must carry its own fresh grounding. When a returning candidate
+looks un-suppressed, check the retention boundary before assuming the gate is broken.
 
 **Harness.** `cache/scratch/replay_blog_fix_1017.py` — imports the generator by path (so `main()` does not
 run), then uses the module's own `get_signals_from_files()`, `load_research()` and `_subject_kw_hits()` to
 assert (A) grounding today, (B) 0 prior-day false groundings, (C) in-window repeats still suppressed. Print
 the real exit code: piping through `tail` masks it.
 
+
 ## Rule 56 — the bookkeeping reference can be joined by a COLON, not only by a dash
 
-**Case (18 Oct 2026).** Finding #3 was titled `FOLLOW-ON to the 23 Sep AgentCore feed: one prompt took over
-every Bedrock AgentCore agent in the account — then poisoned agent memory`. Rule 48's `_is_feed_ref()` only
-inspected segments produced by `raw.split(" - ")`, and this title has no spaced hyphen — the reference is
-joined by `": "`. The hook shipped as the 98-char meta-reference, naming a feed the reader never saw and
-carrying no fact.
+**18 Oct 2026.** The research pipeline tagged the day's #3 finding `FOLLOW-ON to the 23 Sep AgentCore
+feed: one prompt took over every Bedrock AgentCore agent in the account — then poisoned agent memory`.
+Rule 48's `_is_feed_ref()` only ever examined segments produced by `raw.split(" - ")`, and this title
+contains no spaced hyphen — the reference is joined by `": "`. So the hook shipped as the 98-char
+meta-reference, naming an internal feed the reader never saw and stating no fact (the exact Rule 38/48
+failure, third shape).
 
 **Fix.** `_LEAD_SEP = re.compile(r"\s*:\s+|\s+[–—-]\s+")` + `_strip_leading_feed_ref()`, called in
-`_short_title` AFTER the `_REPEAT_PREFIX` strip and BEFORE the `" - "` split. It splits on the FIRST
-separator and drops the head only when `_is_feed_ref(head)` is true, so `Agent trust becomes a certificate:
-Workday Agent Passport goes GA…` is untouched. New hook: `one prompt took over every Bedrock AgentCore agent
-in the account — then poisoned agent memory`.
+`_short_title` AFTER the `_REPEAT_PREFIX` strip and BEFORE the `" - "` segment split. It splits on the
+FIRST separator only and drops the head only when `_is_feed_ref(head)` is true, so a colon that
+introduces real content (`Agent trust becomes a certificate: Workday Agent Passport goes GA…`) leaves the
+title untouched. New hook: `one prompt took over every Bedrock AgentCore agent in the account — then
+poisoned agent memory`.
 
-**Rule.** A separator-specific fix is only as general as the separators the pipeline actually emits —
-enumerate them from the corpus, not from the last incident. Harness (`cache/scratch/hook_harness.py
-before|after`, 48 hooks over 8 research days): 2 changed, both references (18 Oct colon variant and the
-13 Oct `UPDATE to the 18 Sep KYA feed: …` that the dash-only split also missed), 0 mid-claim regressions.
+**Harness.** `cache/scratch/hook_harness.py before|after` — imports the generator by path, runs
+`_short_title` over every finding title in the last 8 `research_*.json`, and diffs. Result: 48 hooks →
+2 changed (18 Oct colon variant; 13 Oct `UPDATE to the 18 Sep KYA feed: …`, which the dash-only split
+also missed — the same defect, not a regression), 0 mid-claim changes. General rule: a separator-specific
+fix is only as general as the separators the pipeline actually emits — enumerate them from the corpus,
+not from the last incident.
 
 ## Rule 57 — a company NAME is not the subject of a listing story
 
-**Case (18 Oct 2026).** `compute-securitisation-lockin` (the Firmus float) took blog slot #3 on an Agentic-AI
-day. Its only hit was bare `firmus`, inside a hedged Genspark line — *"Firmus' float issues"* — while the gap
-asserted a live **A$7bn ASX float** the pipeline's own 14 Oct record says was **withdrawn** (shelved 9 Oct,
-reopening as a private round). `bookbuild`, `prospectus`, `data#3` and `vendor lock-in` were all ZERO.
+**18 Oct 2026.** Blog candidate `compute-securitisation-lockin` (the Firmus float) took the third slot on
+the Agentic-AI day. Its only hit was the bare keyword `firmus`, fired inside a hedged Genspark line —
+*"Firmus' float issues"* — while its gap asserted a live **A$7bn ASX float** that the pipeline's own
+14 Oct record says was **withdrawn** (shelved 9 Oct, reopening as a private round), and `bookbuild`,
+`prospectus`, `data#3` and `vendor lock-in` all occurred ZERO times in the corpus. A post would have been
+drafted asserting an event the record had already superseded.
 
-**Fix.** Keywords rebound to the listing ACTION or the named repriced supplier: `firmus ipo`, `firmus float`,
-`firmus listing`, `firmus withdraw`, `firmus shelves`, `firmus pulls`, `maas group`, `bookbuild`,
-`prospectus`, `data#3`, `vendor lock-in`. Gap rewritten to the state the record supports, with both asserted
-figures removed. Replay: 11 Oct (`firmus shelves its a$7bn asx float`) and 14 Oct (`firmus's withdrawn ipo …
-maas group`) still fire; the 18 Oct hedge does not.
+**Fix.** Keywords rebound to the listing ACTION or the named repriced supplier: `firmus ipo`,
+`firmus float`, `firmus listing`, `firmus withdraw`, `firmus shelves`, `firmus pulls`, `maas group`,
+`bookbuild`, `prospectus`, `data#3`, `vendor lock-in`. The gap was rewritten to the state the record
+supports ("attempted ASX listing (withdrawn, and it repriced its listed supplier)") and the `A$7bn` /
+`~A$3bn` assertions removed — neither figure existed in the corpus that fired the candidate.
 
-**Rule.** When an entity has a STORY TYPE (listing, acquisition, breach), the keywords must name the story,
-not the entity — a bare company name guarantees firing on every passing, retrospective or hedged mention
-long after the story moved on. Note the curly apostrophe: the hedge would not have matched a `firmus float`
-bound phrase anyway, which is luck, not defence.
+**Replay (both directions).** 11 Oct (`firmus shelves its a$7bn asx float`) and 14 Oct (`firmus's
+withdrawn ipo … maas group`) still fire; 18 Oct's hedged mention does not. Note the apostrophe: the
+corpus uses a curly `’`, so `firmus float` would not have matched `firmus’ float` even as a bound phrase —
+a lucky escape, not a defence. Bind to wording you control the shape of.
+
+**Rule.** When an entity has a STORY TYPE (listing, acquisition, breach), the keyword list must name the
+story, not the entity. A bare company name guarantees the candidate fires on every passing mention,
+including retrospective and hedged ones, long after the story has moved on.
 
 ## Rule 58 — a candidate's gap may cite only evidence the day actually carries
 
-**Case (18 Oct 2026).** Blog pick #3 `nhi-agent-identity` shipped the gap *"NIST's agent identity/authorisation
-work and NHI sprawl have no dedicated post."* The corpus that fired it had `nist` 0×, `non-human identity` 0×
-and `nhi` 0× — the single hit was `agent identity`, inside the AppViewX product sentence.
+**18 Oct 2026.** Blog pick #3 `nhi-agent-identity` delivered the gap *"NIST's agent identity/authorisation
+work and NHI sprawl have no dedicated post."* The corpus that fired it contained `nist` 0×,
+`non-human identity` 0× and `nhi` 0× — the single hit was `agent identity`, inside the AppViewX product
+sentence. The claim was inherited from the day the candidate was authored and never re-checked.
 
-**Fix.** Gap restated around the firing evidence: AppViewX shadow-agent discovery, the AI Bill of Materials
-covering reachable skills, JIT access, the kill switch, and the CSA 82%-unknown-agent figure that sentence
-carries. The NIST reference was removed rather than "verified": with no web tool in the cron run, an uncited
-source is a fabrication risk and the post would be written from the gap.
+**Fix.** Gap restated around the firing evidence: AppViewX's shadow-agent discovery, the AI Bill of
+Materials covering reachable skills, JIT access and the kill switch, with the CSA 82%-unknown-agent figure
+that sentence carries. The NIST reference is gone rather than verified — with no web tool in the cron run,
+an uncited source is a fabrication risk, and the post is written from the gap.
 
-**Rule.** Rule 34 covers FIGURES; this is the same defect for SOURCES. Before a candidate takes a slot, read
-the sentence its keyword fired in and confirm every source and figure in the gap appears in the day's corpus.
-If the gap only works on evidence from an earlier day, re-ground it or leave the candidate for a day that
-carries its sources.
+**Rule.** Rule 34 covers FIGURES; this is the same defect for SOURCES. Before a candidate takes a slot,
+read the sentence its keyword fired in and confirm every source and figure in the gap appears in the day's
+corpus. If the gap only works because of evidence from an earlier day, either re-ground it on today's
+evidence or leave the candidate for a day that carries its sources.
 
-## Rule 45 recurrence (18 Oct 2026) — the OWN pillar starves while adjacent pillars look full
+## Rule 45 recurrence (18 Oct 2026) — the day's own pillar runs dry, and the counter-signal repeats on the 5-day slot
 
-On the Agentic-AI cycle (same `date % 5` slot as 13 Oct) the AI-governance pool held two fresh grounded
-candidates once repeats were excluded (`autonomy-tiers` and `agent-incident-register` both inside five days;
-`agent-sandbox-escape` is a registered twin of 8 Oct's egress idea). Fixed per practice, twice:
+On the Agentic-AI cycle (same `date % 5` slot as 13 Oct) the AI-governance pool held only two fresh
+grounded candidates once repeats were excluded (`autonomy-tiers` and `agent-incident-register` both
+proposed within five days; `agent-sandbox-escape` is a registered twin of 8 Oct's egress idea). Two fixes,
+both per practice — never by loosening a gate:
 
-1. **Added** `mitre-attack-agent-controls`, bound to ATT&CK v20's own vocabulary (`t1698`, `t1699`, `t1700`,
-   `t1608.007`, `det0927`, `mitre attack`, `attack v20`, `detection strategy`) — 6 hits today, 0 on every
-   prior day in the replay window.
-2. **Demoted** the auto counter-signal to spare: it led with Gartner's 40%+ cancellation forecast, exactly
-   what the 13 Oct counter-signal post led with. The rewritten spare leads with CERT-In's "conventional
-   weaknesses" line.
+1. **Added** `mitre-attack-agent-controls` bound to ATT&CK v20's own vocabulary (`t1698`, `t1699`,
+   `t1700`, `t1608.007`, `det0927`, `mitre attack`, `attack v20`, `detection strategy`) — 6 hits today,
+   0 on every prior day in the replay window.
+2. **Demoted** the auto-generated counter-signal idea to spare: it led with Gartner's 40%+ cancellation
+   forecast, which is exactly what the 13 Oct counter-signal post led with. The rewritten spare leads with
+   CERT-In's "conventional weaknesses" line instead.
 
-**Diagnostic.** It is the day's own pillar that starves, not the adjacent ones — the Cloud pillar still had
-grounded candidates, and that is exactly how the stale Firmus repeat reached slot #3 (Rule 57). Count the
-own-pillar fresh pool first; a full slate built from other pillars is the warning sign.
+**Diagnostic note.** The day's own pillar is the one that starves, not the adjacent ones — the Cloud pillar
+still had candidates and that is precisely how a stale Firmus repeat reached slot #3 (Rule 57). Count the
+own-pillar fresh pool first; a full-looking slate built from other pillars is the warning sign.
 
+## Rule 59 — a stat that ends inside a comparison has lost its predicate, and no verb gate sees it
 
+**19 Oct 2026.** Startup & VC day, auto-idea #4 shipped the hook
+*"ASX tech index is down 14% over five years while the Nasdaq: Sixteen Australian unicorns and not one
+VC-backed listing on the ASX"*. The research `content` reads "…down 14% over five years while the Nasdaq is
+up 42%" — the hook clause bounded at a word boundary and dropped "is up 42%", leaving a comparative with no
+predicate. Every existing check passed it: `_ends_on_verb` is False (it ends on a proper noun, not a verb),
+`_hook_clause`'s subordinate-tail cut only fires on `_SUBORD` + no-verb tails inside the 100-char slice
+(here the slice itself was built from the truncated stat), and `_hook_stat_ok`'s length / overlap / figure
+gates all measured the words that were present, not the ones the cut removed.
 
+**Fix.** `_dangling_comparative_tail(stat)` — reject the stat when the tail after `while`/`whereas` (1–5
+tokens) carries no finite verb (`_tail_has_verb`), wired into `_hook_stat_ok`; the fallback is title-only,
+which is always a complete claim.
+
+**Scope discipline.** Deliberately NOT extended to `than` / `versus` / `and` / `but`: those legitimately end
+on a bare noun phrase — *"40% smaller than the 2022 round"* is complete, and *"AI Kill Switch and Data Centre
+Control Bill 2026"* is a name, not a fragment. A first pass including `than` rejected the complete case, and
+one including `and` rejected the Bill title; both were caught only because the candidate set was tested
+against deliberate counter-examples, not just the failing one.
+
+**Harness.** 6 targeted cases (3 must-reject, 3 must-keep) all pass; replay over 48 hooks from the previous
+nine files → 1 changed (the defective one), 0 regressions.
+
+**General rule.** When a helper's job is to bound a string, the defect class is *material the bound removed*,
+and every downstream gate that inspects only the surviving text is blind to it. Check the discarded tail,
+not just the retained head.
