@@ -83,6 +83,18 @@ Worked example: the Cloudflare dashboard reached through Claude in Chrome (AMLHi
 5. **Close the tabs you opened** so the next session does not inherit a logged-in console.
 6. **Do not widen a scoped API token** to avoid the browser step.
 
+## Check what the agent's own identity can do (worked example, 14 Oct 2026)
+
+A session ran as an IAM user named for monitoring. `aws iam simulate-principal-policy` showed it was **allowed** to create IAM policies,
+attach role policies and write the Terraform state bucket, and it could read the values of a newly created secret. Nothing bad happened, but
+the name said "read-only monitoring" and the permissions said otherwise.
+
+1. **At the start of work that touches cloud infrastructure, run `aws sts get-caller-identity`** and simulate the few actions you are about
+   to need (and a few you are not): if a write is allowed that the task does not require, say so to the human.
+2. **An identity's name is not its permission set.** Report mismatches between the two as a finding, and do not use the extra power for
+   anything the human did not ask for.
+3. **Writes that are outward-facing stay with the human** (`terraform apply`, a secret write) even when the identity could do them.
+
 ## Applying this beyond AWS
 
 The same reasoning covers any unbounded credential an agent might inherit: a `postgres`

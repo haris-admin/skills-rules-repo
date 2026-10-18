@@ -1,0 +1,33 @@
+# Changing an integration host or URL setting: verify, trim, roll back (all agents)
+
+Applies to any change to a base URL, host, path or endpoint setting that a running service uses to call an outside system
+(a payment, POS or SaaS API), especially in production and especially where the caller swallows errors.
+
+## Why this exists
+
+14 Oct 2026, Tap-Ease. `CLOVER_BASE_URL` on the production sync Lambda was changed to the host Fiserv recommended. The saved value
+had a **stray trailing space**, so the code (which strips only slashes) built
+`https://api.ap.clover.com/v3/merchants/ /merchants/<id>/orders` and every call returned `405 Method Not Allowed`. The HTTP client
+logged one ERROR line and returned an empty list, so each run "succeeded" with zero rows. Retries (3 per endpoint per merchant)
+used the whole 600 second timeout, the killed run left its lock behind, and later runs were skipped for about 30 minutes. From the
+outside it looked like "no records synced", with no loud failure. See `locks-must-expire-by-their-own-ttl.md`.
+
+## Rules
+
+1. **Write down the old value before the change.** Rollback is restoring it, and you should not need to reconstruct it.
+2. **Trim and validate URL settings in code**, as config items: strip whitespace and trailing slashes, require `https` and a host,
+   ignore an invalid value and fall back to the documented default, and log that it was ignored (never the value if it could be secret).
+3. **Know the shape each consumer expects.** Two services can read two different variables from one concept: one may want
+   `https://host/v3/merchants/` and another `https://host` and add the path itself. Record the accepted shapes next to the setting.
+4. **One consumer at a time**, and after each change make one real read call on the new value before relying on it.
+   Do it from your own shell with the credential in a variable (never pasted into chat).
+5. **Search the first run's logs for the client's error text, not just record counts.** "0 rows and no error" from a client that
+   swallows errors is a failure signal. Know the exact error line your client writes.
+6. **Do not retry a non-retryable status for every item.** A 4xx that repeats across items should stop the run early; a bounded
+   retry budget beats exhausting the timeout.
+7. **A tool that "checks" the value is not enough.** Compare the value your service actually loaded, not the one you typed.
+
+## Related
+
+- Rules: `locks-must-expire-by-their-own-ttl.md`, `deployed-vs-local-code-parity.md`, `deploy-state-needs-independent-reads.md`
+- Skills: `tapease-pos-clover-shift-sync`, `clover-oauth-v2-integration`

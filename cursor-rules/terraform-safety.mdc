@@ -12,3 +12,4 @@ alwaysApply: false
 3. **No Secret Leaks**: Never commit `.tfvars` containing secrets or output unmasked credentials into logs.
 4. **Zero-Downtime Changes**: Guard against `destroy and then create replacement` on live databases, persistent disks, or routing records.
 
+5. **Agent-written stacks**: tests first with `terraform test` and `mock_provider`, guards as variable validations, plan from a scratch copy without the backend, a person applies, secrets as container + `random_*` + placeholder with `ignore_changes` + `prevent_destroy`, verify with `simulate-principal-policy` and a no-change plan. See `rules/terraform-prod-apply-safety.md`.

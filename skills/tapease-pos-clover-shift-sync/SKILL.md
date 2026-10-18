@@ -124,6 +124,20 @@ Delete `SMOKE-*` / `E2E-*` rows from `trans_driver_shifts` + `trans_payouts`
 afterwards; a stray `open` shift on the terminal makes the next real start
 idempotent-return.
 
+## Clover OAuth v2 migration and base URLs (v4.4.0, 14 Oct 2026)
+
+Shifts and the Lambda reads still use `trans_devices.clover_token` until a merchant is switched (`clover_merchant_credentials.use_oauth`). The
+migration, the broker and the Clover dashboard facts are in the `clover-oauth-v2-integration` skill. Base URL facts that bit us:
+
+- Fiserv: all Clover API calls use `api.ap.clover.com` (only the OAuth authorize page is `www.ap.clover.com`). Legacy dashboard API tokens were
+  accepted on `api.ap.clover.com` by a full production sync.
+- Shapes differ by consumer: the **Lambda** `CLOVER_BASE_URL` must be `https://api.ap.clover.com/v3/merchants/` (it appends `/merchants/{id}`
+  itself if the value does not end in `/merchants`, so a value without `/v3/merchants/` builds a path with no `/v3`); the **backend**
+  `CLOVER_API_BASE_URL` is `https://api.ap.clover.com` (a trailing `/v3/merchants` is stripped).
+- A trailing space in `CLOVER_BASE_URL` made every Lambda call 405 and, through retries, a timeout and a stale lock. See
+  `rules/integration-config-change-verify-and-rollback.md` and `rules/locks-must-expire-by-their-own-ttl.md`. The Lambda's client swallows
+  errors: look for `Error fetching API endpoint` in its log, not just row counts.
+
 ## Environment gotchas
 
 - `portal/clover-sync/dev` secret: the **dev instance role cannot read it**

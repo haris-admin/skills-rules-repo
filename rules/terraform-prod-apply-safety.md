@@ -84,6 +84,29 @@ terraform plan -input=false -compact-warnings -no-color | grep -E "^Plan:|will b
 If this shows anything other than the destroys you already expect and have explicitly signed off
 on, stop.
 
+## Agent-written stacks (added 14 Oct 2026, Tap-Ease Clover OAuth IAM and secret)
+
+When an agent writes a new, small Terraform stack (a policy, a secret, an attachment), these steps apply on top of the rules above.
+The agent writes, tests and plans. A person applies.
+
+1. **Test first, offline.** Write `terraform test` files with `mock_provider` blocks (no credentials, nothing created), watch them
+   fail because the resources do not exist, then write the code. Computed values used by an assertion need
+   `override_during = plan` in the `override_resource` block. Assert the guarantee, not the syntax: exactly one statement, exact action
+   list, exact resource ARN, no `*`, refuses a forbidden role, refuses an unknown environment.
+2. **Guards as variable validations**, each with a test: a role that must never get access is rejected by name, the account id is pinned in
+   the provider (`allowed_account_ids`), and the environment is one of an allowed list.
+3. **Plan against the real account from a scratch copy without the backend** (`terraform init` without the S3 backend, in a temp directory),
+   read the `Plan:` line, and save the plan outside the repo. A new stack has no state yet, so a plan against local state shows creates only.
+4. **Do not apply as the agent.** If the harness blocks `terraform apply`, do not route around it with the cloud CLI. Hand the person a one-line
+   command. Long paths wrap in a terminal and split the command, so create short symlinks first (`~/stack-dir`, `~/saved.tfplan`).
+5. **Secrets:** the stack creates the secret container; generated values come from `random_*` resources; a value a person owns is a placeholder
+   with `lifecycle { ignore_changes = [secret_string] }`; mark the secret and generated values `prevent_destroy`; outputs are names only.
+   Generated values are in the state file, so say so in the README and restrict the state bucket (`one-secret-one-audience.md`).
+6. **Attach, do not take over.** A customer-managed policy attached with `aws_iam_role_policy_attachment` is additive. If another stack owns the
+   role and manages its attachments *exclusively*, its next apply detaches yours; check that stack before relying on it.
+7. **After the apply, verify read-only:** `list-entities-for-policy`, `simulate-principal-policy` (intended roles allowed, excluded roles
+   implicitly denied, other environments denied), and a following `terraform plan` that reports no changes.
+
 ## Related
 
 - [issue-238](../../prod_issues/issue-238-terraform-tfvars-oidc-redis-auth-drift-would-destroy-on-apply.md)

@@ -1,0 +1,49 @@
+# Secrets in query strings are never logged (all agents, all repos)
+
+Applies to any endpoint that receives a one-time code, token, state value or other credential in a URL query
+string: OAuth and SSO redirects, magic links, password-reset or email-verification links, webhook verification.
+
+## Why this exists
+
+14 Oct 2026, Tap-Ease Clover OAuth callback (`GET /integrations/clover/oauth/callback?code=...&state=...`). The route was
+correct and its own tests passed, but a test that captured every application logger found the code and state in the log
+anyway. They were reaching **four** other places the route did not control:
+
+1. the app's per-request trace middleware, which put `query_params` into the API-call log line **and into a `session_logs`
+   database table** (so a one-time code would have been persisted),
+2. the web server's access log (uvicorn prints the full path and query),
+3. the generic exception middleware, which logs and emails the full URL on any unhandled error,
+4. the reverse proxy in front of the app (outside the repo, so it cannot be fixed or tested from it).
+
+The code itself is single use and useless without the client secret, but the `state` and any reusable token are not, and
+a credential in a log is a finding in any audit.
+
+## Rules
+
+1. **List every sink before writing the route.** Access log, request or trace middleware, audit or session tables, exception
+   handlers and alert emails, APM span attributes, the reverse proxy or CDN, and the browser `Referer`. Each gets a fix or a
+   named owner.
+2. **Redact where the parameters are collected, scoped to the path.** A global "redact `state`" breaks unrelated fields
+   (`state` is also an address field). Normalise the path before matching: case and a trailing slash must not be a way around it.
+3. **The route catches every error itself** and returns a static page, so the generic exception middleware never sees the URL.
+   Build the route's dependencies so that constructing them cannot raise either (a dependency error is raised before the handler).
+4. **Never echo input.** Return static HTML, `Cache-Control: no-store` and `Referrer-Policy: no-referrer`. Check that a global
+   security-headers middleware does not overwrite the route's policy.
+5. **Test through the real app with the real middleware stack.** Capture every application logger (exclude only the HTTP test
+   client's own logger, which prints the URL it requested), assert on the database log tables too, and force an unhandled error.
+6. **Prove the test bites:** remove the redaction and watch the test fail (see `prove-new-security-tests-bite-with-mutations.md`).
+7. **Anything outside the repo is an open item with an owner**, for example "redact `$args` in the proxy's access log".
+
+## Patterns to avoid
+
+```python
+# NO: a route-local fix while the shared trace middleware still collects the query
+"query_params": dict(request.query_params)
+# YES: redact at the collection point, for that path only
+"query_params": redact_oauth_query_params(request.url.path, dict(request.query_params))
+```
+
+## Related
+
+- Skills: `clover-oauth-v2-integration`
+- Rules: `no-secret-masking.md`, `security-and-secrets.md`, `agent-tooling-secrets-protection.md`

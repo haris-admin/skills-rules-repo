@@ -7,7 +7,7 @@ description: >
   backend", "push to dev/staging", "ship 4.2.x", or to verify a backend deploy
   that just ran. Covers the 7-file version bump, the SSM Docker deploy to
   i-0f9a6ec659e6aab83, DB / SSM access, smoke tests, and the prod boundary.
-  NOT for the frontend (see deploy-frontend) and NOT for production backend.
+  Also documents the production path (pushing `main` triggers the CI prod deploy) and the cautions around it. NOT for the frontend (see deploy-frontend).
 ---
 
 # Deploy the Tap-Ease backend (dev / staging)
@@ -28,7 +28,7 @@ this skill.
 | Postgres | container `tapease-postgres`, db `tapease`, user `tapease` (no password inside the container network) |
 | Public URL | `https://api-stg.tapease.com.au` → `/health` shows `"environment":"dev"` |
 | Deploy script (runs ON the box) | `scripts/deploy_dev_docker.sh [branch]` — git pull, restart `tapease-backend`, `scripts/run_all_migrations.py` (numbered SQL then `alembic upgrade head`), verify migrations 051–054 + the target migration, `/health` |
-| Production backend (DO NOT TOUCH) | `i-062b8ef5437ea6e2f`, `tapease-backend.service`, `https://api.tapease.com.au` |
+| Production backend | `i-062b8ef5437ea6e2f`, `tapease-backend.service` (systemd, not Docker), `https://api.tapease.com.au`. Deployed ONLY by CI when `main` is pushed (see "The prod boundary"). Reads secrets from `portal/clover-sync/prod`. |
 
 ## Release checklist — bump ALL 7 files (from the repo's AGENTS.md §5)
 
@@ -126,9 +126,45 @@ commit + the 7-file bump, no tag.
   (`5433` docker vs `5433` tunnel vs `5434` prod) and the `.pgpass` classifier
   workaround are in `tapease-db-access`.
 
+## Configuring the staging box (learned 14 Oct 2026, Clover OAuth release)
+
+- **Env file:** `/opt/tapease/.env` (not in the backend checkout). The `backend` service reads it with Compose `env_file: - .env` plus a few
+  explicit `environment:` keys. **`docker restart` does not re-read it**, and the deploy script only restarts. To apply a changed `.env`:
+  `cd /opt/tapease && docker-compose up -d --no-deps --force-recreate backend` (staging is down about a minute; `--no-deps` leaves postgres and
+  redis alone). The box has the standalone `docker-compose`, **not** the `docker compose` plugin.
+- **The compose file defines three services** (`postgres`, `redis`, `backend`). There is no frontend service here; the `tapease-frontend`
+  container in the Facts table is stale. `api-stg.tapease.com.au` resolves to the production frontend host's nginx (its certificate covers
+  `api`, `api-stg` and `api-pos-stg`) and is served by this box.
+- **Secrets Manager is off globally** (`USE_AWS_SECRETS_MANAGER` is not set). To read one secret, use a per-secret switch (for Clover OAuth:
+  `CLOVER_OAUTH_USE_SECRETS_MANAGER=true`, which reads only `portal/clover-oauth/dev`). Turning the global flag on would change how every secret
+  resolves, and the instance role is denied `portal/clover-sync/dev`.
+- **Verify a specific migration:** run the deploy script with `TARGET_MIGRATION=<file.sql>` exported. It runs all pending SQL migrations and
+  Alembic, then checks that migration is recorded.
+- **Read-only checks without a secret:** `docker exec tapease-backend env | cut -d= -f1 | grep '^CLOVER'` lists names. To run a Python check inside
+  the container, copy the script with `docker cp` and run `docker exec -e PYTHONPATH=/app -w /app tapease-backend python3 /tmp/x.py` (a script run by
+  path has its own folder on `sys.path`, not the working directory). `docker exec` needs `-i` to read a script from stdin.
+- **Building SSM `--parameters`:** write the remote script to a file and build the JSON with `python3 -c 'import json,sys; print(json.dumps({"commands":[open(sys.argv[1]).read()]}))'`.
+  A `$(...)` inside a double-quoted local string runs on your machine, not the box.
+- **Saved scripts:** the backend repo has `infra/staging-clover-oauth/` (`verify.sh` read only, `deploy.sh`, `configure_env.sh`, `selfcheck.sh`),
+  guarded to the staging instance, the `dev` branch equal to `origin/dev`, and never a push.
+- **Pushing `dev` cannot deploy production** (the CI deploy job needs `refs/heads/main`). Never put `[skip deploy]` in a `dev` commit.
+
 ## The prod boundary
 
-- This skill only ever targets `i-0f9a6ec659e6aab83`.
-- If asked to "release to production" / "prod" / "go live": stop and confirm
-  explicitly. Production backend is `i-062b8ef5437ea6e2f` and uses a different
-  path (`tapease-backend.service`, not Docker) — out of scope here.
+- The SSM procedure above only ever targets `i-0f9a6ec659e6aab83` (staging).
+- **Production = pushing `main`.** The CI job `deploy-to-ec2` in
+  `.github/workflows/fast-feedback.yml` runs on every push to `main` once `lint` and
+  `security-light` pass (skipped only by `[skip deploy]` in the commit message), builds
+  an S3 bundle and deploys over SSM to `i-062b8ef5437ea6e2f`. There is no manual gate,
+  so a push to `main` is irreversible-ish and outward-facing: only do it when the user
+  has explicitly asked for production, and say plainly that the push deploys.
+- Order that worked (2026-10-13, v4.3.24): commit on `dev` -> push `dev` -> SSM staging
+  deploy -> check `https://api-stg.tapease.com.au/health` shows the new `version` ->
+  `git checkout main && git pull --ff-only && git merge --ff-only dev && git push origin main`.
+- Verify prod without AWS or `gh` (the Actions API returned 404 from the agent): poll
+  `https://api.tapease.com.au/health` for the new `version`. Expect ~3 minutes of empty
+  responses while the service restarts. `"status":"degraded"` is normal on both.
+- Never "seed" production (see `tapease-db-access`), and a dev reseed wipes dev data;
+  neither is part of a release, the deploy scripts never seed.
+- Read the repo's `AGENTS.md` (§4, §7) before telling the user a deploy path is out of
+  scope; it documents the prod path and the guardrails.

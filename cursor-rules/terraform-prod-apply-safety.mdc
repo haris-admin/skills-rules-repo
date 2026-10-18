@@ -88,3 +88,5 @@ on, stop.
   human manually ran a full plan
 
 Apply resets CloudWatch alarm actions to enabled: re-apply the deploy-only silence plan after any apply. Always an explicit AWS profile; `-lock=false` only if no lock table and sole operator; give humans short per-step scripts (a wrapped long command half-ran an apply). See `rules/terraform-prod-apply-safety.md`.
+
+Agent-written stacks (14 Oct 2026): write `terraform test` tests with `mock_provider` first and watch them fail (`override_during = plan` for computed values); guards as variable validations (forbidden role, pinned account, allowed environments); plan from a scratch copy without the backend; the agent never applies (hand over a one-line command using short symlinks); secrets = container + `random_*` + placeholder with `ignore_changes` + `prevent_destroy`, names-only outputs, generated values are in state; policy attachments are additive unless the role's owner stack manages them exclusively; verify afterwards with `list-entities-for-policy`, `simulate-principal-policy` and a no-change plan. Full text: `rules/terraform-prod-apply-safety.md`.

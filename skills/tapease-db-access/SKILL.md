@@ -36,6 +36,31 @@ If a tunnel isn't up, the user starts it — ask, or check which targets/ports a
 live: `ps aux | grep session-manager-plugin` (the JSON args name the `Target`
 instance and `localPortNumber`).
 
+## Which database will the tests touch? (14 Oct 2026)
+
+Check before the first `pytest`. The backend's `.env` `DATABASE_URL` pointed at `localhost:5435`, an **SSM tunnel to the dev EC2** (a
+`session-manager-plugin` process), so the suite's migration runner and per-test pools would have run against shared dev data. Ports drift:
+on that day the dev tunnel was 5435 and `5433` was the Docker container `tapease-test-pg` (`postgres:17-alpine`, databases `postgres` and
+`tapease_dev`), so re-check instead of trusting the table above.
+
+```bash
+# host, port and database only (never print credentials)
+python3 - <<'PY'
+from urllib.parse import urlparse
+for k in ("DATABASE_URL","TEST_DATABASE_URL"):
+    for l in open(".env"):
+        if l.startswith(k+"="):
+            u=urlparse(l.split("=",1)[1].strip().strip("\"'").replace("+asyncpg",""))
+            print(k, u.hostname, u.port, u.path.lstrip("/"))
+PY
+lsof -nP -iTCP:5435 -sTCP:LISTEN; ps aux | grep -E "[s]ession-manager-plugin"   # a plugin process means a remote database
+```
+
+Run tests through a wrapper that exports an explicit `TEST_DATABASE_URL` for a throwaway database in the local container
+(`docker exec tapease-test-pg psql -U postgres -c "create database <name>"`) and refuses ports 5434 and 5435. The repo's `tests/conftest.py`
+uses `TEST_DATABASE_URL` over `.env`, and tests marked `no_db` skip the per-test pool. Take the baseline in a clean `git worktree` on its own
+database and remove the worktree afterwards. Rule: `verify-test-database-target-before-first-run.md`.
+
 ## Credential workaround (sandbox classifier)
 
 `PGPASSWORD=… psql -h <remote> …` is **blocked by the auto-mode classifier** as
@@ -63,6 +88,25 @@ Python to build the `.pgpass` line, no workaround needed) in a 2026-09-20
 above that it's always denied. Try it directly first; fall back to asking the
 user for the password only if it's actually refused this session — don't
 assume denial without testing.
+
+**Counter-example, 2026-10-13:** in a `tapease_portal_fastapi_a2square` session the auto-mode
+classifier DENIED the same fetch ("dangerous", no explanation) when it piped the
+prod RDS password into a `.pgpass`. It is session-dependent. When denied, do not
+work around it: stop, say what you needed and why, and offer the user either a
+read-only `psql`/DBeaver session of their own on the tunnel or a Bash permission
+rule. Reading `aws rds describe-db-instances` (endpoint, master user) and
+`secretsmanager describe-secret` (name only) was allowed.
+
+**Opening the production tunnel (read-only investigations only, user must have asked):**
+```bash
+aws ssm start-session --region ap-southeast-2 --target i-062b8ef5437ea6e2f \
+  --document-name AWS-StartPortForwardingSessionToRemoteHost \
+  --parameters '{"host":["tapease-postgres-production.c9aso80ocbn0.ap-southeast-2.rds.amazonaws.com"],"portNumber":["5432"],"localPortNumber":["5434"]}'
+```
+Run it in the background, tell the user it is open, and offer to close it when done
+(`lsof -nP -iTCP:5434 -sTCP:LISTEN`). Production DB is `tapease_production`, master
+user `tapease_admin`. Never write or seed it; hand a reviewed SQL script to the user
+(see the write-SQL section below).
 
 ## Write SQL against production: verify by schema, not by dry-run
 
@@ -116,6 +160,12 @@ and **AEDT = UTC+11** (Oct–Apr); use `zoneinfo`, never a fixed offset. See the
 `pos-datetime-utc-normalization` rule and `tapease-pos-clover-shift-sync`.
 
 ## Reading logs on the box
+
+Production logs (`/home/ec2-user/app/backend/app/log/YYYYMMDD-PROD-TAPEASE_BACKEND.log`,
+via SSM `send-command` to `i-062b8ef5437ea6e2f`, read-only greps are allowed) are rotated
+by each deploy and only about 3 days remain, so an incident older than that is not in
+them. Always read the whole result: a `| head -N` on a noisy pattern (every login line
+matches `user_id 65`) hides the lines you wanted.
 
 `docker logs tapease-backend` over SSM **times out** (huge). Read the on-box files:
 
