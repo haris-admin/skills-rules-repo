@@ -1361,3 +1361,89 @@ nine files → 1 changed (the defective one), 0 regressions.
 **General rule.** When a helper's job is to bound a string, the defect class is *material the bound removed*,
 and every downstream gate that inspects only the surviving text is blind to it. Check the discarded tail,
 not just the retained head.
+
+## Rule 60 — a repeat window cannot outlive file retention: use an append-only ledger
+
+**20 Oct 2026, AI Regulation day (same `date % 5` slot as 15 Oct).** Blog idea #1 shipped
+*"The 1 October Cliff: What Australia's Digital-Asset Licence Deadline Changes"* — a verbatim repeat of the
+**12 Oct** curated set, which the 17 Oct defect log had already recorded as a repeat ("Fined for Not
+Enrolling" and "The 1 October Cliff" were re-proposed five days after the 12 Oct delivery). Root cause was
+not the gate but the SOURCE of the gate: `recently_proposed_blog_titles(days=10)` globs
+`linkedin-ideas_*.md`, and research_outputs retained only back to 13 Oct on 20 Oct. **The effective window
+is `min(days, retention)`** — the 12 Oct slate did not exist to be suppressed.
+
+**Fix.** `.blog_title_history.jsonl` in `research_outputs/`, append-only, one `{date, title}` per line,
+written by `_record_blog_titles()` after every emit and read by `_ledger_titles(days=10)`. `_fresh()` and
+`_repeat()` consult the ledger AND the file scan (the file scan still covers days before the ledger existed;
+the ledger covers days the files no longer do). The ledger was seeded from the retained files 13–19 Oct plus
+the two known 12 Oct titles.
+
+**Two traps found while wiring it.**
+1. **Same-day entries must be excluded (`0 < age <= days`).** A same-day re-run appended today's titles, then
+   treated them as repeats of themselves and collapsed the slate from 3 ideas to 1. This mirrors
+   `recently_proposed_blog_titles`, which skips files stamped TODAY — a same-day re-run must reproduce the
+   slate, not eat it. Verified: re-run → 3 ideas again, curated section preserved.
+2. **Seeding must keep the EARLIEST date per title.** A first seed pass recorded "The 1 October Cliff" as
+   20 Oct (it was still in that day's output) instead of 12 Oct, which would have shifted the whole window
+   forward by eight days. Dedupe by normalised title, keep the minimum date.
+
+**Verification recipe.** Suppression is only believable when you show both directions: `_ledger_titles(10)`
+contains the 12 Oct title while `recently_proposed_blog_titles(10)` does NOT (proving the ledger, not the
+file scan, is doing the work), and `_ledger_titles(0)` excludes today — so the same-day re-run stays intact.
+
+**General rule.** A dedupe window implemented as a directory scan is bounded by the retention policy of that
+directory, not by the `days` you pass it. Any "have we shown this in N days" check must read a store whose
+lifetime you control.
+
+## Rule 61 — context vocabulary, third instance: `gatekeeper`, `digital asset`, `crypto`
+
+**20 Oct 2026.** Both auto blog ideas were keyword false positives on the same day:
+- `algo-trading-gatekeeper` (ASIC market-integrity rules) fired on bare **`gatekeeper`** from the Anthropic
+  draft bill's *"single-gatekeeper oversight"* — a US frontier-AI story. `algorithmic trading`, `trading
+  algorithm`, `market integrity rules` and `iosco` were all zero.
+- `digital-asset-licence-cliff` (ASIC transitional relief) fired on bare **`digital asset`** + **`crypto`**
+  from the DOJ's *"crypto playbook / not a digital assets regulator"* analogy inside an AI-enforcement story.
+  `no-action`, `transitional`, `tokenised` and `cliff` were all zero.
+
+**Fix.** Keywords re-bound to the Australian licensing vocabulary:
+`["market integrity rules","algorithmic trading","trading algorithm","iosco","market integrity","algo trading"]`
+and `["digital asset licence","digital-asset licence","digital asset platform","tokenised custody",
+"no-action position","transitional relief","10% of annual turnover","dap licence"]`.
+
+**Replay, both directions (8 retained research days).** `digital-asset-licence-cliff`: 17 Oct keeps its 3
+genuine hits (`digital asset platform`, `tokenised custody`, `no-action position`), 20 Oct drops 2 → 0 — so it
+deduped rather than died. `algo-trading-gatekeeper`: 0 on every day including 20 Oct; it had no genuine hit in
+the retained window at all, so the change removes a pure false positive and leaves it available for a real
+ASIC market-integrity day.
+
+**Also applied (Rule 34 on the gap text).** `algo-trading-gatekeeper`'s gap asserted an *"18-month transition
+to 2028"* that no retained research record grounds. The figure was removed from the gap rather than left to
+ship unverified; restore the dates only after re-reading ASIC's instrument.
+
+**General rule.** Bare sector nouns (`gatekeeper`, `digital asset`, `crypto`, `payments`, `grid`) are context
+vocabulary: they appear in stories ABOUT other domains. A candidate must fire on the vocabulary of its own
+instrument — and the replay must show a prior genuine day still firing, or the "fix" is indistinguishable from
+killing the candidate.
+
+## Rule 62 — when both auto blog ideas fail a gate, ADD grounded candidates for the day's own critical signals
+
+**20 Oct 2026.** With the two false positives removed, the day had zero live candidates, yet its #1 and #2
+findings were both **critical / high-confidence** Australian instruments with no candidate at all. Per Rule
+40/45/58 practice, three subject-bound candidates were added (never a loosened gate):
+
+| key | pillar | grounded on | hits (today / 7 prior days) |
+|---|---|---|---|
+| `digital-duty-of-care-ai-service` | AI Agents & Governance | s25B(1)(h), s26 duty 60,000 PU, s27 annual risk assessment, Schedule 3 repeal of the 2024 testing standard, submissions close 30 Oct / report 20 Nov | 4 / 0 |
+| `oaic-adm-disclosure` | Australian Fintech Regulation | OAIC final ADM guidance 30 Sep, commencement 10 Dec 2026, 'computer program', 'arranged for', human-review exemption, TM scores + CDD ratings | 5 / 0 |
+| `ai-advice-vendor-flowdown` | AI Agents & Governance | Joint Select Committee early advice 12 Oct, embedded incident-reporting experts, ASD early model access, END-2026 standards / early-2027 laws, flow-down through vendor contracts | 6 / 0 |
+
+Result: 3 fresh, grounded blog ideas — and note the *pattern* that produced the day's best idea: the signal
+already covered by 15 Oct's `agent-incident-register` was re-read for its CONTRACTUAL consequence (how a
+lab's duty reaches a downstream buyer), which is a genuinely different post from the incident-register one.
+
+**Cross-cron overlap check.** The 5:45 AM AMLHive content-ideas cron had independently proposed *"The 10
+December Deadline Nobody Told the Principal"* and *"The Early Advice Is the Draft You Will Be Measured
+Against"* the same morning. Same subject, different publication and audience — both were kept, but the
+curated section differentiates them explicitly (enterprise/board evidence design vs principal's checklist)
+and flags "do not publish both in the same week". Check `content-ideas-<date>.md` headings before shortlisting;
+two crons on one box will find the same regulator story on the same day.
