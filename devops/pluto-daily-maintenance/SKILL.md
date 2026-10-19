@@ -489,7 +489,15 @@ When you see `last_status: error` on a cron, classify before escalating:
  summary `E ` repeats correctly ignored; `get_context("fork")` still at line 352. **Expect the next 03:40
  run to print `⚪ N/34 … suite gaps (issue-134)` and to skip backend diagnosis routing — a changed output
  SHAPE, not a fix and not a fake pass.** The 06:03 edit was never exercised by the 04:27 run, so the first
- real proof is 10-19.
+  real proof is 10-19.
+ **2026-10-19 (day 13) — the classifier is PROVEN LIVE, and it still routes the genuine ones.** The
+  03:40 run printed `⚪ 30/34 are SQLite-vs-PostgreSQL suite gaps (issue-134), not product regressions`
+  followed by `🔴 4 genuine assertion failure(s) — routing to diagnosis...` — so the "skips backend
+  diagnosis" expectation above is WRONG whenever any genuine failure remains: it suppresses the route only
+  when EVERY failure is PG-gated. Backend `7770 passed, 34 failed`, vitest `240/1` (14 consecutive),
+  E2E `46/4` (12 consecutive, still off the `48/2` baseline); OVERALL `8056 passed, 39 failed, 0 errors`;
+  both legs wrote real diagnoses (fork fix holds, day 13). **Backend escalation trigger is now the 🔴
+  GENUINE count (4), not the 34 total.**
 - **A skill at ≥99.9% of the 100,000-char SKILL.md cap is effectively UNPATCHABLE — `skill_manage`
   rejects the whole batch when the RESULT exceeds the cap, so even a correct fix fails.** Seen
   2026-10-10: `podcast-knowledge-base/SKILL.md` sat at 99,978 chars (22 chars headroom) and a
@@ -533,7 +541,15 @@ When you see `last_status: error` on a cron, classify before escalating:
  is never a skip/pass). Remediation is OWNER-LEVEL managed state, so alert rather than apply from a daily
  tick: create that testenv (`python3 -m venv ~/.hermes/cache/testenvs/tapease_portal_fastapi_a2square` +
  install the repo's test deps incl. pytest), or make the runner report an ENVIRONMENT BLOCKER (as the
- `unified_weekly_report.py` amlhive leg does) instead of a test error.
+  `unified_weekly_report.py` amlhive leg does) instead of a test error.
+ **2026-10-19: that remediation was applied and the leg's failure MODE CHANGED — the interpreter gap is
+  gone, a 90-minute TIMEOUT replaced it.** `tapease_portal_fastapi_a2square` now resolves a real
+  interpreter (`/mnt/c/Code/github/a2_square/tapease_portal_fastapi_a2square/.venv/bin/python`), so the
+  old `0 passed, 0 failed, 1 error` / "No module named pytest" signature no longer appears; the leg now
+  runs and dies with `Command [...'-m','pytest','tests/','-q','--no-header','--tb=line'] timed out after
+  5400 seconds` (9p-mounted `.venv` on `/mnt/c`, not a code fault). Do not re-apply the testenv fix —
+  alert that the Windows-clone venv is too slow over 9p and needs a WSL-side testenv instead. Overall
+  composition stayed `685 passed, 2 failed/errors` (portal 649p/1f steady, nextjs 36p/0f green).
 - **`ModuleNotFoundError: No module named 'chromadb'` in one or more same-morning `no_agent` scripts
   (seen 2026-09-28) — CRON SCRIPT INTERPRETER REGRESSION, not a MemPalace fault.** POSIX `no_agent`
   `.py` scripts no longer run on `~/.hermes/venv`: `cron/scheduler_script.py::_posix_cron_script_argv`

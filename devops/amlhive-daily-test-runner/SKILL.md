@@ -40,11 +40,13 @@ amlhive_known_flaky.json`): the recurring frontend set (Blob/JSDOM issue-279
    fail/error).
 
 ## Pitfalls
-- **Current baseline (2026-10-18, day 12): `8056 passed / 39 failed`** — 34 backend pytest, 1 frontend
-  vitest (`Blob` instanceof in jsdom + concurrent-signOut race), 4 Playwright E2E. The old "11 failing,
+- **Current baseline (2026-10-19, day 13): `8056 passed / 39 failed`, but the backend number is now SPLIT — read the split, not the total.** 34 backend pytest → `⚪ 30/34 are SQLite-vs-PostgreSQL suite gaps (issue-134)` + `🔴 4 genuine assertion failures`; 1 frontend
+  vitest (`Blob` instanceof in jsdom + concurrent-signOut race); 4 Playwright E2E. The old "11 failing,
   6,320 passed" figure (W32, Aug 16) is SUPERSEDED — do not quote it. The 34-failure backend band has
   been flat since 2026-10-09 (post-`origin/dev`-merge elevation, ~4× the 6-8 pre-merge baseline) and is a
-  COUNT-TREND watch, not a per-day incident; escalate only on a trend change or a new component. The E2E
+  COUNT-TREND watch, not a per-day incident; escalate only on a trend change or a new component. **Since
+  10-19 the actionable backend number is the GENUINE count (4), not 34** — a rising 🔴 count or a
+  collapsing ⚪ share is the escalation trigger. The E2E
   leg DOES move: it sat at `48 passed / 2 failed` (whitelisted `reduced-motion`) from 10-13 to 10-17 and
   jumped to `46/4` on 10-18 with the diagnosis naming a **forgot-password recovery-copy/CTA** assertion and
   an **NFR load-timing benchmark** — read the per-leg diagnosis before calling E2E "the usual flake".
