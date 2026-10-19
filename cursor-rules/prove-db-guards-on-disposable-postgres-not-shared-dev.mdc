@@ -1,0 +1,26 @@
+---
+description: A database-backed guard that fails on the shared dev database is proved on a fresh disposable Postgres at head; never upgrade shared dev as a side effect.
+globs: *
+alwaysApply: false
+---
+
+# Prove db guards on disposable postgres not shared dev
+
+A database-backed guard that fails on the shared dev database is proved on a fresh disposable Postgres at head; never upgrade shared dev as a side effect.
+
+**Scope:** every agent, whenever an integration or schema guard (enum parity, RLS, index) fails against a shared development database.
+
+## Why this exists
+
+Added 19 Oct 2026 (AMLHive C528). `test_t314_13` failed because shared dev sat at `a239` while code head was `a245`. The cause was lag, not a code bug. Upgrading dev would also have applied a parked change's unique index.
+
+## Core Directives
+
+1. **Read the pending revisions first.** List what sits between the database revision and head, and name any parked or gated change among them before touching the database.
+2. **Prove on a disposable database.** Build a fresh container from the project's CI recipe on its own port and name, migrate to head, and run the guard there. A clean migrate to head is itself evidence the chain applies.
+3. **Do not upgrade the shared database** to make a guard pass. Ask the owner whether to upgrade, or to which revision.
+4. **Remove only your own container** when done, and do not touch containers other sessions started.
+
+## Verification & Guardrails
+
+- A guard that passes only after a shared database was changed has proved the change, not the code.
