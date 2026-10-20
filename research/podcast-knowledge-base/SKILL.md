@@ -815,6 +815,7 @@ work** — you get a live ingest instead of usage text.
 - `references/youtube-data-api-setup.md` — YouTube Data API v3 setup and quota reference
 - `references/youtube-sapisidhash-auth.md` — YouTube cookie + SAPISIDHASH auth workaround for transcript fetching
 - `references/chamber-routing-and-stores.md` — chamber router (build + calibration rules), free-tier pacing/routing model, and the three-stores / palace CONTRACT (queue honesty, NAMED-exception rule, reconcile invariants). Extracted 2026-10-11 to clear the 100k SKILL.md ceiling.
+- `references/scanning-status-report.md` — answering "is the YouTube scanning still running and what did it produce?": the funnel from run logs, the API→yt-dlp fallback health tell, where the insight output lands, and the coverage caveat to state with it
 - `references/transcript-sources-and-fallback.md` — where to get a transcript or summary when the KB is stale (podscripts.co / finance.biggo.com / Apple-Podbean), the freshness query to run first, and the quote-attribution rules (confirm the speaker; check the on-record wording before repeating a paraphrase)
 
 ## The daily pipeline (the chain, and the thing that asserts it)
