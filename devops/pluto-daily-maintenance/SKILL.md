@@ -332,6 +332,21 @@ When you see `last_status: error` on a cron, classify before escalating:
   check + `hermes dashboard --status` instead.
 
 ### Real (needs action)
+- **A `monitor`-mode watch whose UPSTREAM PAGE restructures fails with `Script exited with code 2` and
+  SUPPRESSES the agent — fix the PARSER, and treat the missing report as the real damage.**
+  `monitor_script` stdout is hashed and the agent only wakes on a CHANGE, so a parse break means the
+  page's actual content change is never narrated to the owner (status reads `monitor source failed`,
+  not `no_change`). Seen 2026-10-21 on `ce9caadf1d7b` (`austrac_enrol_overview_watch.py`, 07:15 daily):
+  print was `HTTP: 200` + `AS_OF: UNPARSED` + `TABLE: UNPARSED` — AUSTRAC had replaced the
+  "Enrolment progress by industry" table with one sentence, `As of 20 October 2026, we have 62,710
+  businesses enrolled with us`, and `<table` count on the live page is now **0**. Two lessons that
+  generalise to every page watch: (a) the visible `<h2>` text changed while its `id` still read
+  `enrolment-progress-by-industry` — anchor section finding on VISIBLE TEXT, never on an id or on prose
+  copied from the previous page shape; (b) re-verify the fault against the LIVE page before editing
+  (`curl` it and read the real markup) instead of adjusting regexes against the error string. Fix shape:
+  keep the legacy table parser AND add a sentence-form parser, emit `TOTAL_ENROLLED`, exit 0 when either
+  form parses — then prove it with TWO live runs (exit 0, byte-identical stdout; determinism is a hard
+  requirement because the engine hashes those bytes).
 - **`5b95adcb27d4` (Blog Posts via Codex, Tue/Thu 08:00) — STANDING BLOCK, owner decision pending; do NOT
   re-derive or re-escalate, and do NOT report it as a fresh red.** It fails its own `git merge origin/dev`
   pre-flight and BLOCKS by design (nothing written/committed/pushed; tree left clean). 8 consecutive dead
