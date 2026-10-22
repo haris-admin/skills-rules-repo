@@ -311,6 +311,12 @@ When you see `last_status: error` on a cron, classify before escalating:
   NEW occurrence of that fault class**, not as this incident continuing. Full triage: `amlhive-asic-sync`
   skill. Re-check the OTHER datasets each run — if they also go `NO_CHANGE` with a stale `last_synced_at`,
   that IS new and means the whole sync pipeline has stalled. CloudWatch triage: `amlhive-asic-sync` skill.
+  **2026-10-22: a DIFFERENT acnc signature appeared — `HTTP 503 … Could not fetch acnc-charities CSV from
+  data.gov.au: 503`.** That is the UPSTREAM CKAN source, not the app handler: the same run's
+  `asic-companies` / `asic-business-names` came back `DETECTION_UNAVAILABLE` because the backend's CKAN
+  `resource_show` failed too. ONE upstream event — verify with
+  `curl -sI https://data.gov.au/data/dataset/acnc-register` (302→200 at 14:00, recovered) before touching
+  the script or opening a new incident.
 - **RESOLVED 2026-09-20 — this failure mode no longer exists; do NOT re-chase it.**
   `cmdb_cost_monitor.py` was rewritten to read the Notion CMDB **DIRECTLY** (data_source
   `40638825-121a-48f6-8f95-d2bf11fffb15`, `NOTION_TOKEN_WS`) — no local `:3009` plugin, no LAN probe,
@@ -332,6 +338,17 @@ When you see `last_status: error` on a cron, classify before escalating:
   check + `hermes dashboard --status` instead.
 
 ### Real (needs action)
+- **A skip `reason` the script does not recognise is a FAKE PASS — fixed 2026-10-22 in `amlhive_asic_sync.py`.**
+  The dataset loop classified `NO_CHANGE` / `FILE_NOT_YET_PUBLISHED` (pass) and `DATASET_SOURCE_UNAVAILABLE`
+  (alert, with the documented asic-registered-schemes exception), but every other reason fell through to
+  `⏭️ Skipped: {reason}` with **no `overall_alert`** — so `asic-companies` + `asic-business-names` skipping
+  as `DETECTION_UNAVAILABLE` looked like a pass. `DETECTION_UNAVAILABLE` is the BACKEND's own signal
+  (`backend/app/api/internal/sync.py`: `detect_reference_dataset_change()` returned FAILED, i.e. the CKAN
+  `resource_show` call to data.gov.au did not answer 200) — the dataset was never checked. Fix: an explicit
+  `DETECTION_UNAVAILABLE` branch plus a catch-all that alerts on any unclassified reason, both printing
+  `❌ NOT CHECKED`. Verified by running a STUBBED COPY of the script (a real run would POST real syncs): both
+  branches print `❌ NOT CHECKED` and the run ends `OVERALL: ❌ ALERT`. Standing rule for every collector
+  script: the reason classifier must be exhaustive, and the `else` branch ALERTS — never a neutral skip.
 - **A `monitor`-mode watch whose UPSTREAM PAGE restructures fails with `Script exited with code 2` and
   SUPPRESSES the agent — fix the PARSER, and treat the missing report as the real damage.**
   `monitor_script` stdout is hashed and the agent only wakes on a CHANGE, so a parse break means the
@@ -347,6 +364,10 @@ When you see `last_status: error` on a cron, classify before escalating:
   keep the legacy table parser AND add a sentence-form parser, emit `TOTAL_ENROLLED`, exit 0 when either
   form parses — then prove it with TWO live runs (exit 0, byte-identical stdout; determinism is a hard
   requirement because the engine hashes those bytes).
+  **2026-10-22 — the fix HOLDS; the next red was a different class.** `RESULT: FETCH_FAILED` + `HTTP: 503`
+  from austrac.gov.au itself (live `200` when curled at 14:00) — a transient upstream 503, not a parser
+  regression. Before re-opening a just-fixed parser, curl the page: a 503 serves no HTML, so the parser is
+  never reached.
 - **`5b95adcb27d4` (Blog Posts via Codex, Tue/Thu 08:00) — STANDING BLOCK, owner decision pending; do NOT
   re-derive or re-escalate, and do NOT report it as a fresh red.** It fails its own `git merge origin/dev`
   pre-flight and BLOCKS by design (nothing written/committed/pushed; tree left clean). 8 consecutive dead
@@ -525,6 +546,11 @@ When you see `last_status: error` on a cron, classify before escalating:
   diagnosis naming the forgot-password recovery-copy/CTA timeout — NOT the `48/2` whitelist baseline, so
   the 10-18 composition break has not healed; OVERALL `8057 passed, 38 failed, 0 errors`. Both legs wrote
   real diagnoses — fork fix holds, day 15.
+ **2026-10-22 (day 16) — same band, both counters one deeper.** Backend `7770 passed, 34 failed` with
+  `⚪ 30/34 gaps` + `🔴 4 genuine` (genuine flat 4 days running); vitest `240/1` = **17 consecutive**;
+  E2E `47 passed, 3 failed` = **15 consecutive**, diagnosis again the forgot-password recovery-copy timeout
+  (so the `48/2` whitelist baseline still has not returned); OVERALL `8057 passed, 38 failed, 0 errors`.
+  Both legs wrote real diagnoses — fork fix holds, day 16. No action: watch the 🔴 genuine count only.
 - **A skill at ≥99.9% of the 100,000-char SKILL.md cap is effectively UNPATCHABLE — `skill_manage`
   rejects the whole batch when the RESULT exceeds the cap, so even a correct fix fails.** Seen
   2026-10-10: `podcast-knowledge-base/SKILL.md` sat at 99,978 chars (22 chars headroom) and a
