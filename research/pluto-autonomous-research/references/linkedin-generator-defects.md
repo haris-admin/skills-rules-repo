@@ -1447,3 +1447,26 @@ Against"* the same morning. Same subject, different publication and audience —
 curated section differentiates them explicitly (enterprise/board evidence design vs principal's checklist)
 and flags "do not publish both in the same week". Check `content-ideas-<date>.md` headings before shortlisting;
 two crons on one box will find the same regulator story on the same day.
+
+## 2026-10-23 (Rules 71–72)
+
+### Rule 71 — a vulnerability acronym is not a containment subject (Rule 49 recurrence)
+`agent-sandbox-escape` ended its keyword list in bare `rce`. On an Agentic AI & Security day the
+only hit was `rce` from PHP2Shell — two decade-old RCEs in PHP core, a web-runtime patch story with
+no agent, sandbox or eval content anywhere in the corpus; `sandbox`, `eval`, `containment` and
+`egress` were each ZERO. `rce`, `cve`, `credential`, `oauth` and `trust boundary` are context on
+every security day. Fix: bound to containment mechanics (`sandbox escape`, `eval environment`,
+`eval sandbox`, `per-run identity`, `code interpreter`, `agent egress`, `immutable agent log`,
+`hugging face`); replay 1 → 0. Do not leave a generic term in place to rescue a pillar — an
+honestly ungrounded candidate means the day needs a new candidate.
+
+### Rule 72 — a re-run that replaces the slate must prune the superseded ledger entries
+The ledger is append-only and excludes today's own entries. A mid-run first execution recorded a
+title the corrected second run did not deliver, so a never-delivered title was suppressed for ten
+days — the ledger's purpose inverted. After a corrective re-run, diff the delivered slate against
+today's ledger lines and `grep -v` the undelivered ones (keep a copy first).
+
+Practice (Rule 45 recurrence): own-pillar pool empty after Rule 71's fix (`agent-incident-register`
+inside the 10-day window) → three subject-bound candidates ADDED, each 0 hits on the seven prior
+retained days: `agent-pentest-framework` (6 today), `mcp-oauth-exec-path` (7; bare `oauth` dropped
+— it fired on 18 Oct where the MCP story was absent), `php-version-window-evidence` (7).
