@@ -62,10 +62,10 @@ venture scoring (`pluto-portfolio-ideation`), or one-off company research (`web_
 | Founding Enterprise Partners | **ANZ, CBA, Cuscal (ASX: CCL), NAB, Westpac** |
 | Responsible-AI assessment | Gradient Institute (co-authored the AISI Aug 2026 report on AI agents crossing org boundaries) |
 | First intake | Financial services (banking, insurance, superannuation) |
-| Tracks | Digital (open) · **Accelerator (10 companies, 8 weeks)** — both free. Cohort cap = 10 confirmed on the S&C program page 9 Sep 2026. |
+| Tracks | Digital (open) · **Accelerator (10 companies, 8 weeks)** — both free. **"Ten" is the ACCELERATOR place count, never the track size.** The track cohort is ~42 self-announced participants and **no official participant list has ever been published** (verified 17 Oct 2026, day 5 of the track — see the cohort-tracking section). Never quote 10 as the cohort size. |
 | EOI opened | 27 Aug 2026 |
-| **AMLHive EOI** | **SUBMITTED 23 Sep 2026** by Haris via the S&C form (hard close 24 Sep) — that item is closed out |
-| Program dates (operator page, 17 Sep 2026 reschedule — re-verify each run) | EOI close 24 Sep 2026 · **ten companies notified 28 Sep 2026** · national digital track **12 Oct – 4 Dec 2026** · intensive accelerator **1 Feb – 25 Mar 2027 (~8 wks)** ⚠️ ai.gov.au still shows 30 Sep / 5 Oct–27 Nov — quote the operator page, treat Feb–Mar 2027 as provisional |
+| **AMLHive status** | EOI **submitted 23 Sep 2026** · ✅ **SELECTED for the National Digital Track** (notified 28 Sep 2026) · **publicly announced 14 Oct 2026, 19:17 AEDT** — `urn:li:activity:7516064533967462400` · track runs **12 Oct – 4 Dec 2026** · Accelerator decision **4 Dec**, announcement **8 Dec**, commences **Feb 2027** |
+| Program dates — **operator page `stoneandchalk.com.au/buy-australian-ai`, re-verified 17 Oct 2026** | EOI open 27 Aug · close 24 Sep · applicants notified 28 Sep · **track 12 Oct – 4 Dec 2026** · **accelerator 1 Feb – 25 Mar 2027** (ten companies, eight weeks). ⚠️ **The operator page does NOT carry the 4 Dec / 8 Dec decision dates** — those come from the S&C acceptance email (4 Dec: track concludes + ten selected; 8 Dec: announcement). ⚠️ **The sponsor page is a standing staleness error:** `ai.gov.au/buy-australian-ai-partnership-program` (correct slug — the older recorded path 404s) still showed **30 Sep notify / 5 Oct commence / 27 Nov conclude** plus stale "applications open now" copy, re-checked 17 Oct 2026 — 30+ days unreconciled. Quote the operator page + the email; report the sponsor page as a known staleness error, **not** as a slip or a date change. |
 | Program shape (S&C confirmation email, 23 Sep 2026) | **Runs across eight weeks**; activities = enterprise engagement · assurance and governance · commercial readiness · procurement navigation · implementation; final design + participation requirements confirmed with selected companies and partners |
 | **IAG is NOT a partner** | Insurance is represented by the Insurance Council of Australia (a body, not a carrier). Do not add carrier profiles unless the roster changes. |
 | Problem statements | Not published as at 9 Sep; S&C FAQ says released "during the EOI period" |
@@ -219,22 +219,49 @@ items you find elsewhere). AFR is paywalled: headlines, standfirsts and search s
 
 **Dated-feed enumeration when a newsroom is a JS shell (verified 17 Oct 2026 — the four methods below each
 recovered in-window items that extractor-based fetches missed).** Read them with `python urllib` +
-a browser UA, not `curl` (WAF-blocked on aph.gov.au) and not the extract backend.
+ a browser UA, not `curl` (WAF-blocked on aph.gov.au) and not the extract backend.
+- **ASX announcements — THE UNIVERSAL METHOD, use it first for all five (verified 24 Oct 2026).**
+  `https://asx.api.markitdigital.com/asx-research/1.0/companies/<CODE>/announcements?pageSize=40&page=0`
+  returns JSON with `headline`, `date`, `announcementType`, `documentKey`, `isPriceSensitive` — a complete,
+  dated, enumerable list for **CBA · WBC · NAB · ANZ · CCL**. The PDF resolves at
+  `https://newsfile.futunn.com/public/NN-PersistNoticeAttachment/7781/<YYYYMMDD>/732_ASX-FTP-<DOCID>_en-us_0.PDF`
+  where `<DOCID>` is the **last hyphen-segment of `documentKey`** and `<YYYYMMDD>` is the announcement date.
+  Read via pypdf in `~/.hermes/venv`. This closed a four-run **"Cuscal ASX state UNKNOWN"** gap and also
+  delivered the Westpac FY26 "Items Impacting Results" and ANZ s249N PDFs. `openbriefing.com`,
+  `company-announcements.afr.com` and `marketindex` inline PDFs all 403 — do not bother with them.
 - **ANZ** — `anz.com.au/newsroom/media/archive/2026/` is a JS shell to extractors but its **raw HTML carries
-the whole dated list**: `YYYY-MM-DD 00:00 --> --> <Type> <Title>`. Regex the `(\d{4}-\d{2}-\d{2}) 00:00` hits
-and print the following ~320 chars per hit. This is how ANZ's **13 Oct** Smith Family scam-awareness release
-was found (a prior run had it as 8 Oct) and how the archive's true newest item is established.
+  the whole dated list**: `YYYY-MM-DD 00:00 --> --> <Type> <Title>`. Regex the `(\d{4}-\d{2}-\d{2}) 00:00` hits
+  and print the following ~320 chars per hit. This is how ANZ's **13 Oct** Smith Family scam-awareness release
+  was found (a prior run had it as 8 Oct) and how the archive's true newest item is established.
 - **NAB** — `nab.com.au/sitemap.xml` (657 KB, 200 OK) lists every `/news/` URL with a `<lastmod>`: regex
-`<loc>…</loc>\s*<lastmod>(…)</lastmod>` and filter `lastmod` to the window. Recovers post dates (13/14/16 Oct)
-when the newsroom and `news.nab.com.au` are both shells.
+  `<loc>…</loc>\s*<lastmod>(…)</lastmod>` and filter `lastmod` to the window. Recovers post dates (13/14/16 Oct)
+  when the newsroom and `news.nab.com.au` are both shells.
 - **Westpac** — media releases are slug-addressed `…/media/media-releases/2026/<D>-<month>`; **probe the
 candidate days** (`8-october`, `13-october`…) and read the `<title>`. 404 = no release that day, which is
 itself a usable null.
 - **Cuscal** — `cuscal.com/newsroom/` carries `Published <DD Mon YYYY>` stamps for the whole list; regex them
 to state the newest item's date and prove a null week.
 - **CBA AGM-grade numbers live in the ASX PDFs, not the wires**: the CEO/Chair address media releases and the
-**AGM Results** PDF (which carries the poll table *and* the "resolved but NOT put to the meeting" reason — the
-detail that explains a resolution's absence and that wire coverage omits). Read those at source.
+  **AGM Results** PDF (which carries the poll table *and* the "resolved but NOT put to the meeting" reason — the
+  detail that explains a resolution's absence and that wire coverage omits). Read those at source.
+- **AGM packages: pull ALL the PDFs, and read the poll table's STRIKE column (verified Cuscal 20 Oct 2026).**
+  A Cuscal/any-ASX AGM lodges **four separate documents**, each its own PDF: **Chairman's Address**,
+  **Managing Director's Address**, **Results of AGM** (MUFG Corporate Markets report, which carries the full
+  poll table, the **strike Y/N/NA column**, per-resolution for/against/discretionary/abstain, and a print
+  timestamp), and **Resignation of Director + Appendix 3Z**. The strike column reading **`NA`** is what lets
+  you say "**no first strike**" — the raw percentage alone does not (an abstain-heavy proxy count can leave
+  you guessing). Also check the **appendix 3Y/3Z** filings a day or two later; they confirm a retirement date
+  the address only foreshadows. Enumerate via the ASX API (§ Dated-feed enumeration), not the wire summaries.
+- **Quarantine offenders added 24 Oct 2026** — each re-surfaces with a current-looking date and none is news:
+  **NAB's superannuation investment-scam release (25 Aug 2026)** re-stamped by `lastmod`; **APRA's Bendigo and
+  Adelaide Bank A$8m BEAR civil penalty (proceedings 10 Aug 2026, announced 10–11 Aug)** — a *cyber-governance*
+  action, not AML, and not one of the five; **CBA's A$200m FY26 AI gross benefits → A$400m FY27 (11 Aug 2026
+  FY26 result and earnings call; tech envelope A$2.4bn; AI-specific spend undisclosed)** — the best CBA AI-value
+  datapoint there is, but quote it with the 11 Aug date; **AUSTRAC's Fintel Alliance "Operation Claw" coordinated
+  mortgage fraud across 10 major banks (19 Aug 2026)** — *"potentially hundreds of millions"*, *"falsified or
+  misleading documents and the repeated use of mortgage brokers, accountants and law firms"*, CEO Brendan Thomas
+  *"a wake-up call for every lender"* — the strongest precedent for the forged-document narrative and **precedent
+  only**; and **ANZ's re-posted 2018 APRA self-assessment (stamped 20 Oct 2026)**.
 - **aph.gov.au JSCAI hearings**: the working URL is the **doubled path**
 `/Parliamentary_Business/Committees/Joint/Artificial_Intelligence/ArtificialIntelligence/Public_Hearings` —
 the single-path `/Artificial_Intelligence/Public_Hearings` **404s**. It gives Past/Upcoming tables with
@@ -401,6 +428,19 @@ claiming a Notion update.
 
 ## Pitfalls
 
+- **A newsroom index's "latest media releases" list can LAG its own articles.** CBA's listing showed **19 Oct** as
+  newest while a **23 Oct** article was live and dated on its own page (24 Oct 2026). **Date the article, never
+  trust the index's newest-item claim** — a cached listing produces a false null.
+- **Sitemap `lastmod` is not a publish date.** NAB re-stamped its **25 Aug 2026** superannuation-scam release to
+  `lastmod 20 Oct 2026` with zero content change. `lastmod` moves on re-save; always open the page and read
+  the article's own byline date before calling it in-window.
+- **ANZ's newsroom re-posts archival documents with the RE-POST date as the release date.** The **2018** APRA
+  self-assessment report carried a **20 Oct 2026** stamp (24 Oct 2026 run). Read the body and the document's own
+  subject date, not the newsroom date stamp.
+- **Westpac's media-release base path is `/about-westpac/media/media-releases/2026/<D>-<month>`** — the
+  `/news/media/media-releases/` and `/news/media-centre/` variants **404 on every probe** and generated **eight
+  false nulls** in one run before the correct base was found. The index page itself is enumerable and lists
+  every 2026 release with its day-month slug — read the index first, then probe only the days it implies.
 - **Counting only names and dates.** A cohort entry without "what they make publicly available" is an
   incomplete record for this watch.
 - **Regenerating the view file from search alone** — see the union rule above.
