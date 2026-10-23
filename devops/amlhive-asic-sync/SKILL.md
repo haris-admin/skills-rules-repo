@@ -41,6 +41,25 @@ skip with exit 0** — NOT an alert. Any *other* dataset returning
 Do NOT "fix" this by adding a source — there isn't one, and Haris explicitly
 paused ASIC work. See `reference-data-ingestion` skill for the CSV source path.
 
+## Skip reasons must be EXHAUSTIVE — an unlisted reason is never a pass
+
+The dataset loop recognises exactly four clean outcomes: `synced`, `NO_CHANGE`,
+`FILE_NOT_YET_PUBLISHED`, and `DATASET_SOURCE_UNAVAILABLE` (alerting, with the
+`asic-registered-schemes` exception above). Any OTHER reason means the dataset was
+never checked. `DETECTION_UNAVAILABLE` is the backend's own signal
+(`backend/app/api/internal/sync.py`: `detect_reference_dataset_change()` returned
+FAILED, i.e. the CKAN `resource_show` call to data.gov.au did not answer 200).
+
+Until 2026-10-22 an unlisted reason fell through to `⏭️ Skipped: <reason>` with no
+`overall_alert`, so `asic-companies` / `asic-business-names` skipping as
+`DETECTION_UNAVAILABLE` read as a quiet pass on the data.gov.au-503 morning while
+neither dataset had been compared. The loop now carries an explicit
+`DETECTION_UNAVAILABLE` branch plus a catch-all; both print `❌ NOT CHECKED` and set
+`overall_alert`.
+
+Rule for any future edit: never add a reason to the pass list to silence output.
+A new reason gets an explicit branch, and the `else` always ALERTS.
+
 ## Cloudflare 524 Handling (the tricky bit)
 
 Cloudflare caps request duration at ~100s, but the backend allows up to 900s for
