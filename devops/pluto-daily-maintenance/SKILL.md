@@ -551,6 +551,30 @@ When you see `last_status: error` on a cron, classify before escalating:
   E2E `47 passed, 3 failed` = **15 consecutive**, diagnosis again the forgot-password recovery-copy timeout
   (so the `48/2` whitelist baseline still has not returned); OVERALL `8057 passed, 38 failed, 0 errors`.
   Both legs wrote real diagnoses — fork fix holds, day 16. No action: watch the 🔴 genuine count only.
+ **2026-10-24 (day 18) — 🚨 COUNT-TREND BREAK and an E2E leg that produced ZERO tests. This is NOT
+  the standing band — escalate both.** Backend `9157 passed, 49 failed` (10-23: `7770/34`) with
+  `⚪ 35/49 PG gaps` + **`🔴 14 genuine`** (genuine had been flat at 4 for 5 days) — BOTH the collected
+  count (+1,387) and the failure count (+15) moved in one run, the 10-07 signature of a merged /
+  re-dependency'd slice. The run header explains it: merged `origin/dev` at `e71bd5d5b` then printed
+  `📦 Backend deps changed — reinstalling into .venv`; the diagnosis clusters on sentry init,
+  evidence-assurance RLS, worker startup and S3 recovery — a dependency-version effect, not the 34
+  pre-existing PG-gated tests. vitest `266/1` (19 consecutive; +26 passed = same shift). **E2E
+  `❌ 0 passed, 0 failed (6.3s)` — a No-Fake-Pass ERROR, never green:** the previous day ran `47 passed,
+  3 failed` in 186 s, so a 6.3 s zero-test leg is a boot failure whose tail showed only a
+  `next upgrade --agent=security --internal-nudge-id=…` block.
+  **ROOT CAUSE (proven live 2026-10-24 14:00, not inferred):** Next.js **16.4.0** ships an agent-upgrade
+  nudge (`node_modules/next/dist/lib/upgrade/nudge.js`) that throws `SecurityFatalError` with
+  `exitCode: 1` on the FIRST `next dev` after the advisory feed refreshes — *"This command stopped to
+  show the upgrade recommendation. Retry the same command to continue"*. It writes a receipt to
+  `<distDir>/cache/next-agentic-upgrade-retries/<sha>.json` and only continues on a retry inside
+  `RETRY_TTL` = **5 minutes**, so a single-shot harness loses the whole leg and the visible output is
+  the advisory text, NOT the real error. Reproduce in two runs: the first stops and exits 1, the second
+  prints `⚠ … This command is continuing after the upgrade reminder` and boots (`✓ Ready in 296ms`).
+  **The advisory is REAL** — `npm audit` flags `next 16.0.0 - 16.4.0` **critical** (also
+  `@sentry/nextjs ≤10.75.1`, `handlebars`); latest is **16.4.3**, inside the repo's `^16.3.4` range.
+  Remediation is owner/dev-workflow scope, two halves: (a) bump `next` to 16.4.3 (the security fix),
+  and (b) make the E2E harness fault-tolerant — pre-warm `next dev` before Playwright or retry the
+  webServer once. **Generalise: a zero-test leg whose tail is advisory/nudge text is a BOOT failure.**
 - **A skill at ≥99.9% of the 100,000-char SKILL.md cap is effectively UNPATCHABLE — `skill_manage`
   rejects the whole batch when the RESULT exceeds the cap, so even a correct fix fails.** Seen
   2026-10-10: `podcast-knowledge-base/SKILL.md` sat at 99,978 chars (22 chars headroom) and a

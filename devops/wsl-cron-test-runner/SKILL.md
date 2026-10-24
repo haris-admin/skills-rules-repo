@@ -8,6 +8,25 @@ tags: [testing, playwright, pytest, wsl, cron, ci]
 
 # WSL Cron Test Runner
 
+## A zero-test leg whose tail is advisory text is a BOOT failure
+
+Next.js 16.4.0 ships `dist/lib/upgrade/nudge.js`: on the FIRST `next dev` after the security-advisory
+feed refreshes it prints an upgrade recommendation and throws `SecurityFatalError` (`exitCode: 1`),
+deliberately stopping the command (*"Retry the same command to continue"*). It records a receipt in
+`<distDir>/cache/next-agentic-upgrade-retries/<sha>.json` and only allows continuation inside
+`RETRY_TTL` = 5 minutes.
+
+For a Playwright `webServer` harness the server never comes up, playwright exits fast, and the leg
+reports `0 passed, 0 failed` with the advisory block as the only tail. That is a BOOT failure, never a
+green leg (No Fake Pass Rule). Confirm by running the dev command twice — run 1 stops, run 2 boots with
+`continuing after the upgrade reminder`.
+
+Guard rails for any harness that shells out to `next dev`:
+- **Pre-warm** the dev server once before invoking the suite, or retry the webServer once, so a
+  self-terminating advisory cannot cost a run.
+- **Never** treat `0 passed, 0 failed` as success, and never hide the message in config — check
+  `npm audit` for the real advisory (`next 16.0.0-16.4.0` was critical) and upgrade.
+
 ## Core Problem
 Running automated test suites (pytest, Vitest, Playwright) from Hermes cron jobs on WSL. The WSL environment has different constraints than native Linux CI runners: no sudo in cron, slow mounted Windows filesystem (/mnt/c is NTFS via 9P protocol), VPC-bound databases, and Python version requirements.
 
