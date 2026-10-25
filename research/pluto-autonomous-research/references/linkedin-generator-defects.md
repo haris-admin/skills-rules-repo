@@ -1470,3 +1470,111 @@ Practice (Rule 45 recurrence): own-pillar pool empty after Rule 71's fix (`agent
 inside the 10-day window) → three subject-bound candidates ADDED, each 0 hits on the seven prior
 retained days: `agent-pentest-framework` (6 today), `mcp-oauth-exec-path` (7; bare `oauth` dropped
 — it fired on 18 Oct where the MCP story was absent), `php-version-window-evidence` (7).
+
+---
+
+## Rule 73 (Oct 24 2026) — a guard on the HOOK does not guard the DISPLAY title
+
+Every feed-reference strip (Rules 38/48/56) was applied only to `hook`. On 24 Oct the delivered
+idea headline read `UPDATE to the 13 October feed - Firmus's escrow split…`: the pointer had been
+stripped from the hook but pasted verbatim into the H3 that Haris copies as the post title.
+
+Fix: run `_strip_leading_feed_ref()` on `title` as well. The SHORT Rule-38 tags (`UPDATE - `) are
+deliberately KEPT on the title, because there they flag a repeat rather than reading as an internal
+pointer.
+
+**General rule:** when a rule classifies a string as unreadable, apply that classification at every
+surface the string is delivered, not only the one the rule was written for.
+
+Practice (Rule 45 recurrence): the Startup & VC cycle's own-pillar pool was EMPTY — two candidates
+0-hit, one grounded only on `nsw` and a verbatim 19 Oct repeat, one retired — so both blog ideas
+shipped from the Fintech pillar on a day when 5 of 6 findings were venture-market stories. Fixed by
+ADDING two subject-bound candidates (`asx-escrow-composition` 5 hits, `bridge-round-terms-2026` 3;
+0 on the seven prior retained days), never by loosening a gate. The never-delivered
+`Stablecoin Rails Still Need a Licence` line was pruned from the ledger (Rule 72).
+
+## Rule 74 (Oct 25 2026) — a twin map consulted only through `_repeat()` cannot dedupe a SLATE
+
+`_SUBJECT_TWINS` was only ever read inside `_repeat()`, which answers "have I shown this before".
+It does not answer "am I about to show it twice in this one slate". With both twins outside the
+10-day window, `agent-sandbox-escape` and `eval-egress-containment` — one containment gap, two
+titles, two pillars — shipped as blog ideas #1 and #2 on the same day.
+
+Fix, three parts:
+1. Register the pair **both directions**.
+2. After `scored.sort(...)`, collapse twins **inside** the slate in rank order: keep the first of a
+   pair, add both keys to `_twin_taken`, drop the rest.
+3. Guard the **padding loop** with the same set — without it, the slot the suppressed twin gave up
+   is handed straight back to it.
+
+**General rule:** every dedupe predicate must be evaluated against the batch already chosen, not
+only against history.
+
+Practice: suppressing the twin left one fresh idea while three of four critical signals had none, so
+two subject-bound candidates were ADDED (`agent-registry-supervision` — HKMA ART + registry of
+material AI agents, 5 hits / 0 prior; `sector-regulator-ai-supervision` — Italy Decree 179/2026,
+7 / 0), never a loosened gate. The never-delivered twin title was pruned from the ledger.
+
+## Rule 75 (Oct 26 2026) — a `LABEL: facts` title must hook on the facts, not the label
+
+The pipeline writes some finding titles as an editorial label, a colon, then the news:
+`UPDATE — the debt side is now the story: NextDC bonds at 10.4%, CoreWeave trading near 80c…`.
+Every truncation path in `_short_title` prefers the pre-colon clause because cutting at a colon
+reads clean, so two of six delivered hooks carried **no claim at all**:
+
+| shipped hook | source title | chars |
+|---|---|---|
+| `The debt side is now the story` | `…story: NextDC bonds at 10.4%, CoreWeave…` | 28 |
+| `The concentration argument graduated from opinion to causality` | `…causality: a single Google zone's power event froze Revolut card payments…` | 55 |
+
+Neither tripped a gate. They are grammatically complete clauses that do not end on a verb, carry no
+dangling comparative and split no proper noun — the existing gates all ask *is this text broken*,
+and the answer was no. The defect is that the clause **selected** contains no reader-facing fact.
+Same family as Rules 38/48/56/63 (a bookkeeping or framing prefix reaching the reader), one layer
+out: the prefix is not a tag or a feed pointer, it is prose.
+
+Fix: `_prefer_figure_clause(head)` runs on `head` after the feed-ref strips and before the length
+check. It drops the pre-colon label when **all** of:
+
+1. the label carries no digit,
+2. the label is at most 10 words, and
+3. either the remainder carries a digit, **or** the label's last token is in
+   `_META_LABEL_TAILS` (`story`, `causality`, `theme`, `question`, `debate`, `moment`, `shift`,
+   `picture`, `point`, `takeaway`, `underneath`, `governance`, `narrative`, `subtext`, `angle`,
+   `reality`, `argument`, `consensus`).
+
+Clause 3(b) is required: the second failing title has **no digit in its remainder either**, so a
+figures-only gate (the first pass, 7 changed) still shipped the label. Extend `_META_LABEL_TAILS`
+when a new bare label reaches a hook — Rule 63 practice — do not special-case the hook builder.
+
+Replay: 150 distinct titles from every retained research JSON plus every `linkedin-ideas_*.md`
+heading, before vs after → **8 changed, 0 broken**. All 8 now end on a complete claim:
+
+- `The debt side is now the story` → `NextDC bonds at 10.4%, CoreWeave trading near 80c at 15% called 'distressed'`
+- `The concentration argument graduated from opinion to causality` → `A single Google zone's power event froze Revolut card payments`
+- `Bloomberg audit: only 23% of the 40+ data centres planned for Sydney` → `Only 23% of the 40+ data centres planned for Sydney and Melbourne have confirmed grid connections` (the colon cut had also been truncating mid-noun-phrase)
+- `In Australian financial advice, adoption is outrunning governance` → `9 in 10 advisers rate their own process efficiency poorly`
+- `The capex boom is rotating underneath: data-centre CPU revenue rose 34.9%…` → `Data-centre CPU revenue rose 34.9% in a quarter, faster than GPUs (+13%) or AI ASICs`
+
+**Accepted cost:** the drop can remove an attribution prefix — `Gartner: 80% of neoclouds…` and
+`Bloomberg audit: …` lose the speaker. A fact-bearing claim with provenance in the angle beats a
+framed fragment; the angle builder quotes the content, so check the angle names the source.
+
+**Must-KEEP counter-examples** (verify on every change): `The 10 December Deadline: Automated
+Decisions…` (label carries the date), `The Fix That Shipped Without a CVE: MCP OAuth as an
+Execution Path` and `True Sale, PPSA and Tax: The Legal Test…` (tail carries no figure, label ends
+on a concrete noun).
+
+**Practice note (Oct 26 2026).** The Cloud slate had two fresh grounded candidates for six
+findings. `datacentre-permitting-risk` fired on a single `social licence` mention while its gap
+asserted `A$1.2bn` / `90MW` / NSW-Victoria conditions occurring **nowhere** in that day's corpus
+(Rule 34/58 class) and its title had already shipped on 11 Oct; `datacentre-energy-grid` and
+`neocloud-credit-marks` were both inside the 10-day window. Fix was to ADD two subject-bound
+candidates bound to the day's own vocabulary, never to loosen a gate:
+`grid-connection-financing` (jemena / power pole / grid connection / connection agreement / council
+not approving — 5 hits today, 0 on the 7 prior retained days; register as a **both-ways twin** of
+`datacentre-permitting-risk` so one approvals gap cannot ship twice) and `outage-postmortem-ai-code`
+(ai-generated code / 75% of its new code / us-east-1 / automation-software bug / post-mortem —
+5 today, 1 on 24 Oct). Verify each by printing the sentence every keyword fired in: all ten hits
+were on-subject. Slate went 2 → 3 grounded ideas, all Cloud (correct on a Cloud day). The
+never-delivered `The Project That Walked` title was pruned from the ledger per Rule 72.
