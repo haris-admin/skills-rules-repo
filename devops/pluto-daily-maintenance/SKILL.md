@@ -93,6 +93,17 @@ date, not by status: `cd /mnt/c/Code/github/haris-admin/alexandria && git log -1
 --date=iso && git rev-list --left-right --count origin/main...HEAD` (the count must read `0\t0` —
 anything else means an unpushed commit). A non-zero `git status --porcelain` on `alexandria-ops` is
 usually an untracked cron-output subdir (e.g. `?? podcast-capture/`) and is NOT a push failure.
+**`FileNotFoundError` raised inside `drain_reports()` is a TOCTOU against a SELF-PRUNING source dir,
+not a missing path and not a repo problem.** Seen 2026-10-25 11:08: `alexandria_ops_sync.py:132` died on
+`os.path.getsize('/home/habib/.hermes/cron/output/5678a363ce3b/2026-10-25_01-45-15.md')` — `5678a363ce3b`
+is the every-5-minute MemPalace Inbox Watcher whose output dir holds only ~50 files, so a path captured
+by `listdir()` can be rotated away before the `stat()`. Tell-tale second symptom: the run had already
+pruned earlier folders, so the tree carried **uncommitted `D` deletions + untracked new reports** while
+`rev-list` still read `0 0` — the writer is NOT atomic, and a crash leaves the prune half-applied until
+the next successful run commits it. Fix = wrap the size comparison in `try/except OSError: continue`
+(patched 2026-10-25); prove it with `--dry-run` then a real run, and require the SECOND run to print
+`0 copied, 0 pruned` + `no changes` (idempotency) before calling it fixed. Never "fix" this by widening
+retention on the watcher.
 
 **Run the hardened helpers first — they cover Task 1 and Task 3 steps 1-4 + 6 in one pass:**
 `python3 ~/.hermes/scripts/daily_cron_audit.py` (script-path resolution against BOTH script roots,
@@ -575,6 +586,16 @@ When you see `last_status: error` on a cron, classify before escalating:
   Remediation is owner/dev-workflow scope, two halves: (a) bump `next` to 16.4.3 (the security fix),
   and (b) make the E2E harness fault-tolerant — pre-warm `next dev` before Playwright or retry the
   webServer once. **Generalise: a zero-test leg whose tail is advisory/nudge text is a BOOT failure.**
+ **2026-10-25 (day 19) — the count-trend break PERSISTS and the E2E leg is a REPEAT zero-test boot
+ failure, so this is now a standing defect awaiting the owner's one-line bump.** Backend
+ `9157 passed, 49 failed` with `⚪ 35/49 PG gaps` + **`🔴 14 genuine`** (identical to 10-24: the elevated
+ band is stable, not still climbing); vitest `266/1` = 20 consecutive; E2E **`❌ 0 passed, 0 failed (5.5s)`
+ for the SECOND consecutive day**, tail again the `next upgrade --agent=security --internal-nudge-id=…`
+ advisory. `package.json` still declares `"next": "^16.3.4"` and `node_modules` resolves **16.4.0**, so
+ nothing changed on the dev side between the two days. OVERALL `9423 passed, 50 failed, 4 errors`.
+ Report it as ONE line ("E2E zero-test, day 2, needs `next` 16.4.3 + webServer retry"), never as a fresh
+ diagnosis with the root cause re-derived — and do NOT edit `frontend/package.json` from a daily tick:
+ `~/code/amlhive1` is a shared agent lane under the branch standard, so the bump is owner scope.
 - **A skill at ≥99.9% of the 100,000-char SKILL.md cap is effectively UNPATCHABLE — `skill_manage`
   rejects the whole batch when the RESULT exceeds the cap, so even a correct fix fails.** Seen
   2026-10-10: `podcast-knowledge-base/SKILL.md` sat at 99,978 chars (22 chars headroom) and a
