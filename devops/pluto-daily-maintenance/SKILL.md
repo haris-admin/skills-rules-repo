@@ -596,6 +596,23 @@ When you see `last_status: error` on a cron, classify before escalating:
  Report it as ONE line ("E2E zero-test, day 2, needs `next` 16.4.3 + webServer retry"), never as a fresh
  diagnosis with the root cause re-derived — and do NOT edit `frontend/package.json` from a daily tick:
  `~/code/amlhive1` is a shared agent lane under the branch standard, so the bump is owner scope.
+ **2026-10-26 (day 20) — 🟢 E2E CLEARED (the `next` bump landed), backend drifted, and a RELEASE-level
+ fault took the headline.** `frontend/package.json` now `"next": "^16.4.1"` with `node_modules/next`
+ resolving **16.4.1** → E2E ran `✅ 48 passed, 2 failed (195.0s)` = the whitelisted `reduced-motion`
+ baseline (run 1/3, exit green) after two consecutive zero-test days. **So the 10-24/10-25 defect is
+ CLOSED — never re-describe it as a live zero-test leg.** 16.4.1 is still below the 16.4.3 audit target
+ (functional fix, security nudge-only). Backend `9274 passed / 51 failed` = ⚪35/51 gaps + **🔴16 genuine**
+ (10-25: 9157/49, 🔴14) after merging `origin/dev` at `bf7c6594c` + `📦 Frontend deps changed`; +117
+ collected / +2 genuine is drift, watch the 🔴 count only. vitest `266/1` = **21 consecutive**
+ (escalated). OVERALL `9588 passed, 54 failed, 3 errors`. **NEW standing fault, owner scope:
+ `4689311b6ad0` (hourly) red 14 h straight — `STALE_BUILD: API=0.50.184 BEHIND expected=0.50.185`.**
+ Root cause is the ECR repo's **IMMUTABLE tags** (`tag invalid: The image tag 'a202c80' already exists`),
+ so a failed deploy retried on the same commit can never push; `Deploy to EC2 via SSM` is SKIPPED. Worse,
+ the 12:22 deploy of 0.50.185 reported SUCCESS with a green post-deploy version gate while production
+ still serves 0.50.184 — a false pass, not just a red. Diagnosis recipe: `hourly-version-check` skill.
+ `0320d41d6d71` unchanged standing shape (685/2: portal 649p/1f + the 9p 5400 s timeout on
+ `tapease_portal_fastapi_a2square`; nextjs 36p/0f green). `5b95adcb27d4` reads `ok` while its report is
+ still `🔴 BLOCKED` — it exits 0 after filing drafts to the vault, so `ok` never means "landed in repo".
 - **A skill at ≥99.9% of the 100,000-char SKILL.md cap is effectively UNPATCHABLE — `skill_manage`
   rejects the whole batch when the RESULT exceeds the cap, so even a correct fix fails.** Seen
   2026-10-10: `podcast-knowledge-base/SKILL.md` sat at 99,978 chars (22 chars headroom) and a
