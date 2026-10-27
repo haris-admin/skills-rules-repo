@@ -610,6 +610,25 @@ When you see `last_status: error` on a cron, classify before escalating:
  so a failed deploy retried on the same commit can never push; `Deploy to EC2 via SSM` is SKIPPED. Worse,
  the 12:22 deploy of 0.50.185 reported SUCCESS with a green post-deploy version gate while production
  still serves 0.50.184 — a false pass, not just a red. Diagnosis recipe: `hourly-version-check` skill.
+ **2026-10-27 — ✅ RESOLVED, CLOSED (do NOT re-open):** `4689311b6ad0` ran `ok` silent at 14:00 and
+ `curl https://api.amlhive.com.au/version` returned **0.50.185**, so prod IS on the expected build again.
+ The hourly check reporting `STALE_BUILD` is the freshness signal working, not a bug — when it goes
+ quiet, verify prod once by curl and close it. **A stale build is an event with a lifespan; re-derive it
+ with one curl before carrying it forward.**
+- **`SSM: Error response from daemon: No such container: amlhive-app-1` on `3ebed4e59ee3` (AML Hive Daily
+  Business Report, 21:15) — a CONTAINER RENAME, and production is uniformly HEALTHY. Class this as a
+  script fault, NOT a prod outage.** Seen 2026-10-26 21:15, the first report after the 0.50.185 deploy:
+  `amlhive_daily_report.py` fell back to `docker exec amlhive-app-1 python3` (no psql client on the host)
+  and the container no longer existed. Verify in this order before touching anything:
+  `curl -s https://api.amlhive.com.au/version` (answered 0.50.185), fleet monitor 05:02 file (API 200,
+  frontend 200, both EC2s ok), then `ssm_shell(env, get_instance_id("amlhive-prod-backend", …),
+  "docker ps -a --format '{{.Names}} :: {{.Status}}'")` → **`amlhive-api-1` + `amlhive-worker-1`**, i.e.
+  the compose service was renamed `app` → `api` and a worker sibling appeared. The frontend is unchanged
+  (`amlhive-frontend`). Fix shape: resolve the container from `docker ps` at runtime (env override still
+  honoured), retry once on `No such container` because a deploy can rename it mid-run; proved with a real
+  `SELECT 1` → `1|amlhive` through the patched transport. **Generalise: any `docker exec <name>` in a cron
+  script is a stale-name time bomb — resolve it, never hardcode it, and never read the container error as
+  an outage without curling the API.**
  `0320d41d6d71` unchanged standing shape (685/2: portal 649p/1f + the 9p 5400 s timeout on
  `tapease_portal_fastapi_a2square`; nextjs 36p/0f green). `5b95adcb27d4` reads `ok` while its report is
  still `🔴 BLOCKED` — it exits 0 after filing drafts to the vault, so `ok` never means "landed in repo".
