@@ -632,6 +632,11 @@ When you see `last_status: error` on a cron, classify before escalating:
  `0320d41d6d71` unchanged standing shape (685/2: portal 649p/1f + the 9p 5400 s timeout on
  `tapease_portal_fastapi_a2square`; nextjs 36p/0f green). `5b95adcb27d4` reads `ok` while its report is
  still `🔴 BLOCKED` — it exits 0 after filing drafts to the vault, so `ok` never means "landed in repo".
+ **2026-10-27 (day 21) — band unchanged, one stat off yesterday's.** Backend `9274 passed, 51 failed` with
+ `⚪ 35/51 gaps` + **`🔴 16 genuine`** (identical to 10-26 — flat, not climbing); vitest `266/1` =
+ **22 consecutive**; E2E `47 passed, 3 failed` = run 2/3 whitelisted `reduced-motion` (exit stays green,
+ escalates at 3 — the 10-26 `48/2` baseline has drifted by one, watch it, do not call it a regression on
+ run 2/3); OVERALL `9587 passed, 55 failed, 3 errors`. Only the 🔴 genuine count matters here.
 - **A skill at ≥99.9% of the 100,000-char SKILL.md cap is effectively UNPATCHABLE — `skill_manage`
   rejects the whole batch when the RESULT exceeds the cap, so even a correct fix fails.** Seen
   2026-10-10: `podcast-knowledge-base/SKILL.md` sat at 99,978 chars (22 chars headroom) and a
