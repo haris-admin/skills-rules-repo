@@ -126,3 +126,79 @@ second — so a re-run that replaces the slate never suppresses a title Haris ne
 the day's second cluster, but `nhi-agent-identity` shipped on 18 Oct and any new
 `agent-credential-lifecycle` candidate would be its twin (Rule 74). Correct action is to say so in
 the curated section and let the 10-day window hold, not to ship the same idea under a new title.
+
+## Rule 78 — fix the classification on EVERY surface the string reaches (Oct 29 2026)
+
+**Symptom.** Idea #4's hook was correctly capitalised ("The record A$4.2bn quarter decomposes to
+93%…") while the display title directly above it — the H3 Haris copies as the post headline — read
+"the record A$4.2bn quarter decomposes to…". The finding's raw title began `UPDATE to the 13
+October feed - the record…`; `_strip_leading_feed_ref()` (Rule 48/56/73) removed the pointer and
+left a lowercase residue, and the Rule 68 capitalisation fix runs on the HOOK builder only.
+
+**Fix.** After the feed-ref strip, capitalise the title when its first token is a leading FUNCTION
+word (`the/a/an/and/but/this/that/what/why/how/…`, the bounded `_LOWERCASE_LEAD_WORDS` set). The
+set is deliberately small so brand-cased tokens ("iOS", "eBay", "macOS") are never rewritten —
+a blanket `title[0].upper()` is the wrong fix.
+
+**Rule.** Rule 73 said it for feed refs: when a rule classifies a string as unreadable, apply that
+classification everywhere the string is delivered. Rule 78 is the same lesson for CLEANUP — a fix
+that runs on the hook does not run on the title unless you put it there.
+
+## Rule 78b — a CTA must not assert a date the corpus cannot support (Oct 29 2026)
+
+`CTA_BY_PILLAR["Startup & ESOP"]` shipped "Modelling this for a cap table or an ESOP **before the
+28 Sep deadline**?" on 29 October — six weeks stale, on the day's top two posts, because the
+deadline was typed into the constant when it was true. **Rule:** keep dates out of static copy.
+A template constant outlives every deadline it names, and nothing in the pipeline can tell that it
+has expired.
+
+## Rule 79 — a name initial is not a sentence end (Oct 29 2026)
+
+**Symptom.** The NonPublic angle ended "…ARK Invest, Citadel, Fidelity, Morgan Stanley, T." — the
+`[.!?](?=\s)` sentence-end scan matched the "." in "T. Rowe Price", so `_trim_angle` cut there and
+silently discarded the rest of the sentence.
+
+**Fix.** Reject a candidate cut whose segment ends on a bare single capital + "." (`(?:^|\s)[A-Z]\.$`).
+A genuine sentence ending in initials ("the U.S.") has a different shape and is untouched.
+
+**Replay.** All 48 angles across the 8 retained research days: **1 changed (intended), 0
+regressions**. The class is general: any truncator that treats "." as a boundary must exclude
+initials, abbreviations and decimals.
+
+## Rule 80 — a passing regime mention must not out-vote the vocabulary the finding is written in (Oct 29 2026)
+
+**Symptom.** The NonPublic/Tenstorrent finding (Australian wholesale capital into a US$1.5bn
+Series E, Anthropic's listing, CBA's stake) was pillared **Australian Fintech Regulation** and
+closed with TokenPilot AU's digital-asset CTA, because `reg_strong` matched `afsl` twice in the
+body while the story carried no digital-asset content at all. Rule 66/76's defect class, one
+branch lower: presence, not dominance.
+
+**Fix.** Before `reg_strong`, count private-markets vocabulary (`pre-ipo`, `wholesale investors`,
+`series a-e`, `private markets`, `valuation`, `cap table`, `esop`, `venture round`, `deal count`,
+`first round`, `ipo`) against licensed-activity vocabulary (`digital asset`, `token*`, `stablecoin*`,
+`crypto*`, `dlt`, `custody`, `afsl`, `psp`, `aml`, `cft`, `austrac`, `licen[cs]*`); if
+`vc_n >= 3 and vc_n > da_n`, return Startup & ESOP.
+
+**Replay.** 8 retained research days, every finding: **1 changed (today's #6), 0 regressions.**
+
+## Rule 45 recurrence #6 + practice note (Oct 29 2026)
+
+Startup & VC's own-pillar pool was **empty of fresh grounded candidates**: `vc-barbell-missing-middle`
+RETIRED (3 hits), `asx-escrow-composition` (1) and `datacentre-firb-screening` (2) both inside the
+10-day window, every other Startup & ESOP candidate at 0. The slate therefore padded ONE Cloud
+candidate — `datacentre-permitting-risk` — whose only hit was the context word `withdrawn` (from
+"Firmus had already withdrawn its ASX float"), whose gap asserted an A$1.2bn/90MW project absent
+from the corpus (Rule 34/58), and whose title had shipped on 11 Oct (`The Project That Walked`)
+before the ledger's retention window, so neither the file scan nor the ledger could see the repeat.
+
+Two subject-bound candidates were ADDED (`pre-ipo-access-distribution` 6 hits, `mark-divergence-valuation`
+3 hits; 0 on the seven prior retained days). The slate went 1 ungrounded repeat → 2 grounded ideas.
+The superseded ledger entry was pruned (Rule 72) so a never-delivered repeat is not suppressed for
+10 days.
+
+**Deliberate non-proposal.** The day's #3 signal (FIRB + ACCC suspensory merger regime) had no
+Startup candidate, and adding one would have duplicated the same morning's AMLHive content idea
+"Two Gates, Two Answers: A Foreign Investment Clearance Is Not an AML/CTF Clearance". Check
+`content-ideas-<date>.md` before adding a candidate for a regulatory signal that another lane
+already owns, and say so in the curated section instead of shipping the duplicate.
+
