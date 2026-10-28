@@ -1,0 +1,17 @@
+---
+description: Before designing or defining any new, unfamiliar feature, search GitHub for open-source prior art, compare approaches, then adopt best practices
+globs: 
+alwaysApply: true
+---
+
+# Research open-source prior art before building an unfamiliar feature
+
+Canonical: `rules/research-open-source-before-building-unfamiliar-features.md`
+
+Do not write an unfamiliar feature from scratch straight away. Apply this whenever you design or define a new feature.
+
+- Check the repository for an existing pattern first and reuse it, recording its path.
+- Otherwise search GitHub for 3 to 5 maintained projects, compare approaches (licence, trade-offs, fit), pick the best practices, then design.
+- Record a `Prior art` section: search date, queries, URLs, licences, comparison table, decision.
+- Skip only with a recorded reason (live hotfix, trivial change, existing pattern). "Nothing relevant found" is valid.
+- Findings never authorise a new dependency, copying GPL/AGPL/unlicensed code, running another project's scripts, or sending confidential data into a search.
