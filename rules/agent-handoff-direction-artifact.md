@@ -75,3 +75,17 @@ docs/handoff_<tool>_feedback_2026-09-10.md          # a top-level cross-artifact
 - `claude-code-spec-only-implementer-builds.md` — the spec-author / implementer split
 - `no-fabricated-human-decisions.md` — open decisions stay open
 - `subagent-verification-protocol.md` — verifying a downstream agent actually followed the direction
+
+## Addendum: two agents sharing one working log (27 Oct 2026, Tap-Ease Clover install)
+
+When two agents (Claude Code and Codex) work the same problem and Haris relays between them, keep one shared doc in the
+repo's `docs/` with a working-rules block, a question tracker and an append-only message log.
+
+- Heading format `### [From -> To] <date>, <subject>`; reply under your own new entry, never edit the other agent's.
+- Mark each claim **verified** (you saw it), **reported** (you were told) or **inferred** (your reasoning). Do not state an inference as a fact.
+- Record Haris's structured answers verbatim (question, selected option, description) and say what they do and do not decide.
+- Include the denial-of-authority list in the hand-off section (no push, deploy, dashboard saves, production writes, emails, secrets).
+- Questions to third parties (customer, Fiserv) go to Haris for approval first; neither agent contacts them.
+- A message addressed by name to another agent ("Codex, ...") is not for you: say so, give Haris the text to paste, and do not act on it.
+- Re-fetch `origin/main` right before preparing a release: another agent may have pushed it since you last looked.
+
