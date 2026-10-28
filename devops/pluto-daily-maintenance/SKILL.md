@@ -449,172 +449,45 @@ When you see `last_status: error` on a cron, classify before escalating:
   38 failed` (10-07: 7641/31, baseline 6-8) on the merged tree — day 2 of the post-`origin/dev`-merge
   elevation, and vitest's 1 failure has now been escalated from known-flaky to real (3 consecutive
   runs).
-  **2026-10-09 (day 3) — the fork-context fix is CONFIRMED LIVE, not just unit-verified.** Task 4's
-  rule ("run ONE live invocation") applies to the diagnosis writer too: the runner wrote a real entry
-  `[2026-10-09 02:40:31 AEST] frontend vitest FAILURE DIAGNOSIS` (jsdom `Blob` instanceof + the
-  concurrent-signout `window.location` navigation) with NO pickle error. Backend `7770 passed,
-  34 failed` (10-07 7641/31, 10-08 7699/38, baseline 6-8) — day 3 of the elevated post-`origin/dev`
-  band, flat-to-down; still a COUNT-TREND watch, not a new incident. vitest `240 passed, 1 failed` =
-  4 consecutive runs (escalated real on 10-08, unchanged). E2E `47 passed, 3 failed` — all three match
-  the whitelisted `reduced-motion` flaky pattern (counter run 2/3, exit stays green, escalates at 3)
-  → do NOT report E2E as a regression.
-  **2026-10-10 (day 4) — flat backend, but BOTH flaky counters have now tripped escalation.**
-  Backend `7770 passed, 34 failed` (10-07 7641/31, 10-08 7699/38, 10-09 7770/34, baseline 6-8) —
-  day 4 of the elevated post-`origin/dev` band, unchanged, still a COUNT-TREND watch. vitest
-  `240 passed, 1 failed` = **5 consecutive runs**; E2E `47 passed, 3 failed` = **3 consecutive runs**,
-  so the runner now prints `ESCALATED as real failure` for BOTH legs (`4 known-flaky pattern(s) for 5
-  consecutive runs` / `1 known-flaky pattern(s) for 3 consecutive runs`). From here the E2E
-  `reduced-motion` counter is NO LONGER the benign 2/3 shape recorded on 10-09 — treat the next E2E red
-  as a real leg. OVERALL `8057 passed, 38 failed, 0 errors`; the diagnosis writer produced real entries
-  for both the vitest and E2E legs, so the `get_context("fork")` fix still holds.
- **2026-10-11 (day 5) — backend flat, and the E2E failure has MOVED OFF the flaky whitelist.**
- Backend `7770 passed, 34 failed` (day 5 of the elevated band, unchanged). vitest `240 passed, 1 failed`
- = **6 consecutive runs**; E2E `47 passed, 3 failed` = **4 consecutive runs** — both still escalate. But the
- E2E diagnosis now names `Login page layout › forgot password shows recovery copy and sign-in link CTA`,
- which is NOT the whitelisted `reduced-motion` pattern: this is a real functional regression (the
- forgot-password flow no longer renders the recovery copy). **From here the E2E leg counts as real, not
- flaky** — the 10-09/10-10 "whitelisted pattern" framing no longer applies. OVERALL `8057 passed,
- 38 failed, 0 errors`; `pluto_pr` merged `origin/dev` again at `94051bcb`. The diagnosis writer produced
-  real entries for BOTH legs (log mtime 2026-10-11 04:22, 239 KB) — the `get_context("fork")` fix holds.
- **2026-10-12 (day 6) — backend flat; both flaky counters one deeper.** Backend `7770 passed, 34 failed`
- (10-07 7641/31, 10-08 7699/38, 10-09 7770/34, 10-12 7770/34, baseline 6-8) — day 6 of the elevated
- post-`origin/dev` band, unchanged, still only a COUNT-TREND watch. vitest `240 passed, 1 failed` =
- **7 consecutive runs**; E2E `47 passed, 3 failed` = **5 consecutive runs**, and the E2E diagnosis still
- names the forgot-password recovery-copy/CTA regression (REAL functional regression, not the
- `reduced-motion` whitelist). OVERALL `8057 passed, 38 failed, 0 errors`; `pluto_pr` merged `origin/dev`
- at `2acfb81d`. Diagnosis writer wrote real entries for both legs (log mtime 2026-10-12 04:29) — fork fix
- still holds.
- **2026-10-13 (day 7) — backend flat, both flaky counters one deeper, E2E diagnosis back on the whitelist.**
- Backend `7770 passed, 34 failed` (10-07 7641/31 → 10-13 7770/34, baseline 6-8) — day 7 of the elevated
- post-`origin/dev` band, unchanged. vitest `240 passed, 1 failed` = **8 consecutive runs**; E2E
- `48 passed, 2 failed` = **6 consecutive runs** (composition moved from 10-12's `47/3`), and the E2E
- diagnosis now names `a11y-reduced-motion-parity` — the WHITELISTED `reduced-motion` pattern again, not
- the 10-11/10-12 forgot-password recovery-copy regression. Both legs still print `ESCALATED as real`.
- OVERALL `8058 passed, 37 failed, 0 errors` (10-12: 8057/38) — flat-to-1-better. `pluto_pr` merged
- `origin/dev` at `49450bfa`. Diagnosis writer produced real entries for both legs — fork fix holds. The
- audit's chosen discriminator for this job was `⚪ 'poetry' not found — fallback to venv pytest`, which is
- the PERMANENT path on this host (poetry is not installed), not a fault.
- **2026-10-14 (day 8) — backend flat, both counters one deeper, chain verify recovered.** Backend
- `7770 passed, 34 failed` (10-07 7641/31 → 10-14 7770/34, baseline 6-8) — day 8 of the elevated
- post-`origin/dev` band, unchanged, still only a COUNT-TREND watch. vitest `240 passed, 1 failed` =
- **9 consecutive runs**; E2E `48 passed, 2 failed` = **7 consecutive runs**, diagnosis on the whitelisted
- `reduced-motion`/CSS-media-query pattern (not the 10-11/10-12 forgot-password regression). Both still
- print `ESCALATED as real`. OVERALL `8058 passed, 37 failed, 0 errors` (10-13: 8058/37) — flat.
- `pluto_pr` merged `origin/dev` at `49450bfa` AGAIN (no new dev commits since 10-13). Diagnosis writer
- produced real entries for both legs — fork fix holds. Same `⚪ 'poetry' not found` discriminator (the
- permanent path, not a fault).
- **2026-10-15/16 (days 9-10) — backend still flat, both flaky counters one deeper.** Backend
- `7770 passed, 34 failed` on BOTH days (10-07 7641/31 → 10-16 7770/34) — day 10 of the elevated
- post-`origin/dev` band, unchanged, still only a COUNT-TREND watch. 10-15: OVERALL `8057 passed,
- 38 failed` (vitest 10 consecutive, E2E `47/3` = 8 consecutive). 10-16: `8058 passed, 37 failed`
- (vitest **11 consecutive**, E2E `48/2` = **9 consecutive**); E2E diagnosis back on the whitelisted
- `reduced-motion` CSS pattern, not the 10-11/10-12 forgot-password regression. `pluto_pr` merged
- `origin/dev` at `49450bfa` on BOTH days (no new dev commits since 10-13) — the merge prints ✅ while
- the suite still measures the elevated band, so the merge alone is not the fix. Diagnosis writer
- produced real entries for both legs — fork fix holds.
- **2026-10-17 (day 11) — unchanged band; the vitest DIAGNOSIS now times out.** Backend
- `7770 passed, 34 failed` (day 11 at 7770/34), vitest `240 passed, 1 failed` = **12 consecutive**,
- E2E `48 passed, 2 failed` = **10 consecutive** (whitelisted `reduced-motion` diagnosis again);
- OVERALL `8058 passed, 37 failed, 0 errors`. Both legs still `ESCALATED as real`. New wrinkle: the
- vitest leg printed `Diagnosis: [Diagnosis skipped: timed out after 120s]` while E2E produced a real
- diagnosis — so "the diagnosis writer wrote something" no longer proves it covered EVERY failed leg;
- read per-leg lines before assuming names are available for the vitest failure.
- **2026-10-18 (day 12) — backend flat, but the E2E COMPOSITION BREAK is the finding.** Backend
- `7770 passed, 34 failed` (day 12 at 7770/34, unchanged); vitest `240 passed, 1 failed` = **13 consecutive**
- with a REAL diagnosis back (jsdom `Blob` instanceof + concurrent `signOut` — the 10-17 timeout did not
- repeat); E2E **`46 passed, 4 failed` = 11 consecutive, composition CHANGED from 10-17's `48/2`** — two
- fewer passing, two more failing, and the diagnosis names the **forgot-password recovery-copy/CTA**
- assertion plus the **NFR load-timing benchmark**, i.e. at least 3 failures are NOT the whitelisted
- `reduced-motion` pattern. OVERALL `8056 passed, 39 failed, 0 errors` (10-17: 8058/37). This is a
- composition change, not the standing flat band — treat the E2E leg as REAL until it returns to `48/2`.
- `pluto_pr` still merged `origin/dev` at `49450bfa` (no new dev commits since 10-13), so the merge is not
- a factor. Diagnosis writer produced real entries for BOTH legs — fork fix holds for the 13th day.
- **Also 2026-10-18 06:03 — `amlhive_daily_test_runner.py` was PATCHED (issue-134 work) AFTER its own run:**
- new `classify_pg_gated()` splits SQLite-vs-PostgreSQL suite gaps out of the backend failure count, and
- the `codex_diagnose` call now takes `tail=True` (pytest's failures sit at the END of the output; the head
- slice was feeding the model progress dots). Unit-exercised here: 3/3 synthetic tb-line failures counted,
- summary `E ` repeats correctly ignored; `get_context("fork")` still at line 352. **Expect the next 03:40
- run to print `⚪ N/34 … suite gaps (issue-134)` and to skip backend diagnosis routing — a changed output
- SHAPE, not a fix and not a fake pass.** The 06:03 edit was never exercised by the 04:27 run, so the first
-  real proof is 10-19.
- **2026-10-19 (day 13) — the classifier is PROVEN LIVE, and it still routes the genuine ones.** The
-  03:40 run printed `⚪ 30/34 are SQLite-vs-PostgreSQL suite gaps (issue-134), not product regressions`
-  followed by `🔴 4 genuine assertion failure(s) — routing to diagnosis...` — so the "skips backend
-  diagnosis" expectation above is WRONG whenever any genuine failure remains: it suppresses the route only
-  when EVERY failure is PG-gated. Backend `7770 passed, 34 failed`, vitest `240/1` (14 consecutive),
-  E2E `46/4` (12 consecutive, still off the `48/2` baseline); OVERALL `8056 passed, 39 failed, 0 errors`;
-  both legs wrote real diagnoses (fork fix holds, day 13). **Backend escalation trigger is now the 🔴
-  GENUINE count (4), not the 34 total.**
- **2026-10-20 (day 14) — same band, counters one deeper, chain green.** Backend `7770 passed, 34 failed`
-  with `⚪ 30/34 gaps` + `🔴 4 genuine` (genuine count unchanged 2 days running — still a watch, not an
-  incident); vitest `240/1` = **15 consecutive**; E2E `47/3` = **13 consecutive**, diagnosis on the **NFR
-  load-timing benchmark** (composition moved off 10-19's `46/4`, still NOT the `48/2` whitelist baseline);
-  OVERALL `8057 passed, 38 failed, 0 errors`. Both legs wrote real diagnoses (fork fix holds, day 14).
-  Watching the 🔴 genuine count, not 34, is what makes this a no-op day.
- **2026-10-21 (day 15) — same band, counters one deeper, E2E diagnosis back on the forgot-password
-  regression.** Backend `7770 passed, 34 failed` with `⚪ 30/34 gaps` + `🔴 4 genuine` (genuine count flat
-  3 days running); vitest `240/1` = **16 consecutive**; E2E `47 passed, 3 failed` = **14 consecutive**,
-  diagnosis naming the forgot-password recovery-copy/CTA timeout — NOT the `48/2` whitelist baseline, so
-  the 10-18 composition break has not healed; OVERALL `8057 passed, 38 failed, 0 errors`. Both legs wrote
-  real diagnoses — fork fix holds, day 15.
- **2026-10-22 (day 16) — same band, both counters one deeper.** Backend `7770 passed, 34 failed` with
-  `⚪ 30/34 gaps` + `🔴 4 genuine` (genuine flat 4 days running); vitest `240/1` = **17 consecutive**;
-  E2E `47 passed, 3 failed` = **15 consecutive**, diagnosis again the forgot-password recovery-copy timeout
-  (so the `48/2` whitelist baseline still has not returned); OVERALL `8057 passed, 38 failed, 0 errors`.
-  Both legs wrote real diagnoses — fork fix holds, day 16. No action: watch the 🔴 genuine count only.
- **2026-10-24 (day 18) — 🚨 COUNT-TREND BREAK and an E2E leg that produced ZERO tests. This is NOT
-  the standing band — escalate both.** Backend `9157 passed, 49 failed` (10-23: `7770/34`) with
-  `⚪ 35/49 PG gaps` + **`🔴 14 genuine`** (genuine had been flat at 4 for 5 days) — BOTH the collected
-  count (+1,387) and the failure count (+15) moved in one run, the 10-07 signature of a merged /
-  re-dependency'd slice. The run header explains it: merged `origin/dev` at `e71bd5d5b` then printed
-  `📦 Backend deps changed — reinstalling into .venv`; the diagnosis clusters on sentry init,
-  evidence-assurance RLS, worker startup and S3 recovery — a dependency-version effect, not the 34
-  pre-existing PG-gated tests. vitest `266/1` (19 consecutive; +26 passed = same shift). **E2E
-  `❌ 0 passed, 0 failed (6.3s)` — a No-Fake-Pass ERROR, never green:** the previous day ran `47 passed,
-  3 failed` in 186 s, so a 6.3 s zero-test leg is a boot failure whose tail showed only a
-  `next upgrade --agent=security --internal-nudge-id=…` block.
-  **ROOT CAUSE (proven live 2026-10-24 14:00, not inferred):** Next.js **16.4.0** ships an agent-upgrade
-  nudge (`node_modules/next/dist/lib/upgrade/nudge.js`) that throws `SecurityFatalError` with
-  `exitCode: 1` on the FIRST `next dev` after the advisory feed refreshes — *"This command stopped to
-  show the upgrade recommendation. Retry the same command to continue"*. It writes a receipt to
-  `<distDir>/cache/next-agentic-upgrade-retries/<sha>.json` and only continues on a retry inside
-  `RETRY_TTL` = **5 minutes**, so a single-shot harness loses the whole leg and the visible output is
-  the advisory text, NOT the real error. Reproduce in two runs: the first stops and exits 1, the second
-  prints `⚠ … This command is continuing after the upgrade reminder` and boots (`✓ Ready in 296ms`).
-  **The advisory is REAL** — `npm audit` flags `next 16.0.0 - 16.4.0` **critical** (also
-  `@sentry/nextjs ≤10.75.1`, `handlebars`); latest is **16.4.3**, inside the repo's `^16.3.4` range.
-  Remediation is owner/dev-workflow scope, two halves: (a) bump `next` to 16.4.3 (the security fix),
-  and (b) make the E2E harness fault-tolerant — pre-warm `next dev` before Playwright or retry the
-  webServer once. **Generalise: a zero-test leg whose tail is advisory/nudge text is a BOOT failure.**
- **2026-10-25 (day 19) — the count-trend break PERSISTS and the E2E leg is a REPEAT zero-test boot
- failure, so this is now a standing defect awaiting the owner's one-line bump.** Backend
- `9157 passed, 49 failed` with `⚪ 35/49 PG gaps` + **`🔴 14 genuine`** (identical to 10-24: the elevated
- band is stable, not still climbing); vitest `266/1` = 20 consecutive; E2E **`❌ 0 passed, 0 failed (5.5s)`
- for the SECOND consecutive day**, tail again the `next upgrade --agent=security --internal-nudge-id=…`
- advisory. `package.json` still declares `"next": "^16.3.4"` and `node_modules` resolves **16.4.0**, so
- nothing changed on the dev side between the two days. OVERALL `9423 passed, 50 failed, 4 errors`.
- Report it as ONE line ("E2E zero-test, day 2, needs `next` 16.4.3 + webServer retry"), never as a fresh
- diagnosis with the root cause re-derived — and do NOT edit `frontend/package.json` from a daily tick:
- `~/code/amlhive1` is a shared agent lane under the branch standard, so the bump is owner scope.
- **2026-10-26 (day 20) — 🟢 E2E CLEARED (the `next` bump landed), backend drifted, and a RELEASE-level
- fault took the headline.** `frontend/package.json` now `"next": "^16.4.1"` with `node_modules/next`
- resolving **16.4.1** → E2E ran `✅ 48 passed, 2 failed (195.0s)` = the whitelisted `reduced-motion`
- baseline (run 1/3, exit green) after two consecutive zero-test days. **So the 10-24/10-25 defect is
- CLOSED — never re-describe it as a live zero-test leg.** 16.4.1 is still below the 16.4.3 audit target
- (functional fix, security nudge-only). Backend `9274 passed / 51 failed` = ⚪35/51 gaps + **🔴16 genuine**
- (10-25: 9157/49, 🔴14) after merging `origin/dev` at `bf7c6594c` + `📦 Frontend deps changed`; +117
- collected / +2 genuine is drift, watch the 🔴 count only. vitest `266/1` = **21 consecutive**
- (escalated). OVERALL `9588 passed, 54 failed, 3 errors`. **NEW standing fault, owner scope:
- `4689311b6ad0` (hourly) red 14 h straight — `STALE_BUILD: API=0.50.184 BEHIND expected=0.50.185`.**
- Root cause is the ECR repo's **IMMUTABLE tags** (`tag invalid: The image tag 'a202c80' already exists`),
- so a failed deploy retried on the same commit can never push; `Deploy to EC2 via SSM` is SKIPPED. Worse,
- the 12:22 deploy of 0.50.185 reported SUCCESS with a green post-deploy version gate while production
- still serves 0.50.184 — a false pass, not just a red. Diagnosis recipe: `hourly-version-check` skill.
- **2026-10-27 — ✅ RESOLVED, CLOSED (do NOT re-open):** `4689311b6ad0` ran `ok` silent at 14:00 and
- `curl https://api.amlhive.com.au/version` returned **0.50.185**, so prod IS on the expected build again.
- The hourly check reporting `STALE_BUILD` is the freshness signal working, not a bug — when it goes
- quiet, verify prod once by curl and close it. **A stale build is an event with a lifespan; re-derive it
- with one curl before carrying it forward.**
+  **Days 3-22 COMPRESSED (2026-10-09 → 2026-10-28) — read this, not a day-by-day log.** The backend
+  band moved TWICE and both moves are explained; everything else is counter-drift on a stable band:
+  - **Days 3-12 (10-09→10-18): flat `7770 passed, 34 failed`** (pre-10-07 baseline was 6-8; the
+    elevation dates from the `03e74c26` `origin/dev` merge). vitest `240/1` climbed 5→13 consecutive
+    runs, E2E oscillated `47-48/2-3`. Two REAL E2E excursions inside that window, both now superseded:
+    the forgot-password recovery-copy/CTA regression (10-11/10-12) and the NFR load-timing benchmark
+    (10-18); otherwise the diagnosis named the whitelisted `reduced-motion` pattern. The
+    `get_context("fork")` diagnosis fix wrote real per-leg entries EVERY day — treat it as confirmed,
+    and only re-open it if a leg prints a pickle error.
+  - **Days 13-16 (10-19→10-22): `classify_pg_gated()` proven live** → output becomes
+    `⚪ 30/34 are SQLite-vs-PostgreSQL suite gaps (issue-134)` + `🔴 4 genuine assertion failure(s)`.
+    **Backend escalation trigger is the 🔴 GENUINE count, never the 34 total**, and the classifier
+    suppresses the diagnosis route only when EVERY failure is PG-gated.
+  - **Day 18 (10-24) 🚨 COUNT-TREND BREAK: `9157 passed, 49 failed`, 🔴 14 genuine** (collected +1,387,
+    failures +15 in one run) after merging `origin/dev` at `e71bd5d5b` + `📦 Backend deps changed —
+    reinstalling` — a dependency-version effect, not the PG-gated 34. Same run's E2E leg produced
+    `❌ 0 passed, 0 failed (6.3s)` — **a boot failure, never green (No Fake Pass)**.
+    **ROOT CAUSE, proven live: Next.js 16.4.0's agent-upgrade nudge** (`next/dist/lib/upgrade/nudge.js`)
+    throws `SecurityFatalError` (exitCode 1) on the FIRST `next dev` after the advisory feed refreshes,
+    writing a receipt under `<distDir>/cache/next-agentic-upgrade-retries/` that only authorises a retry
+    inside `RETRY_TTL` = 5 min — so a single-shot harness loses the whole leg and the visible tail is
+    the `next upgrade --agent=security --internal-nudge-id=…` advisory, NOT the real error.
+    **Generalise: a zero-test leg whose tail is advisory/nudge text is a BOOT failure.** Day 19 (10-25)
+    repeated it; day 20 (10-26) `"next": "^16.4.1"` landed and E2E returned to `48 passed, 2 failed`.
+  - **Days 20-22 (10-26→10-28): backend `9274 passed / 51 failed` with `⚪ 35/51 gaps` + `🔴 16
+    genuine` on all three days** — flat at the new level, the escalation rule is still the 🔴 count.
+    vitest `266/1` → `267/1` (22+ consecutive, escalated long ago). OVERALL `9589 passed, 54 failed,
+    3 errors` (10-28).
+  **2026-10-28 (day 22) — the E2E flaky counter tripped again; that is the only change.** E2E `48
+  passed, 2 failed` (200.7s) but the runner printed `⚠️ playwright e2e: 1 known-flaky pattern(s) for 3
+  consecutive runs → ESCALATED as real failure`. So the whitelisted `reduced-motion` composition is no
+  longer a benign 2/3 shape: **from 10-29 a further E2E red counts as a REAL leg**, and run 1 of a new
+  counter is the only state that resets it.
+  **`4689311b6ad0` STALE_BUILD — root cause is the ECR repo's IMMUTABLE tags** (`tag invalid: The image
+  tag 'a202c80' already exists`), so a failed deploy retried on the same commit can never push and
+  `Deploy to EC2 via SSM` is SKIPPED; worse, a deploy can report SUCCESS with a green post-deploy version
+  gate while production still serves the old build. **✅ RESOLVED 2026-10-27 — do NOT re-open:** it ran
+  `ok` silent and `curl https://api.amlhive.com.au/version` returned 0.50.185. **A stale build is an
+  event with a lifespan; re-derive it with one curl before carrying it forward.**
 - **`SSM: Error response from daemon: No such container: amlhive-app-1` on `3ebed4e59ee3` (AML Hive Daily
   Business Report, 21:15) — a CONTAINER RENAME, and production is uniformly HEALTHY. Class this as a
   script fault, NOT a prod outage.** Seen 2026-10-26 21:15, the first report after the 0.50.185 deploy:
@@ -632,11 +505,7 @@ When you see `last_status: error` on a cron, classify before escalating:
  `0320d41d6d71` unchanged standing shape (685/2: portal 649p/1f + the 9p 5400 s timeout on
  `tapease_portal_fastapi_a2square`; nextjs 36p/0f green). `5b95adcb27d4` reads `ok` while its report is
  still `🔴 BLOCKED` — it exits 0 after filing drafts to the vault, so `ok` never means "landed in repo".
- **2026-10-27 (day 21) — band unchanged, one stat off yesterday's.** Backend `9274 passed, 51 failed` with
- `⚪ 35/51 gaps` + **`🔴 16 genuine`** (identical to 10-26 — flat, not climbing); vitest `266/1` =
- **22 consecutive**; E2E `47 passed, 3 failed` = run 2/3 whitelisted `reduced-motion` (exit stays green,
- escalates at 3 — the 10-26 `48/2` baseline has drifted by one, watch it, do not call it a regression on
- run 2/3); OVERALL `9587 passed, 55 failed, 3 errors`. Only the 🔴 genuine count matters here.
+ **2026-10-28 (day 22) — see the COMPRESSED block above; band flat, E2E counter tripped at 3.**
 - **A skill at ≥99.9% of the 100,000-char SKILL.md cap is effectively UNPATCHABLE — `skill_manage`
   rejects the whole batch when the RESULT exceeds the cap, so even a correct fix fails.** Seen
   2026-10-10: `podcast-knowledge-base/SKILL.md` sat at 99,978 chars (22 chars headroom) and a
@@ -644,6 +513,14 @@ When you see `last_status: error` on a cron, classify before escalating:
   a daily tick: make the edit NET-NEGATIVE (shorter than the text it replaces) so the result fits. The
   real fix is Saturday scope — move a section into `references/`. Check the cap BEFORE patching:
   `len(Path(skill).read_text())` vs 100,000.
+  **This skill itself was the worst offender and was COMPACTED 2026-10-28 (92,526 → 78,819 chars).**
+  The expensive part was a per-day running log of `044c0bc41e31` (days 3-22, one paragraph per day,
+  each repeating the same band). Rule: a per-day watch that emits a paragraph per run is a LOG, not a
+  lesson — once a band is stable for 3+ days, replace the whole span with ONE `**Days N-M COMPRESSED**`
+  block that keeps only (a) the band's start/end numbers, (b) every ROOT CAUSE with its proof, and
+  (c) the escalation trigger. Keep day-by-day narration only for the current un-resolved incident.
+  Compact with a line-range script (assert the anchor lines first, back the file up to
+  `~/.hermes/backups/` before writing) rather than a 188-line `patch` match.
 - **`daily_cron_audit.py`'s `=== legacy 'fallback_model' config key ===` scan is a DOCUMENTED FALSE
   POSITIVE — do not "fix" the two hits.** `monitoring-alert-verification` and `llm-cost-routing` name
   `fallback_model` only to explain it is the LEGACY key merged after the canonical
