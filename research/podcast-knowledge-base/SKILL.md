@@ -520,6 +520,12 @@ re-check access before the 4:00 AM job.
 a clips channel (last upload 2026-08-05) rather than the main show, so ingest stopped while the podcast
 kept publishing. This is why the AMA material never arrived at all.
 
+**An odd TITLE is not evidence of a wrong channel — read the transcript head first.** Acquired publishes
+its main episodes as `… (Audio)` uploads, so rows like `Seinfeld - Full Episode (Audio)` look like junk
+but open with the hosts talking to "David" about researching the episode; the ~1,000-char rows with the
+same shape are its YouTube Shorts (descriptions, classified thin). Confirm with the first 300 chars of
+`transcript_text` plus the show's normal duration before calling a row wrong-channel ingest.
+
 **Check when a show goes quiet:** compare the newest episode's **duration** against what that show normally
 publishes. 8-15 minute "episodes" from a 60-90 minute show means you are watching its clips channel.
 Verify `youtube_handle` identity, not just the display name.
@@ -942,6 +948,14 @@ With 7 of 12 episodes genuinely needing review, the cron would have been RED EVE
 report the pipeline broken daily. The gate DID its job: it ran, produced verdicts, recorded them. Only a
 real script/LLM failure exits non-zero now; `needs_human` prints as a review queue and stays in the
 ledger. **Distinguish 'the job failed' from 'the job found something' before wiring an exit code.**
+
+**A manual repair does NOT turn the 09:00 assert green the same day — by design, not by failure.** The
+assertor (`7e4a2379157d`) judges the verify leg from its last CRON EXECUTION status, not from the ledger.
+So after re-running one episode by hand to clear a transient error, the verify job's most recent execution
+is still the morning's `failed` row and the assert keeps reporting the chain broken until the next scheduled
+05:35 run. Confirm the repair from the LEDGER (`status`, `notes`, and `error` count in the last 24h) and say
+explicitly that the assert will read green on the next scheduled leg — never re-run the assertor to "check",
+which reproduces the same stale verdict and looks like the fix failed.
 
 **Reading that exit code next morning — the log the cron shows you is TRUNCATED.** The daily wrapper pipes
 the verifier through `| tail -60`, so the execution's error field holds only the LAST 60 lines: a page of
