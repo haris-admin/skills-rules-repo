@@ -482,6 +482,14 @@ When you see `last_status: error` on a cron, classify before escalating:
   consecutive runs → ESCALATED as real failure`. So the whitelisted `reduced-motion` composition is no
   longer a benign 2/3 shape: **from 10-29 a further E2E red counts as a REAL leg**, and run 1 of a new
   counter is the only state that resets it.
+  **2026-10-29 (day 23) — the escalated leg produced its first REAL E2E failure; this one is a code bug,
+  not flaky noise.** `47 passed, 3 failed` (186.7s) and the diagnosis names it: test #18
+  `"forgot password shows recovery copy and sign-in link CTA"` (`tests/e2e/amlhive.spec.ts:106`)
+  timed out at 17.6s against 1-6s for its peers — the SAME regression seen 10-11/10-12 and then marked
+  superseded. Third recurrence ⇒ treat as a real frontend regression to fix, and stop re-labelling the
+  `reduced-motion` whitelist as the explanation for every E2E red. Band otherwise flat:
+  backend 16 genuine, vitest 267p/1f (24 consecutive), OVERALL `9588 passed, 55 failed, 3 errors`.
+  Read the diagnosis line before classifying any E2E red: a NAMED non-whitelisted test is a regression.
   **`4689311b6ad0` STALE_BUILD — root cause is the ECR repo's IMMUTABLE tags** (`tag invalid: The image
   tag 'a202c80' already exists`), so a failed deploy retried on the same commit can never push and
   `Deploy to EC2 via SSM` is SKIPPED; worse, a deploy can report SUCCESS with a green post-deploy version
