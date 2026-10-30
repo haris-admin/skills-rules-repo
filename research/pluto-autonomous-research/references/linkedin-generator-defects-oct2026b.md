@@ -202,3 +202,93 @@ Startup candidate, and adding one would have duplicated the same morning's AMLHi
 `content-ideas-<date>.md` before adding a candidate for a regulatory signal that another lane
 already owns, and say so in the curated section instead of shipping the duplicate.
 
+## Rule 77 — a 10-day repeat window cannot see a 15-day cycle, and a stale repeat outranks nothing when the pool is thin (Oct 30 2026)
+
+**Symptom.** The 30 Oct 2026 slate — same `date % 5` slot as 15 Oct — shipped **both** blog ideas
+as word-for-word repeats of the 15 Oct pair (`The AI Incident Register…`, `One Product, Three
+Rulebooks…`). `_repeat()` answered "not a repeat" for both, correctly: the ledger held them at
+15 Oct, 15 days back, outside `_ledger_titles(days=10)`. A 5-day topic cycle plus a 10-day window
+means every third visit to the same slot re-serves the same slate, and nothing in the pipeline
+ranks *verbatim* staleness below a fresh idea.
+
+**Why it happened (the pool, not the gate).** Filtering `BLOG_CANDIDATES` to the day's pillars and
+`_fresh` left exactly two grounded AI-governance candidates — the two 15 Oct repeats. The day's
+#2 (TGA digital scribe review), #3 (EN 18286 first harmonised standard) and #5 (board-level agent
+accountability) signals had **no candidate at all**, so the slate had nothing fresh to prefer.
+
+**Fix — add candidates, never widen the window.** Three subject-bound candidates were ADDED:
+`tga-scribe-device-function` (6 hits), `en-18286-qms-conformity` (6), `board-agent-accountability`
+(6); **0 on the seven prior retained days**, verified by replaying each against the retained
+research JSONs, and each keyword's firing sentence printed before acceptance. Slate went 2 stale
+repeats → 3 fresh grounded ideas. The 30 Oct ledger lines for the two never-delivered repeats were
+pruned (Rule 72), keeping the 15 Oct originals.
+
+**Rule 49 recurrence, same run.** `agent-incident-register` fired on a single term, `marking`,
+taken from "you can't have OpenAI **marking** its own homework" — a board-accountability quote on a
+corpus where `incident`/`reportable`/`serious incident` were all ZERO. Its list carried bare
+`marking`, `notification`, `regulator`, `reportable`, `article 50`, `transparency`: all context
+vocabulary on any AI-regulation day. Re-bound to reporting mechanics (`incident report`,
+`incident register`, `incident log`, `serious incident`, `reportable incident`, `unreported
+incident`, `article 73`, `incident notification`): today 1 → 0, 15 Oct record still grounds it.
+
+**Two-way check performed.** Today fires for all three new candidates; the seven prior retained
+days return 0 for all three. And confirm a new candidate's gap does not silently duplicate an
+existing one: `board-agent-accountability` is distinct from `scorer-independent-verification`
+(self-grading mechanism) and from `agent-oversight-monitor-integrity` (whether oversight can be
+switched off) — it asks *who is named*, on what evidence. State that boundary in the gap text.
+
+
+---
+
+## Rule 81 (Oct 31 2026) — a twin pair registered ONE way leaves the OLDER title alive after the window
+
+**Defect.** The 31 Oct Cloud slate (same `date % 5` slot as 16 Oct and 26 Oct) shipped blog ideas that
+were **verbatim title repeats from 16 Oct** — `Power, Not Land: The Data Centre Constraint That Will
+Re-Price Your Cloud` and `The Missing Substitutability Test` — 15 days old, i.e. outside
+`_ledger_titles(days=10)`. Eleven days into the same cycle, 26 Oct had shipped
+`The Connection Agreement: Why a Grid Contract, Not a GPU, Now Prices an AI Data Centre`
+(`grid-connection-financing`) for **the same gap**: power/grid availability as the binding constraint.
+`grid-connection-financing` was registered as a twin of `datacentre-permitting-risk` but **not** of
+`datacentre-energy-grid`, so the pair covering one gap was invisible to each other. When
+`grid-connection-financing` aged out at 10 days its sibling — five days OLDER in delivery terms — was
+only just becoming "fresh" again and re-took the slot.
+
+**Rule.** Whenever two candidates assert the same gap, register the pair **both ways and against every
+member of the family**, not just the one you were fixing that day. A one-way or partial twin map does
+not fail at the moment you write it; it fails an ageing window later, which is why it survives review.
+
+**Fix.** `datacentre-energy-grid` ↔ `grid-connection-financing` registered both ways.
+**Two-way verification.** Live direction: `datacentre-energy-grid` absent from today's slate while its
+keywords still fire (1 hit — `aemo`) → deduped, not killed. Counterfactual: with the pair unregistered
+(prior run this morning) it took the slot, which is the failing case reproduced.
+
+## Rule 82 (Oct 31 2026) — a bare phrase that is *analysis*, not subject, can be the only thing grounding a candidate
+
+**Defect.** `cloud-concentration-resilience` fired today on **one** keyword, `concentration risk`,
+taken from a sentence of commentary inside the London-outage finding ("concentration risk has moved
+from a theoretical board paper to a supervisory conversation"). Every one of its own anchors —
+`substitutability`, `cloud concentration`, `financial stability review`, `portability`, `exit plan` —
+was **zero** in today's corpus, and its gap asserted the RBA Financial Stability Review and BoE
+SIMEX26 evidence that only existed on 16 Oct (Rule 34/58 class: a gap may not assert sources absent
+from the corpus that fired it). The title was also a 16 Oct delivery.
+
+**Rule.** Keyword grounding must be satisfied by *subject* vocabulary, and a candidate whose gap cannot
+be re-grounded in today's sentences should be demoted, not padded into the third slot. Two fixes were
+applied together: dropped bare `concentration risk` (it is the vocabulary of any post-hoc analysis),
+added `critical third-party regime` (the phrase the story is actually reported in — note the hyphen,
+`critical third party` returns nothing), and **rewrote the gap** around the 20 Oct europe-west2-b event,
+the FCA/PRA vendor contact and the first-test-of-the-UK-regime framing, all of which are in today's
+corpus.
+
+**Practice note (Rule 45 recurrence, third consecutive Cloud slot).** Two fresh subject-bound candidates
+were ADDED rather than loosening any gate: `hyperscaler-capex-cashflow` (revenue backlog, `$567.7b`,
+`azure crossed`, `free cash flow`, `$45.98b`; **9 hits today / 0 on eight prior retained days**) and
+`repatriation-unit-economics` (`37signals`, `cast ai`, `idle capacity`, `provisioned cpu`; **6 / 0**).
+The second excludes `unit economics`/`cost optimisation` deliberately so it cannot fire off
+`cloud-waste-finops` (delivered 26 Oct) — two cost candidates must not share keywords. And check the
+same morning's `content-ideas-<date>.md`: that lane already owned the DRAM-renewal and data-centre-levy
+angles, which is why **no** Pocock candidate was added despite the signal being in the day's top four.
+
+**Ledger.** The two never-delivered 31 Oct lines (the verbatim 16 Oct repeats) were pruned per Rule 72,
+keeping a `.bak` copy; the 16 Oct originals remain, and the twin rule — not a ledger artifact — is what
+keeps them off the same cycle.
