@@ -391,7 +391,13 @@ When you see `last_status: error` on a cron, classify before escalating:
   17 unmerged files incl. application code, while `~/code/amlhive1-pluto-pr` carried **2173 dirty entries**
   — so Option B is NOT the one-line retarget the 1 Oct report called it; its BRANCH is still 0-behind dev,
   so the only clean path is a FRESH worktree off `pluto_pr`. Same cause blocks `31ac1948416f` (Fri Codex
-  Review). Any future content run must also use the current bundle path `assets/YYYY-MM-DD-<slug>/`, not
+  Review). **2026-10-30: that job's signature moved — `BLOCKED: origin/dev merge conflicted:
+  CONFLICT (content): Merge conflict in .version`** (plus auto-merges of `CHANGELOG.md`,
+  `backend/.env.example`, `backend/app/api/internal/sync.py`). Same standing block, different surface:
+  the script still stops cleanly and produces no report, and the blocker is still the lane's drift, which
+  only the owner's A/B/C choice clears. Classify as the standing owner-decision block — do NOT open it
+  as a new fault — but note `.version` is exactly the file a long-diverged branch collides on first, so
+  this is the expected shape of the same unresolved decision, not a worsening. Any future content run must also use the current bundle path `assets/YYYY-MM-DD-<slug>/`, not
   `assets/blog-migration/<slug>/` (dev moved it 21 Sep). Detail: `environment.md` → "codex_pr IS NO LONGER
   A CONTENT LANE" + the 2026-10-06 status append.
 - **A paused job's stale `last_status: error` is NOT a current failure — read `enabled` before classifying.**
@@ -490,6 +496,20 @@ When you see `last_status: error` on a cron, classify before escalating:
   `reduced-motion` whitelist as the explanation for every E2E red. Band otherwise flat:
   backend 16 genuine, vitest 267p/1f (24 consecutive), OVERALL `9588 passed, 55 failed, 3 errors`.
   Read the diagnosis line before classifying any E2E red: a NAMED non-whitelisted test is a regression.
+  **2026-10-30 (day 24) — band FLAT; the useless diagnosis got root-caused and FIXED.** backend
+  `9274 passed / 51 failed`, ⚪35 gaps, 🔴16 genuine (identical to days 20-22); vitest `267p/1f`
+  (25 consecutive); OVERALL `9589 passed, 54 failed, 3 errors`. E2E `48 passed, 2 failed` — the
+  escalation counter is now 5 consecutive runs. The E2E diagnosis again read `output is truncated at
+  test 41 … no failures visible`, and this time it was root-caused: `codex_diagnose()` was called
+  WITHOUT `tail=True` on the playwright leg, and `window = test_output[-6000:] if tail else
+  test_output[:6000]` fed the model the **FIRST** 6000 chars — 41 passing test lines — never the
+  failure block at the end. Fixed 2026-10-30 (playwright call site now `tail=True`; vitest deliberately
+  left on the head slice because its head slice DID name four real failures). Verified by exec'ing the
+  extracted function with a stub `chat_with_fallback` in a forked child that writes what the model
+  actually receives: `tail=True` → sees the named failure; default → head only. **Rule: a diagnosis that
+  says "output truncated / no failures visible" on a leg that reported N failed means the SLICE is
+  wrong — fix the slice; never conclude the failures are unreproducible, and never let a slice bug erase
+  the test NAMES the escalation rule depends on.**
   **`4689311b6ad0` STALE_BUILD — root cause is the ECR repo's IMMUTABLE tags** (`tag invalid: The image
   tag 'a202c80' already exists`), so a failed deploy retried on the same commit can never push and
   `Deploy to EC2 via SSM` is SKIPPED; worse, a deploy can report SUCCESS with a green post-deploy version
