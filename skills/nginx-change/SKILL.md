@@ -166,3 +166,9 @@ aws ssm send-command --region ap-southeast-2 --instance-ids i-0aca7e109d0f6e773 
 - `systemctl reload nginx` directly.
 - Trust `nginx -t` as sufficient. The smoke test is the gate.
 - Build the config on the box with an interpolating heredoc.
+
+## Lessons from handledispute (1 Nov 2026)
+
+* Always `nginx -t` before reload (the install script does); keep a `conf.d.bak` copy.
+* A static export directory with no index returns 403 on a trailing slash. Add `rewrite ^/(.+)/$ /$1 permanent;` and pin it with a test.
+* After a DNS change verify with `curl --resolve`, not the local resolver. See `rules/dns-cutover-create-before-delete-and-worker-owned-records.md`.
