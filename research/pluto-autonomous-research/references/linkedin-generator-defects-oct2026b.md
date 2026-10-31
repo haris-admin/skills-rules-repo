@@ -292,3 +292,59 @@ angles, which is why **no** Pocock candidate was added despite the signal being 
 **Ledger.** The two never-delivered 31 Oct lines (the verbatim 16 Oct repeats) were pruned per Rule 72,
 keeping a `.bak` copy; the 16 Oct originals remain, and the twin rule — not a ledger artifact — is what
 keeps them off the same cycle.
+
+---
+
+## Rule 83 (Nov 1 2026) — the feed-reference strip must CLOSE the parenthetical it opened
+
+`_strip_leading_feed_ref` drops a bookkeeping head joined to the headline by `:` or a dash. When the
+head OPENED a parenthetical — `UPDATE to the 31 October feed (what changed: the London outage was …
+not an unavoidable utility fault)` — removing the head left the closing `)` behind, so two of five
+delivered display titles (the H3 Haris copies) ended on an orphan bracket. The hooks read clean, which
+is why every existing gate passed: Rule 50 resolved the OPENING side (`_balance_fragment` loops on
+unbalanced parens) but nothing re-balanced the text after a head was removed, and the display title never
+passes through `_balance_fragment` at all.
+
+**Fix:** count the head's own paren deficit and remove that many unmatched `)` from the tail, scanning
+with a depth counter so a balanced pair inside the tail (`(Article 50(2) date)`) is untouched. Applied
+inside `_strip_leading_feed_ref`, i.e. for every surface the function feeds (display title and hook via
+`_short_title`) — the Rule 73/78 lesson applied at the source instead of per surface.
+
+**Replay:** 47 titles / 8 days → **2 changed (both today), 0 regressions, 0 unbalanced after**.
+
+**Practice note (Rule 45 recurrence, Cloud slot).** Today's five findings were 4 × CloudProof AU on a
+Cloud & Infrastructure day, and the engine shipped **3/3 blog ideas on AI Agents & Governance**. The
+own-pillar pool was genuinely empty: the only Cloud candidate with real hits (`sovereign-cloud-procurement`,
+4) is RETIRED against a published post, `cloud-concentration-resilience` sat inside the 10-day window,
+and `eval-egress-containment`'s 3 "hits" were context vocabulary (`egress` from the ACM's data-EGRESS
+fees, `sandbox` from GovAI's Sandbox tier) — the Rule 49 class again, caught only by printing the
+sentences the keywords fired in. Fixed by ADDING three subject-bound candidates for today's own signals:
+`datacentre-maintenance-posture` (single-feed / LOTO'd feeder / PLC sensing; **10 hits today, 0 on eight
+prior days** once the location noun `europe-west2` was dropped), `data-act-switching-charges`
+(`switching charge`, `leidraad`, `egress fee`, `12 january 2027`; **9 / 0**) and
+`provider-control-plane-compromise` (`idcf`, `206 of 495`, `portal authentication`; **6 / 0**).
+No gate was loosened. The `content-ideas-<date>.md` lane covered the same four signals for the AML/
+real-estate audience, so the curated section names the sequencing rather than suppressing the post.
+
+---
+
+## Rule 84 (Nov 1 2026) — run the hook guards on the FINAL text, at every return path
+
+Two of five hooks left `_short_title` mid-clause: `…gated by IRAP: GovAI Hosting runs` (88 chars, `runs`
+IS in `_DANGLE_VERBS`) and `…had virtual servers encrypted — backup coverage` (a bare noun phrase after
+an em-dash). The verb guard at the slice stage had already run by the time the later completion steps
+(`_complete_tail`'s Rule-65 token restore, the scaffolding pops) rebuilt the clause, so the classification
+was correct but stale — Rule 44's lesson, three rules later.
+
+**Fix:** two final-text helpers applied via `_finalize_hook()` at **all four** return paths of
+`_short_title` (the `len(head) <= limit` early return, both delimiter-cut returns, and the final
+`_complete_tail` return):
+
+- `_drop_dangling_verb_tail()` — if the finished hook ends on a `_DANGLE_VERBS` token, drop the subordinate
+  clause or the verb, keeping the result only when it still stands alone (>=30 chars).
+- `_drop_dash_fragment()` — drop a trailing `— <1-4 tokens>` that carries no finite verb; a complete
+  dash-joined clause (`UPDATE — the argument graduated from opinion to causality`) is untouched.
+
+**Replay:** 47 titles / 8 days → **2 changed, 0 regressions, 0 still ending on a verb or an unbalanced
+bracket.** The fix is deliberately at the exit, not at the slice, because every earlier guard can be
+undone by a step that runs after it.
