@@ -510,6 +510,21 @@ When you see `last_status: error` on a cron, classify before escalating:
   says "output truncated / no failures visible" on a leg that reported N failed means the SLICE is
   wrong — fix the slice; never conclude the failures are unreproducible, and never let a slice bug erase
   the test NAMES the escalation rule depends on.**
+  **2026-10-31 (day 25) — NEW fault class at the install step, and the band move is explained.**
+  `❌ Frontend dep install failed: … npm error code EUSAGE` (`npm ci` can only install when
+  package.json and package-lock.json are in sync — `Missing: webpack@5.112.2 …`). Cause: commit
+  `50fb44a55` (zod 3→4.6.7) rewrote `frontend/package-lock.json` deleting 580 lines without a full
+  regeneration; it is on **`origin/dev`**, so `npm ci` fails for every clone and every CI job.
+  `npm ci --dry-run` on the CLEAN tree reproduces it — verify reach with
+  `git merge-base --is-ancestor <sha> origin/dev` before blaming a lane. **The dangerous half is the
+  silent one: the runner printed this error and then ran vitest anyway against the stale
+  `node_modules`, reporting `282 passed / 1 failed` from the WRONG tree.** When an install line fails,
+  classify that leg as an ENVIRONMENT BLOCKER and do not diagnose its failures as code.
+  Counts: backend `9518/53` (`⚪35` + `🔴18`), vitest `282p/1f` (26 consecutive), E2E `46 passed / 4 failed`
+  (6 consecutive, diagnosis names a React hydration mismatch on inline `caret-color`), OVERALL
+  `9846 passed / 58 failed / 3 errors`. The +244 collected vs day 24 is a **202-commit `origin/dev`
+  merge**, not a trend break — size the merge (`git log --oneline <merge>^1..<merge>^2 | wc -l`) before
+  escalating a count move.
   **`4689311b6ad0` STALE_BUILD — root cause is the ECR repo's IMMUTABLE tags** (`tag invalid: The image
   tag 'a202c80' already exists`), so a failed deploy retried on the same commit can never push and
   `Deploy to EC2 via SSM` is SKIPPED; worse, a deploy can report SUCCESS with a green post-deploy version
