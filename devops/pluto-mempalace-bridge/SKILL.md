@@ -308,10 +308,10 @@ Runs at 11:55 PM AEST (cron `0fc5019948be`). Archives old research files, checks
 - `Pluto LinkedIn Ideas (6:45 AM AEST)` — `ee4e48300826`, generates LinkedIn/blog post ideas
 - `Pluto Skill Extractor` — `2d33c8f9a89c`, daily at 11:00 AM AEST, scans sessions + scripts for reusable patterns
 - `Pluto Morning Briefing (6:00 AM Mon-Fri)` — `c527fed4a1da`, delivers briefing text + voice via Telegram (voice generated inline)
-- `Pluto Chamber Refresh (5:25 AM AEST)` — `0959371eec17`, daily at 05:25. `script: pluto_chamber_refresh.py`, `no_agent: true`, `deliver: local`. Feeds Gmail/Perplexity + podcast transcripts + research findings into chambers, then triggers synthesis.
+- `Pluto Chamber Refresh (5:10 AM AEST)` — `0959371eec17`, daily at 05:10 (`10 5 * * *`; moved from 05:25 — the 05:25-era runs ended 2026-11-01). `script: pluto_chamber_refresh.py`, `no_agent: true`, `deliver: local`. Feeds Gmail/Perplexity + podcast transcripts + research findings into chambers, then triggers synthesis.
 - ~~`Vercel Monitor — AML Hive`~~ — **RETIRED (Aug 8, 2026)**; Vercel no longer used, the cron (`745ec76c6bf9`) is gone. AML Hive deployment health is now covered by the 4×/day `amlhive_prod_monitor.py` fleet monitor (public health endpoints + EC2/Docker/CloudWatch).
 - `Pluto Weekly Review (Fri 11:05 PM AEST)` — `cc5ca5690d05`, every Friday, reviews the week: what worked, what didn't, what to improve. Saves to `~/.hermes/reviews/weekly/weekly-review-{DATE}.md`
-- `Pluto Weekly Improvements (Sat 12:00 AM AEST)` — `159702fe072c`, every Saturday midnight, implements the review's action items across 5 phases: 🧹 Stale data cleanup (pgvector), 🧠 MemPalace updates, 🔧 Skill rewriting, 🔗 Connection rewiring, 🌙 Dreaming (speculative improvements)
+- ~~`Pluto Weekly Improvements (Sat 12:00 AM AEST)`~~ — `159702fe072c`, **DISABLED `enabled: false` since its last run 2026-09-12; do not treat as a live leg.** When it did run, it implemented the review's action items across 5 phases: 🧹 Stale data cleanup (pgvector), 🧠 MemPalace updates, 🔧 Skill rewriting, 🔗 Connection rewiring, 🌙 Dreaming (speculative improvements)
 - `Mempalace Inbox Watcher` — `5678a363ce3b`, every 5 minutes, auto-processes `mempalace-inputs/`
 - `MemPalace Nightly Cleanup (11:55 PM AEST)` — `0fc5019948be`, archives old research files, compacts ChromaDB
 
@@ -391,11 +391,11 @@ gumby_mempalace_query.py        pluto_action_bridge.py — prioritized actions
 13. **Feedback Loop** — `pluto_feedback_processor.py` (cron: `59f18c4d557c`, 6:10 AM).
 14. **Daily Learning** — Random podcast episode → teach concept + quiz (cron: `0fb6bf47f704`, 6:15 AM).
 15. **Morning Briefing** — Text + voice MP3 delivered via Telegram (cron: `c527fed4a1da`, 6:00 AM Mon-Fri).
-22. **Chamber Refresh** — `pluto_chamber_refresh.py` (cron: `0959371eec17`, 5:25 AM). Cross-source feed: Gmail briefings + podcast transcripts + research findings → ChromaDB chambers → synthesis.
+22. **Chamber Refresh** — `pluto_chamber_refresh.py` (cron: `0959371eec17`, 5:10 AM). Cross-source feed: Gmail briefings + podcast transcripts + research findings → ChromaDB chambers → synthesis.
 17. **Nightly MemPalace Cleanup** — `mempalace_cleanup.py` (cron: `0fc5019948be`, 11:55 PM) archives old research files, checks ChromaDB health.
 18. ~~**Vercel Monitor (AM/PM)**~~ — RETIRED Aug 2026 (Vercel no longer used). Superseded by the AMLHive fleet monitor.
 19. **Weekly Review** — (cron: `cc5ca5690d05`, Fri 11:05 PM) reviews the week's operations, identifies what worked/failed, proposes improvements.
-20. **Weekly Improvements** — (cron: `159702fe072c`, Sat 12:00 AM) implements review action items: stale data cleanup (pgvector), MemPalace updates, skill rewriting, connection rewiring, speculative dreaming.
+20. ~~**Weekly Improvements**~~ — (cron: `159702fe072c`, Sat 12:00 AM) **DISABLED since 2026-09-12** — implemented review action items: stale data cleanup (pgvector), MemPalace updates, skill rewriting, connection rewiring, speculative dreaming.
 
 ## Feeding Interactive/Ad-Hoc Research into the Mempalace
 
