@@ -6,6 +6,9 @@ Use this collection to move from a promising observation to a defensible next de
 
 | If the founder needs to... | Start with | Then use when needed |
 | --- | --- | --- |
+| Investigate an unfamiliar idea folder and independently re-verify every figure | [Startup Idea Investigation](../growth/startup-idea-investigation/SKILL.md) | [Startup Pre-Mortem](../growth/startup-premortem/SKILL.md); [Startup VC Skeptic](../growth/startup-vc-skeptic/SKILL.md) |
+| Assume the venture failed and find every specific cause, with early warning signals | [Startup Pre-Mortem](../growth/startup-premortem/SKILL.md) | [Startup Idea Validation](../growth/startup-idea-validation/SKILL.md) for the tests it proposes |
+| Get a blind, hostile investor review (10 reasons to pass) | [Startup VC Skeptic](../growth/startup-vc-skeptic/SKILL.md) | [Adversary Analysis Assessment](../growth/adversary-analysis-assessment/SKILL.md) |
 | Validate a problem, test assumptions, or conduct customer discovery | [Startup Idea Validation](../growth/startup-idea-validation/SKILL.md) | [Zain Dreamer](../skills/zain-dreamer/SKILL.md) for business cases; [Deep Research](../skills/deep-research/SKILL.md) for signals |
 | Calculate defensible bottom-up TAM, SAM, and SOM revenue scale | [Market Sizing TAM/SAM/SOM](../growth/market-sizing-tam-sam-som/SKILL.md) | [Habib CFO](../skills/habib-cfo/SKILL.md) for unit economics; [Startup Runway & Unit Economics](../growth/startup-runway-and-unit-economics/SKILL.md) |
 | Audit competitor defensibility, moats, and retaliation risk | [Adversary Analysis Assessment](../growth/adversary-analysis-assessment/SKILL.md) | [Competitor News Monitor](../research/competitor-news-monitor/SKILL.md) for live intelligence |
@@ -19,6 +22,7 @@ Use this collection to move from a promising observation to a defensible next de
 
 ## Founder Workflow
 
+0. **Investigate, Pre-Mortem, and Challenge.** Ingest the folder and re-verify every figure with [Startup Idea Investigation](../growth/startup-idea-investigation/SKILL.md), find failure modes with [Startup Pre-Mortem](../growth/startup-premortem/SKILL.md), then run a blind [Startup VC Skeptic](../growth/startup-vc-skeptic/SKILL.md) review. Compare the two reviews only after both are written.
 1. **Extract and Test Assumptions.** Map Desirability, Feasibility, and Viability risks using [Startup Idea Validation](../growth/startup-idea-validation/SKILL.md). Run Mom-Test interviews to surface past customer behavior rather than hypothetical promises.
 2. **Quantify the Opportunity.** Build bottom-up TAM, SAM, and SOM models with [Market Sizing TAM/SAM/SOM](../growth/market-sizing-tam-sam-som/SKILL.md). Ground revenue ceilings in verified account counts and defensible ACV.
 3. **Analyze Adversaries and Moats.** Evaluate incumbent retaliation barriers ("Can't vs Won't" test) and Hamilton Helmer's 7 Powers with [Adversary Analysis Assessment](../growth/adversary-analysis-assessment/SKILL.md). Craft battlecards to defeat customer inertia and status quo spreadsheets.
