@@ -18,6 +18,10 @@ Added 18 Oct 2026 (Haris). Long paths wrapped and split in his terminal and a re
 
 6. **A script that prompts for a password cannot run through `! <cmd>`.** That shell has no keyboard input, so the prompt closes at once (apksigner: "standard input closed"). Give `! open -a Terminal ~/<name>.sh` instead, read the password in the script with `read -r -s`, strip whitespace and non-printing characters (a pasted password arrived as "not ASCII"), pass it by environment variable (`--ks-pass env:VAR`), `unset` it after use, `tee` only non-secret output to a log the agent can read, and end with `read -r -p "Press Return to close."` so the window stays open. Running `open` twice opens two windows waiting at the same prompt; tell the user to use one.
 
+7. **Make the name typo-proof.** On 3 Nov 2026 `~/hd-ses-apply.sh` was typed with a trailing comma, and `~/hd-` and `~/hd` were sent twice as truncated fragments. Prefer a name of 10 characters or fewer, give a second short alias (`ln -s`) when the first fails, and tell the user the exact command with no trailing punctuation.
+8. **Infrastructure applies are always handed over.** The auto-mode classifier blocks agent `terraform apply`. Save the plan with `-out`, show the summary, then write a script that applies that exact plan file. Never chain a dry run and its apply into one command (see `dry-run-output-read-before-apply`).
+9. **Tell the user which scripts are finished** and to delete them (token and apply scripts are one-time).
+
 ## Verification & Guardrails
 
 - If the user reports a wrapped or split command, the fix is a shorter path, not repeating the long one.

@@ -136,6 +136,14 @@ export default defineConfig({
 })
 ```
 
+## Real-backend harness (2 Nov 2026, handledispute)
+See rule `e2e-real-backend-harness-real-otp-pinned-local-target`. In short:
+- Pin the API in `webServer.env`, never reuse a stale dev server, and add a `globalSetup` that refuses a non-loopback API or a non-local/test environment.
+- Recover real one-time codes from the LOCAL database (salted-hash search, about one second) instead of a fixed code; read SQL on stdin and the password from the environment.
+- Seed demo data idempotently after the guard, with `.invalid` contact addresses.
+- Wizard flows that gained required fields need helper functions (`ensureTransactionDate`, `chooseReason`, `acceptReviewTerms`), not copy-pasted steps.
+- Triage a red baseline by cause (environment, stale selector, changed requirement) and get approval before rewriting tests for a changed requirement.
+
 ## Flaky Test Patterns
 
 ### Quarantine

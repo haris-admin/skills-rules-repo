@@ -26,6 +26,8 @@ The integration branch (`dev`) was 150+ commits past the last deploy and carried
 12. **Read the real result after each step** (git, run view, cloud CLI) before sending the next script.
 13. **Cherry-pick the fix back** to the integration branch so its eventual release does not ship the bug again.
 
+14. **Mark held work in the release notes** ("In progress, not deployed") and check them before choosing what ships. On 2 Nov 2026 the analytics work was blocked for production, so the release was the last deployed commit plus only two small UI commits. When a cherry-pick conflicts only in non-site files (docs, spec, tooling), drop those paths and continue. Verify the live result in a real browser after the deploy.
+
 ---
 
 ## Patterns to Follow
