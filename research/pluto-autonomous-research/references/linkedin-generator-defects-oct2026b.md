@@ -348,3 +348,79 @@ was correct but stale — Rule 44's lesson, three rules later.
 **Replay:** 47 titles / 8 days → **2 changed, 0 regressions, 0 still ending on a verb or an unbalanced
 bracket.** The fix is deliberately at the exit, not at the slice, because every earlier guard can be
 undone by a step that runs after it.
+
+---
+
+## Rules 85–87 — Nov 3 2026 (final-text guards, single-token verb test, weak-regulator dominance)
+
+### Rule 85 — a single token is not a tail: `_tail_has_verb`'s suffix heuristic misclassifies plural nouns
+
+**Symptom:** the day's #1 hook shipped as `Banks block third-party AI agents: five US and four Canadian
+banks shut agent access to customer` — truncated one token short of the noun phrase.
+
+**Cause:** Rule 65's noun-phrase completion refuses to append a token when `_tail_has_verb(t)` is true.
+That helper's heuristic (`len > 3 and ends es|ed|ing|s`) is correct for a multi-token tail and wrong for a
+single token: `accounts` ends in `s`, so the completion was rejected and the hook ended on `customer`.
+
+**Fix:** `_is_verb_token(tok)` — for ONE token, only a known finite form (`_FINITE_VERBS`) or an
+`-ed`/`-ing` participle counts. Used at the Rule 65 extension only; `_tail_has_verb` keeps its suffix
+heuristic everywhere it inspects a *tail*.
+
+**General rule:** a heuristic tuned on multi-token text is not valid unchanged on a single token. When a
+guard is reused at a different granularity, re-derive it for that granularity rather than reusing it.
+
+### Rule 86 — guards that need tokens AFTER a conjunction cannot see a hook ENDING on one
+
+**Symptom:** `A contractor's personal Claude Code agent ran on the Pentagon's NIPRNet for two months and`
+delivered as a hook.
+
+**Cause:** every subordinate-tail guard (`_SUBORD`, Rule 44's widened re-check) is written as
+`\s(?:and|but|or|while|…)\s+(\S+\s*){1,N}$` — it requires at least one token after the conjunction. A
+clause whose LAST token is the conjunction matches nothing, and `_ends_on_verb` does not list coordinators.
+
+**Fix:** `_drop_trailing_coordinator()` in `_finalize_hook`, applied to the final text at every return
+path (Rule 84's lesson): strip a trailing coordinator/preposition (≥30 chars must survive). `_finalize_hook`
+is now `_drop_dangling_verb_tail(_drop_trailing_coordinator(_drop_dash_fragment(text)))`.
+
+**General rule:** for every "dangling X" guard, ask what the text looks like when X is the LAST token, not
+only when X is followed by something.
+
+### Rule 87 — a WEAK regulator mention must lose to an AI/agent subject, not only to a cloud one
+
+**Symptom:** the SailPoint agent-governance finding (85% of APAC enterprises run agents, 5% have
+governance tooling) pillared **Australian Fintech Regulation** and closed with an AUSTRAC CTA.
+
+**Cause:** `pillar_for()` ranked `reg_weak` (a passing "APRA CPS 234" mention) above the AI vocabulary
+*because the weakness check only had a cloud branch to lose to* (`if cloud-subject: Cloud` came first).
+Rules 66/76/80 had each added a dominance check on one branch; the `reg_weak` branch had none for AI.
+
+**Fix:** before `if reg_weak: return Fintech`, count AI/agent terms vs regulatory terms in the blob and
+return **AI Agents & Governance** when `ai_n >= 3 and ai_n > reg_n`.
+
+**Replay:** 9 retained research days → **1 pillar change** (today's SailPoint finding, intended), 0 others.
+
+**General rule:** every "X loses to Y" rule needs a branch for each subject class the generator can
+recognise, or the class with no branch silently inherits the default. When adding a dominance check,
+enumerate the classes rather than patching the one that failed today.
+
+### Practice note — the day's slate had three separate grounding defects
+
+Nov 3 2026 ran on an agent-security corpus with no AU regulatory news (see the AMLHive content-ideas lane:
+whole inbox byte-identical to the prior day). All three auto blog ideas failed a ground check:
+
+| Candidate | Defect | Fix |
+|---|---|---|
+| `nhi-agent-identity` | gap cited AppViewX, a CSA "82%", an AI Bill of Materials and an agent kill switch — **all zero occurrences** in the corpus (the `82%` rows in mempalace-inputs are RBA rate-hike odds) | restated onto NIST's tenets, which the corpus carries (nist 7, agent identity 3, tenets 3) |
+| `agent-incident-register` | gap claimed "EU confirmed an unreported agent incident"; the `incident report` keyword had actually fired on the NIPRNet 72-hour sentence | restated onto that sentence |
+| `psp-regulated-software` | keyword list carried bare `payments`, which fired on "agentic payments and CDD" inside the NIST finding | keywords rebound to PSP/payment-service-provider vocabulary; scores 0 today, which is the honest answer |
+
+The day's Cloud signal had no candidate at all, so `agent-discovered-exploit` was ADDED (mptcp 2,
+"53 minutes" 2, kernel exploit 1, cve-2026-98432 1, patched kernel 1, go 1.24 1 — 0 on the eight prior
+retained days) and twinned BOTH WAYS with `php-version-window-evidence` as one patch-window gap family.
+Never loosen a grounding gate to fill a slot: three grounded ideas from two pillars beat a fabricated
+third. Also prune a never-delivered title from the ledger (Rule 72) — this run pruned *From PSP to
+Regulated Software…* and collapsed duplicate same-day rows (the recorder appends once per run, so three
+generator runs in one morning write nine rows; dedupe by title keeping the earliest date).
+
+**Hook replay today:** 47 titles / 8 days → **2 changed, 0 regressions, 0 still broken** (both changes are
+the two defects above).
