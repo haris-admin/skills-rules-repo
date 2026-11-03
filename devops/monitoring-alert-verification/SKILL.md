@@ -561,8 +561,9 @@ window; keep the two paths' coverage written down side by side.
 
 - `amlhive-prod-monitor` (user-owned) — AMLHive prod monitor; holds its own alert severity
   model and EC2 auto-discovery notes.
-- `website-uptime-monitor` — HTTP/SSL probing; same discipline applies to "is it up" checks
-  (a single 5xx during a deploy is not an outage).
+- `website-uptime-monitor` — ARCHIVED locally (`.archive/website-uptime-monitor/`); do NOT re-open it.
+  HTTP/SSL probing lives here now, in `references/site-and-repo-watch.md`. The one discipline worth
+  carrying over: a single 5xx during a deploy is not an outage.
 - `references/refdb-readonly-probe.md` — read-only serving-store probe recipe: the concrete
   "establish truth" step for a reference-data sync.
 - `references/queue-backlog-verification.md` — the same "establish truth" step for a BACKGROUND WORKER

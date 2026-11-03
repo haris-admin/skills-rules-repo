@@ -531,6 +531,11 @@ When you see `last_status: error` on a cron, classify before escalating:
   gate while production still serves the old build. **✅ RESOLVED 2026-10-27 — do NOT re-open:** it ran
   `ok` silent and `curl https://api.amlhive.com.au/version` returned 0.50.185. **A stale build is an
   event with a lifespan; re-derive it with one curl before carrying it forward.**
+  **2026-11-01→11-03 (days 26-29) — band FLAT, one blocker unchanged.** backend `9529 passed /
+  51 failed`, ⚪35 gaps, 🔴16 genuine; vitest `282p/1f` (**29 consecutive**, escalated long ago); E2E
+  `46 passed / 4 failed` with the SAME React hydration diagnosis (inline `caret-color`) — now **9
+  consecutive** escalated runs. The `npm ci` EUSAGE lockfile blocker from day 25 is still present, so
+  the vitest leg is STILL an ENVIRONMENT BLOCKER reading a stale tree. No action from a daily tick.
 - **`SSM: Error response from daemon: No such container: amlhive-app-1` on `3ebed4e59ee3` (AML Hive Daily
   Business Report, 21:15) — a CONTAINER RENAME, and production is uniformly HEALTHY. Class this as a
   script fault, NOT a prod outage.** Seen 2026-10-26 21:15, the first report after the 0.50.185 deploy:
