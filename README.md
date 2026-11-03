@@ -277,6 +277,7 @@ Hermes/Pluto.
 | **[growth-tool-chain](./content-growth-and-media/growth-tool-chain/SKILL.md)** | Multi-stage research pipeline: Perplexity (discover/cite) → Antigravity (orchestrate/challenge) → IDE (implement/verify). Use when producing a… | - |
 | **[habib-cfo](./skills/habib-cfo/SKILL.md)** | Startup CFO and financial analyst for business cases, pre-revenue pricing and packaging, unit economics, pilot economics, runway planning, cost… | - |
 | **[habibi](./skills/habibi/SKILL.md)** | Cloud Solution Architect for AWS/Azure/GCP architecture design, scaling strategies, security patterns, infrastructure as code, and cost optimization… | - |
+| **[handledispute-edge-monitor](./devops/handledispute-edge-monitor/SKILL.md)** | Use when checking HandleDispute TLS, HTTPS, API health. | - |
 | **[haris-serial-entrepreneur](./skills/haris-serial-entrepreneur/SKILL.md)** | Serial entrepreneur and strategic advisor for Australian fintech/payments. Expert in pitch refinement, business-model validation, founder-market fit… | - |
 | **[herdr-agent-runtime](./autonomous-ai-agents/herdr-agent-runtime/SKILL.md)** | "Use when driving coding agents headlessly via Herdr." | - |
 | **[hermes-agent](./autonomous-ai-agents/hermes-agent/SKILL.md)** | "Configure, extend, or contribute to Hermes Agent." | [Cli And Slash Command Reference](./autonomous-ai-agents/hermes-agent/references/cli-and-slash-command-reference.md) |
