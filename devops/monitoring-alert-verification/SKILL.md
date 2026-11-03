@@ -267,12 +267,84 @@ yourself writing `if healthy: save_baseline()`, that is the bug.
   producer's enqueue CONDITION — and when a case exists with no work item, name the missing
   prerequisite rather than calling the consumer broken. Recipe: `references/queue-backlog-verification.md`.
 
+## Cloudflare-proxied hosts: a 200 is not a health signal
+
+When the host sits behind Cloudflare (or any CDN that terminates TLS and proxies the origin),
+four assumptions break at once. Check for `server: cloudflare` / a `cf-ray` header first, then
+adapt:
+
+- **Assume a catch-all.** A Next.js/SPA build behind Cloudflare answers **200 for any path** —
+  probing `/this-path-should-404-xyz` returned 200 on a live site. Status, therefore, proves only
+  that the edge answered. Assert a **content marker** (a string that must be in the body, e.g. the
+  product name from `<title>`) and fail the check when it is missing: a deploy that serves an empty
+  shell or a parked page is a 🔴 even though every response is `200 OK`. Probe one random path per
+  run and print whether the host is catch-all, so the reader knows status is decorative there.
+- **The certificate you can see is the EDGE's, not the origin's.** Cloudflare re-terminates TLS, so
+  expiry monitoring of the apex proves nothing about the origin certificate — that one is invisible
+  from outside and its failure appears as **HTTP 526**, not as a countdown. Say this in the report
+  instead of implying origin TLS is covered; closing the gap needs a zone-scoped API token (an
+  R2-only token gets 403 on `/zones`).
+- **52x means the ORIGIN is sick, not the edge.** Map the codes rather than printing a bare 5xx:
+  521 origin refused · 522 edge→origin timeout · 523 origin unreachable · 524 origin read timeout ·
+  525 edge→origin TLS handshake failed · 526 origin cert invalid/expired · 530 origin DNS error;
+  520 unknown origin response and 1010/1020 (firewall block) are P1. These are the *only* origin
+  signals a proxied host gives you, so word them precisely.
+- **Plain-HTTP silence is a zone setting, not a fault.** If `http://host/` gives no answer while
+  `https://` is healthy, that is "Always Use HTTPS" being off / :80 not proxied — render it as ℹ️
+  with the fix, never as a warning, or a design choice sits in the alert path forever.
+- **Planned hostnames belong in the config, not in the alerts.** A name that does not resolve yet
+  (an API host not launched — `api.<domain>` here) is marked `planned`: it prints as "not yet live",
+  raises nothing, and the normal probe takes over automatically the moment DNS answers. Never let an
+  unlaunched name become a permanent daily alarm — that is how the whole feed gets ignored.
+
+Also, when wrapping a monitor in a shell script for a cron: **chmod it executable, and never judge its
+exit code through a pipe.** `./monitor.sh | head -4; echo rc=$?` reports `head`'s status, so a
+non-executable wrapper (mode 644 → `bash: Permission denied`, rc 126) looked like a clean run. Capture
+the status before piping, and gate delivery on the monitor's own rc:
+`out=$(python3 monitor.py); rc=$?` then decide what to print.
+
 **Repairing the data is half the fix; the missing MONITOR is the other half.** When a store or write
 path is found broken with nothing alerting — a connector that failed 100% of its writes for weeks
 while every scheduled job reported `ok`, a collection that stopped decoding — treat "build the check"
 as part of the SAME task, not a follow-up. A repaired silent failure with no detector is simply
 scheduled to happen again. Pair the repair with a check that would have caught it, and prove the
 check fires by feeding it a known-bad input.
+
+## The code behind the site: assert the DEPLOYED BUILD, not just the page
+
+Uptime says the product answers; it cannot say which build answers. When a repo backs the
+site, monitor the pairing:
+
+- **A JSON health route outranks any content marker.** If the API exposes `/health`, assert on
+  FIELDS (`status == healthy`, `database == ok`) and print `service` / `version` /
+  `environment` in the same line. A marker proves the app rendered; this proves which build and
+  which environment answered, and it is the only signal that can detect a stale deploy.
+- **Compare the repo's version manifest with the deployed version.** Repo manifest OLDER than
+  deployed ⇒ that checkout cannot build what is live — check `git rev-list --count
+  HEAD..origin/<branch>` before blaming the release, because a clone hundreds of commits behind
+  produces exactly this; NEWER ⇒ something was committed and never shipped. Only a clean tree at
+  origin HEAD can prove a genuine release bug.
+- **A live site whose repo has hundreds of uncommitted files is running code that is not in
+git.** Print it as that sentence; it changes how the next deploy should be read.
+- **A watcher fetches, never pulls.** `git fetch --all --prune` is safe against a dirty
+  production checkout; `git pull` can conflict and destroy uncommitted work. Report the lag and
+  offer options (pull-and-report, read-only mirror, or let the user stash) instead of acting.
+- **Resolve which repo backs a site from the remote, never from the folder name.** A local
+  `ideas-<product>/` directory can be an empty placeholder while the real code sits under a
+  different slug — enumerate the org's repos sorted by `pushedAt` and confirm by structure
+  (`backend/` + `frontend/`, manifests, product nouns in commit subjects). An empty directory
+  means *not cloned*, never *code absent*.
+- **Adding a platform is a multi-registry change, not a new script.** Every monitor that
+  ENUMERATES the estate must learn the new name at the same time as the new checker is written:
+  the TLS/cert scope list, the host-set map, the dependency inventory, the health-check config.
+  A product added to the uptime monitor but not to the cert monitor looks fully covered and is
+  not — the gap is invisible precisely because something green reports on that domain. Grep for
+  the existing products' names before declaring the addition complete, and prefer repointing an
+  existing job at the broader engine over scheduling a second job for the same cadence (two jobs
+  on one cadence double every alert).
+
+Full config schema, per-host check types, the reporting-hours delivery gate and the repo-watch
+recipe: `references/site-and-repo-watch.md`.
 
 ## Assert the CHAIN, not the legs
 
@@ -508,4 +580,8 @@ window; keep the two paths' coverage written down side by side.
 - `credential-exposure-remediation` — the follow-up when an audit surfaces a hardcoded secret in a
   checker or its cron prompt: containment vs rotation, the no-VCS backup, the literal sweep, and the
   rotation handover.
+- `references/site-and-repo-watch.md` — monitoring a product END TO END: the config-driven
+  multi-site engine (health-route assertions, markers, redirect hosts, planned DNS), the
+  digest-at-fixed-hours delivery gate, repo→product resolution, and the repo-vs-deployed
+  version-drift check.
 - `pluto-pipeline-orchestration` — where the fleet's various checkers sit in the schedule.

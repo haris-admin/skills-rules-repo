@@ -14,6 +14,10 @@ allowed-tools: [terminal, file, read_file, write_file, execute_code, memory]
 - Setting up monitoring crons for podcast ingestion
 - The user mentions an episode the KB does not have → **run the capture audit first** (`python3 ~/.hermes/scripts/podcast_capture_audit.py` — see "Capture-chain integrity"), then go to the source (`references/transcript-sources-and-fallback.md`). Never answer "the KB has nothing on that" without first reporting whether the episode is missing, un-chunked, or unread.
 
+## Measured baseline (Nov 2026 — quote these numbers, not an estimate)
+
+2,382 episodes · 23,552 chunks · **63.5% unreachable by learning** (YouTube IP-block) · **119 false-green ingests** (runs that reported success while storing no usable transcript). This replaces every earlier "~63%" estimate: the coverage figure is now **measured**, and the improvement target is judged against these numbers. Never claim full coverage, and never present the unreachable share as a retrieval or model failure — it is an upstream access block.
+
 ## Architecture
 
 ```
@@ -483,6 +487,14 @@ A self-check would have passed by construction.
   captions carry speaker labels mid-quote, so compare **word-token windows** (a contiguous 12-word
   window must appear in the transcript) after folding typography to ASCII. A char comparison rejected 6
   genuinely-verbatim quotes out of 14.
+- **The length floor must run AFTER the substring test, and stutters/punctuation must be folded
+  (2026-11-02).** `quote_verified()` used to reject any quote under 40 chars *before* checking it, so a
+  genuine 38-char line ("The best marketers are allergic to AI.") was published as unverified, and a
+  speaker stutter ("my my thesis") broke the substring match on another. Both were reported as
+  *fabrication* when they were verifier artefacts — the metric then understates fidelity and invites
+  someone to "fix" a correct extractor. Order is now: verbatim (>= 20 chars) → stutter-collapsed →
+  punctuation-stripped → word-window prefixes → fail. Keep a negative control in the test
+  (an invented sentence must still return `NOT FOUND`).
 - **`\copy ... from stdin` swallows every SQL statement after it** in the same psql session, and a TEMP
   staging table dies with the session. Stage into a permanent table and `\copy` from a FILE.
 - **Transcripts contain newlines** (154 episodes do). A `|`-delimited or line-per-row psql read breaks on

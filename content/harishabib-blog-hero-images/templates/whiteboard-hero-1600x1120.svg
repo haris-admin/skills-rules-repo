@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1120" viewBox="0 0 1600 1120" role="img" aria-labelledby="title desc">
+  <title id="title">REPLACE: figure title</title>
+  <desc id="desc">REPLACE: one or two sentences describing the figure for screen readers.</desc>
+  <defs>
+    <style>
+      .title { font: 800 54px sans-serif; fill: #1e293b; }
+      .subtitle { font: 400 26px sans-serif; fill: #475569; }
+      .sectionHeading { font: 700 24px sans-serif; fill: #1d4ed8; }
+      .bullet { font: 400 21px sans-serif; fill: #334155; }
+      .num { font: 700 26px sans-serif; fill: #fff; }
+      .tag { font: 600 20px sans-serif; fill: #1d4ed8; }
+      .foot { font: 400 19px sans-serif; fill: #64748b; }
+    </style>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000000" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <!-- canvas + inner card + corner brackets -->
+  <rect width="1600" height="1120" fill="#f6f2e8"/>
+  <g filter="url(#shadow)">
+    <rect x="24" y="24" width="1552" height="1072" rx="26" fill="#fbfaf7" stroke="#d7d2c7" stroke-width="4"/>
+  </g>
+  <path d="M72 72 h44 M72 72 v44 M1484 72 h44 M1528 72 v44 M72 1048 h44 M72 1004 v44 M1484 1048 h44 M1528 1004 v44" fill="none" stroke="#2d2d2d" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- title + rule + subtitle -->
+  <text x="800" y="112" text-anchor="middle" class="title">REPLACE: HOOK LINE IN CAPITALS</text>
+  <line x1="300" y1="140" x2="1300" y2="140" stroke="#1d4ed8" stroke-width="5" stroke-linecap="round"/>
+  <text x="800" y="182" text-anchor="middle" class="subtitle"><tspan x="800" y="178">REPLACE: context line one</tspan><tspan x="800" y="210" class="subtitle">REPLACE: context line two</tspan></text>
+
+  <!-- card 1 (top-left) -->
+  <g>
+    <rect x="80" y="248" width="700" height="190" rx="18" fill="rgba(255,255,255,0.74)" stroke="#1d4ed8" stroke-width="3"/>
+    <circle cx="120" cy="286" r="22" fill="#1d4ed8"/>
+    <text x="120" y="294" text-anchor="middle" class="num">1</text>
+    <text x="152" y="292" class="sectionHeading">REPLACE HEADING</text>
+    <rect x="106" y="322" width="12" height="12" rx="2" fill="rgba(4,120,87,0.08)" stroke="#047857" stroke-width="2"/>
+    <text x="128" y="334" class="bullet">REPLACE bullet one</text>
+    <rect x="106" y="350" width="12" height="12" rx="2" fill="rgba(4,120,87,0.08)" stroke="#047857" stroke-width="2"/>
+    <text x="128" y="362" class="bullet">REPLACE bullet two</text>
+    <rect x="106" y="378" width="12" height="12" rx="2" fill="rgba(4,120,87,0.08)" stroke="#047857" stroke-width="2"/>
+    <text x="128" y="390" class="bullet">REPLACE bullet three</text>
+  </g>
+
+  <!-- card 2 (top-right) -->
+  <g>
+    <rect x="820" y="248" width="700" height="190" rx="18" fill="rgba(255,255,255,0.74)" stroke="#1d4ed8" stroke-width="3"/>
+    <circle cx="860" cy="286" r="22" fill="#1d4ed8"/>
+    <text x="860" y="294" text-anchor="middle" class="num">2</text>
+    <text x="892" y="292" class="sectionHeading">REPLACE HEADING</text>
+    <rect x="846" y="322" width="12" height="12" rx="2" fill="rgba(4,120,87,0.08)" stroke="#047857" stroke-width="2"/>
+    <text x="868" y="334" class="bullet">REPLACE bullet one</text>
+    <rect x="846" y="350" width="12" height="12" rx="2" fill="rgba(4,120,87,0.08)" stroke="#047857" stroke-width="2"/>
+    <text x="868" y="362" class="bullet">REPLACE bullet two</text>
+    <rect x="846" y="378" width="12" height="12" rx="2" fill="rgba(4,120,87,0.08)" stroke="#047857" stroke-width="2"/>
+    <text x="868" y="390" class="bullet">REPLACE bullet three</text>
+  </g>
+
+  <!-- card 3 (bottom-left) -->
+  <g>
+    <rect x="80" y="460" width="700" height="190" rx="18" fill="rgba(255,255,255,0.74)" stroke="#047857" stroke-width="3"/>
+    <circle cx="120" cy="498" r="22" fill="#047857"/>
+    <text x="120" y="506" text-anchor="middle" class="num">3</text>
+    <text x="152" y="504" class="sectionHeading" fill="#047857">REPLACE HEADING</text>
+    <rect x="106" y="534" width="12" height="12" rx="2" fill="rgba(4,120,87,0.08)" stroke="#047857" stroke-width="2"/>
+    <text x="128" y="546" class="bullet">REPLACE bullet one</text>
+    <rect x="106" y="562" width="12" height="12" rx="2" fill="rgba(4,120,87,0.08)" stroke="#047857" stroke-width="2"/>
+    <text x="128" y="574" class="bullet">REPLACE bullet two</text>
+    <rect x="106" y="590" width="12" height="12" rx="2" fill="rgba(4,120,87,0.08)" stroke="#047857" stroke-width="2"/>
+    <text x="128" y="602" class="bullet">REPLACE bullet three</text>
+  </g>
+
+  <!-- card 4 (bottom-right) -->
+  <g>
+    <rect x="820" y="460" width="700" height="190" rx="18" fill="rgba(255,255,255,0.74)" stroke="#047857" stroke-width="3"/>
+    <circle cx="860" cy="498" r="22" fill="#047857"/>
+    <text x="860" y="506" text-anchor="middle" class="num">4</text>
+    <text x="892" y="504" class="sectionHeading" fill="#047857">REPLACE HEADING</text>
+    <rect x="846" y="534" width="12" height="12" rx="2" fill="rgba(4,120,87,0.08)" stroke="#047857" stroke-width="2"/>
+    <text x="868" y="546" class="bullet">REPLACE bullet one</text>
+    <rect x="846" y="562" width="12" height="12" rx="2" fill="rgba(4,120,87,0.08)" stroke="#047857" stroke-width="2"/>
+    <text x="868" y="574" class="bullet">REPLACE bullet two</text>
+    <rect x="846" y="590" width="12" height="12" rx="2" fill="rgba(4,120,87,0.08)" stroke="#047857" stroke-width="2"/>
+    <text x="868" y="602" class="bullet">REPLACE bullet three</text>
+  </g>
+
+  <!-- wide amber card: keep body text under ~130 chars per line, or split into two tspans -->
+  <g>
+    <rect x="80" y="672" width="1440" height="124" rx="18" fill="rgba(255,255,255,0.74)" stroke="#b45309" stroke-width="3"/>
+    <circle cx="120" cy="712" r="22" fill="#b45309"/>
+    <text x="120" y="720" text-anchor="middle" class="num">5</text>
+    <text x="152" y="710" class="sectionHeading" fill="#b45309">REPLACE TAKEAWAY HEADING</text>
+    <text x="152" y="748" class="bullet"><tspan x="152" y="748">REPLACE takeaway line one —</tspan><tspan x="152" y="780">REPLACE takeaway line two.</tspan></text>
+  </g>
+
+  <!-- closing tag line + divider + footnotes + attribution -->
+  <text x="800" y="852" text-anchor="middle" class="tag">REPLACE THE ONE-LINE CLOSING ARGUMENT</text>
+  <line x1="300" y1="874" x2="1300" y2="874" stroke="#d7d2c7" stroke-width="3"/>
+  <text x="120" y="912" class="foot">REPLACE footnote one</text>
+  <text x="120" y="944" class="foot">REPLACE footnote two</text>
+  <text x="120" y="976" class="foot">Sources: REPLACE</text>
+  <text x="1480" y="1040" text-anchor="end" class="foot" fill="#94a3b8">harishabib.au · REPLACE section</text>
+</svg>
