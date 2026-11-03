@@ -40,3 +40,10 @@ Use this when the service is a single FastAPI app and a separate checker is not 
 - **Transport:** SESv2 `send_email` with `Text` and `Html` parts, credentials from the instance role (boto3 default chain), IAM `ses:SendEmail` only, resource the sender identity, condition `ses:FromAddress`.
 - **Before promising delivery, read the account:** `aws sesv2 get-account` (production access, quota, shared use) and `get-email-identity` (verification). An address identity can send but gives no domain DKIM; mail to Gmail may land in spam, so prefer a domain identity with Easy DKIM records the founder adds.
 - **Keep customer email separate:** the alert switch and transport are independent of the customer `EMAIL_PROVIDER`, which can stay `mock` while alerts are live.
+
+## Lessons from the first ChargeRail run (3 Nov 2026)
+- The first box check found a real fault: the nightly backup had failed since install because its script lost its quoting. See rule `install-scripts-as-files-not-quoted-strings`.
+- Deploy hooks fan in from every session; the 30 minute window suppressed the approved test email. See rule `alert-fanout-and-suppression-check`.
+- The timer install on the box was blocked by the auto mode classifier (persistence). Prepare `~/cr-box-events.sh` for the founder instead.
+- Check SES identity status (`VerifiedForSendingStatus`) before promising delivery.
+
