@@ -43,6 +43,10 @@ security control that means the control is inert in any process where a double i
 non-test dirs for `mock`/`Mock`/`return_value`/`TESTING` on any change touching hard-to-mock
 collaborators (DNS, TLS, subprocess, clock). See the `test-doubles-vs-assertions` rule.
 
+## Follow-ups are lettered OpenSpecs of the original change (added 3 Nov 2026)
+
+Any issue or bug against work an OpenSpec already governs gets its own OpenSpec named from the ORIGINAL change number plus a letter: an issue in `39` is `39a`, the next one reported in a later cycle is `39b`, then `39c`. The letter always hangs off the original number (never `39aa`). Folder `openspec/changes/39a-<slug>/` with the usual four files; `.openspec.yaml` sets `parent: 39`; the failing test cites the ID. Haris: "All issues are openspecs of that same original requirement i.e. if issue is in 39 then 39a. Another bug reported in later cycle for 39 then 39b." Full rule: `rules/openspec-follow-up-letter-suffix.md`.
+
 ## What counts as an OpenSpec-governed change — the carve-out is narrow
 
 Content, doc-only edits, issue triage, deploy-runner skills, and read-only diagnostics are outside OpenSpec. That carve-out does **not** cover: a new or amended `openspec/specs/*/spec.md` (a spec is the output of a change, never hand-authored alone); a CI change that alters what the test suite does or gates (test DB version, coverage floor, a new build-failing scan); a new production-deploy behaviour; a new cloud resource / IAM policy / secret / env var. Each needs its own thin proposal/design/tasks.
@@ -69,7 +73,7 @@ Reference example: `openspec/changes/custom-term-id-and-serial-refund-endpoints/
 A bug or defect found in a feature is a requirement correction for that feature, so its fix is an amendment of the OpenSpec change where the feature originated: the next free letter on that spec's number.
 
 1. Issue in spec `40` gets `40a`. A later issue in `40` gets `40b`, then `40c`. If `13a` exists, the next one on `13` is `13b`. Find the next letter with `ls openspec/changes | grep '^13[a-z]-'`.
-2. Never batch a review's fixes under one new number, and never create an umbrella or parent spec for a set of fixes (the owner rejected that). Several issues from one origin may share one amendment if they are the same defect class; otherwise each gets its own letter.
+2. Never batch a review's fixes under one new number, and never create an umbrella or parent spec for a set of fixes (the owner rejected that). Every issue gets its own dedicated amendment, even when several issues share an origin (issues 031, 032 and 033 in spec 39 became 39a, 39b, 39c), and each amendment is linked to its original spec both ways (`amends:` plus a link; the origin spec lists its amendments; the issue file names both).
 3. Work with no single origin spec (a new capability) gets a new number as usual.
 4. The amendment keeps the numbering style `NNx-short-slug/` with the normal four files, and sets `amends: <origin spec folder>` in `.openspec.yaml`. It records the owner's decision verbatim, requirements, acceptance criteria and tasks. Tests for the amendment cite its task ids (`T40a.01`).
 5. The issue file records both ends: `Origin spec: 40` and `Amendment: 40a`. The `prod-issues/README.md` index row links the amendment.
