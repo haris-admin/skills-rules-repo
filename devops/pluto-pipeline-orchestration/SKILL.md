@@ -33,7 +33,7 @@ DAILY CHAIN:
  5:10 AM Cross-Chamber Synth       ddceef1f9e5b  synthesizer         deliver: local
  5:15 AM Action Bridge             38c1aa80a5b8  actions             deliver: local
  5:20 AM Briefing Improver         7cc81d64613a  briefing engine     no_agent    deliver: local
- 5:25 AM Chamber Refresh           0959371eec17  mempalace feed      no_agent    deliver: local
+ 5:10 AM Chamber Refresh           0959371eec17  mempalace feed      no_agent    deliver: local
  5:30 AM Honcho Signal Bridge      pluto_honcho_bridge_daily  Honcho  no_agent ✅ (moved from 6AM)
  6:00 AM ★ Pluto Morning Briefing   c527fed4a1da  ALL IN ONE          deliver: origin 📱 (Mon-Fri ONLY)
  6:10 AM Feedback Loop             59f18c4d557c  feedback            no_agent    deliver: local

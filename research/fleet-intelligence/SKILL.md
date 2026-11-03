@@ -219,7 +219,7 @@ As of June 1, 2026, Pluto is the primary fleet agent. Gumby (OpenClaw/Windows) i
 | Cross-Chamber Synthesis | 5:10 AM | Cross-domain pattern detection |
 | Action Bridge | 5:15 AM | Convert synthesis → actions |
 | Briefing Improver | 5:20 AM | Enhance briefing with podcast + competitor intel |
-| Chamber Refresh | 5:25 AM | Feed research→ChromaDB chambers |
+| Chamber Refresh | 5:10 AM | Feed research→ChromaDB chambers |
 | Honcho Signal Bridge | 5:30 AM | Push [pluto] signals to Honcho |
 | ★ Main Briefing | 6:00 AM Mon-Fri | Deliver text + voice to Telegram |
 | Feedback Loop | 6:10 AM | Close feedback cycle |

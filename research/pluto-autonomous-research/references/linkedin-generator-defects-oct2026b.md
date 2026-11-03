@@ -126,3 +126,301 @@ second — so a re-run that replaces the slate never suppresses a title Haris ne
 the day's second cluster, but `nhi-agent-identity` shipped on 18 Oct and any new
 `agent-credential-lifecycle` candidate would be its twin (Rule 74). Correct action is to say so in
 the curated section and let the 10-day window hold, not to ship the same idea under a new title.
+
+## Rule 78 — fix the classification on EVERY surface the string reaches (Oct 29 2026)
+
+**Symptom.** Idea #4's hook was correctly capitalised ("The record A$4.2bn quarter decomposes to
+93%…") while the display title directly above it — the H3 Haris copies as the post headline — read
+"the record A$4.2bn quarter decomposes to…". The finding's raw title began `UPDATE to the 13
+October feed - the record…`; `_strip_leading_feed_ref()` (Rule 48/56/73) removed the pointer and
+left a lowercase residue, and the Rule 68 capitalisation fix runs on the HOOK builder only.
+
+**Fix.** After the feed-ref strip, capitalise the title when its first token is a leading FUNCTION
+word (`the/a/an/and/but/this/that/what/why/how/…`, the bounded `_LOWERCASE_LEAD_WORDS` set). The
+set is deliberately small so brand-cased tokens ("iOS", "eBay", "macOS") are never rewritten —
+a blanket `title[0].upper()` is the wrong fix.
+
+**Rule.** Rule 73 said it for feed refs: when a rule classifies a string as unreadable, apply that
+classification everywhere the string is delivered. Rule 78 is the same lesson for CLEANUP — a fix
+that runs on the hook does not run on the title unless you put it there.
+
+## Rule 78b — a CTA must not assert a date the corpus cannot support (Oct 29 2026)
+
+`CTA_BY_PILLAR["Startup & ESOP"]` shipped "Modelling this for a cap table or an ESOP **before the
+28 Sep deadline**?" on 29 October — six weeks stale, on the day's top two posts, because the
+deadline was typed into the constant when it was true. **Rule:** keep dates out of static copy.
+A template constant outlives every deadline it names, and nothing in the pipeline can tell that it
+has expired.
+
+## Rule 79 — a name initial is not a sentence end (Oct 29 2026)
+
+**Symptom.** The NonPublic angle ended "…ARK Invest, Citadel, Fidelity, Morgan Stanley, T." — the
+`[.!?](?=\s)` sentence-end scan matched the "." in "T. Rowe Price", so `_trim_angle` cut there and
+silently discarded the rest of the sentence.
+
+**Fix.** Reject a candidate cut whose segment ends on a bare single capital + "." (`(?:^|\s)[A-Z]\.$`).
+A genuine sentence ending in initials ("the U.S.") has a different shape and is untouched.
+
+**Replay.** All 48 angles across the 8 retained research days: **1 changed (intended), 0
+regressions**. The class is general: any truncator that treats "." as a boundary must exclude
+initials, abbreviations and decimals.
+
+## Rule 80 — a passing regime mention must not out-vote the vocabulary the finding is written in (Oct 29 2026)
+
+**Symptom.** The NonPublic/Tenstorrent finding (Australian wholesale capital into a US$1.5bn
+Series E, Anthropic's listing, CBA's stake) was pillared **Australian Fintech Regulation** and
+closed with TokenPilot AU's digital-asset CTA, because `reg_strong` matched `afsl` twice in the
+body while the story carried no digital-asset content at all. Rule 66/76's defect class, one
+branch lower: presence, not dominance.
+
+**Fix.** Before `reg_strong`, count private-markets vocabulary (`pre-ipo`, `wholesale investors`,
+`series a-e`, `private markets`, `valuation`, `cap table`, `esop`, `venture round`, `deal count`,
+`first round`, `ipo`) against licensed-activity vocabulary (`digital asset`, `token*`, `stablecoin*`,
+`crypto*`, `dlt`, `custody`, `afsl`, `psp`, `aml`, `cft`, `austrac`, `licen[cs]*`); if
+`vc_n >= 3 and vc_n > da_n`, return Startup & ESOP.
+
+**Replay.** 8 retained research days, every finding: **1 changed (today's #6), 0 regressions.**
+
+## Rule 45 recurrence #6 + practice note (Oct 29 2026)
+
+Startup & VC's own-pillar pool was **empty of fresh grounded candidates**: `vc-barbell-missing-middle`
+RETIRED (3 hits), `asx-escrow-composition` (1) and `datacentre-firb-screening` (2) both inside the
+10-day window, every other Startup & ESOP candidate at 0. The slate therefore padded ONE Cloud
+candidate — `datacentre-permitting-risk` — whose only hit was the context word `withdrawn` (from
+"Firmus had already withdrawn its ASX float"), whose gap asserted an A$1.2bn/90MW project absent
+from the corpus (Rule 34/58), and whose title had shipped on 11 Oct (`The Project That Walked`)
+before the ledger's retention window, so neither the file scan nor the ledger could see the repeat.
+
+Two subject-bound candidates were ADDED (`pre-ipo-access-distribution` 6 hits, `mark-divergence-valuation`
+3 hits; 0 on the seven prior retained days). The slate went 1 ungrounded repeat → 2 grounded ideas.
+The superseded ledger entry was pruned (Rule 72) so a never-delivered repeat is not suppressed for
+10 days.
+
+**Deliberate non-proposal.** The day's #3 signal (FIRB + ACCC suspensory merger regime) had no
+Startup candidate, and adding one would have duplicated the same morning's AMLHive content idea
+"Two Gates, Two Answers: A Foreign Investment Clearance Is Not an AML/CTF Clearance". Check
+`content-ideas-<date>.md` before adding a candidate for a regulatory signal that another lane
+already owns, and say so in the curated section instead of shipping the duplicate.
+
+## Rule 77 — a 10-day repeat window cannot see a 15-day cycle, and a stale repeat outranks nothing when the pool is thin (Oct 30 2026)
+
+**Symptom.** The 30 Oct 2026 slate — same `date % 5` slot as 15 Oct — shipped **both** blog ideas
+as word-for-word repeats of the 15 Oct pair (`The AI Incident Register…`, `One Product, Three
+Rulebooks…`). `_repeat()` answered "not a repeat" for both, correctly: the ledger held them at
+15 Oct, 15 days back, outside `_ledger_titles(days=10)`. A 5-day topic cycle plus a 10-day window
+means every third visit to the same slot re-serves the same slate, and nothing in the pipeline
+ranks *verbatim* staleness below a fresh idea.
+
+**Why it happened (the pool, not the gate).** Filtering `BLOG_CANDIDATES` to the day's pillars and
+`_fresh` left exactly two grounded AI-governance candidates — the two 15 Oct repeats. The day's
+#2 (TGA digital scribe review), #3 (EN 18286 first harmonised standard) and #5 (board-level agent
+accountability) signals had **no candidate at all**, so the slate had nothing fresh to prefer.
+
+**Fix — add candidates, never widen the window.** Three subject-bound candidates were ADDED:
+`tga-scribe-device-function` (6 hits), `en-18286-qms-conformity` (6), `board-agent-accountability`
+(6); **0 on the seven prior retained days**, verified by replaying each against the retained
+research JSONs, and each keyword's firing sentence printed before acceptance. Slate went 2 stale
+repeats → 3 fresh grounded ideas. The 30 Oct ledger lines for the two never-delivered repeats were
+pruned (Rule 72), keeping the 15 Oct originals.
+
+**Rule 49 recurrence, same run.** `agent-incident-register` fired on a single term, `marking`,
+taken from "you can't have OpenAI **marking** its own homework" — a board-accountability quote on a
+corpus where `incident`/`reportable`/`serious incident` were all ZERO. Its list carried bare
+`marking`, `notification`, `regulator`, `reportable`, `article 50`, `transparency`: all context
+vocabulary on any AI-regulation day. Re-bound to reporting mechanics (`incident report`,
+`incident register`, `incident log`, `serious incident`, `reportable incident`, `unreported
+incident`, `article 73`, `incident notification`): today 1 → 0, 15 Oct record still grounds it.
+
+**Two-way check performed.** Today fires for all three new candidates; the seven prior retained
+days return 0 for all three. And confirm a new candidate's gap does not silently duplicate an
+existing one: `board-agent-accountability` is distinct from `scorer-independent-verification`
+(self-grading mechanism) and from `agent-oversight-monitor-integrity` (whether oversight can be
+switched off) — it asks *who is named*, on what evidence. State that boundary in the gap text.
+
+
+---
+
+## Rule 81 (Oct 31 2026) — a twin pair registered ONE way leaves the OLDER title alive after the window
+
+**Defect.** The 31 Oct Cloud slate (same `date % 5` slot as 16 Oct and 26 Oct) shipped blog ideas that
+were **verbatim title repeats from 16 Oct** — `Power, Not Land: The Data Centre Constraint That Will
+Re-Price Your Cloud` and `The Missing Substitutability Test` — 15 days old, i.e. outside
+`_ledger_titles(days=10)`. Eleven days into the same cycle, 26 Oct had shipped
+`The Connection Agreement: Why a Grid Contract, Not a GPU, Now Prices an AI Data Centre`
+(`grid-connection-financing`) for **the same gap**: power/grid availability as the binding constraint.
+`grid-connection-financing` was registered as a twin of `datacentre-permitting-risk` but **not** of
+`datacentre-energy-grid`, so the pair covering one gap was invisible to each other. When
+`grid-connection-financing` aged out at 10 days its sibling — five days OLDER in delivery terms — was
+only just becoming "fresh" again and re-took the slot.
+
+**Rule.** Whenever two candidates assert the same gap, register the pair **both ways and against every
+member of the family**, not just the one you were fixing that day. A one-way or partial twin map does
+not fail at the moment you write it; it fails an ageing window later, which is why it survives review.
+
+**Fix.** `datacentre-energy-grid` ↔ `grid-connection-financing` registered both ways.
+**Two-way verification.** Live direction: `datacentre-energy-grid` absent from today's slate while its
+keywords still fire (1 hit — `aemo`) → deduped, not killed. Counterfactual: with the pair unregistered
+(prior run this morning) it took the slot, which is the failing case reproduced.
+
+## Rule 82 (Oct 31 2026) — a bare phrase that is *analysis*, not subject, can be the only thing grounding a candidate
+
+**Defect.** `cloud-concentration-resilience` fired today on **one** keyword, `concentration risk`,
+taken from a sentence of commentary inside the London-outage finding ("concentration risk has moved
+from a theoretical board paper to a supervisory conversation"). Every one of its own anchors —
+`substitutability`, `cloud concentration`, `financial stability review`, `portability`, `exit plan` —
+was **zero** in today's corpus, and its gap asserted the RBA Financial Stability Review and BoE
+SIMEX26 evidence that only existed on 16 Oct (Rule 34/58 class: a gap may not assert sources absent
+from the corpus that fired it). The title was also a 16 Oct delivery.
+
+**Rule.** Keyword grounding must be satisfied by *subject* vocabulary, and a candidate whose gap cannot
+be re-grounded in today's sentences should be demoted, not padded into the third slot. Two fixes were
+applied together: dropped bare `concentration risk` (it is the vocabulary of any post-hoc analysis),
+added `critical third-party regime` (the phrase the story is actually reported in — note the hyphen,
+`critical third party` returns nothing), and **rewrote the gap** around the 20 Oct europe-west2-b event,
+the FCA/PRA vendor contact and the first-test-of-the-UK-regime framing, all of which are in today's
+corpus.
+
+**Practice note (Rule 45 recurrence, third consecutive Cloud slot).** Two fresh subject-bound candidates
+were ADDED rather than loosening any gate: `hyperscaler-capex-cashflow` (revenue backlog, `$567.7b`,
+`azure crossed`, `free cash flow`, `$45.98b`; **9 hits today / 0 on eight prior retained days**) and
+`repatriation-unit-economics` (`37signals`, `cast ai`, `idle capacity`, `provisioned cpu`; **6 / 0**).
+The second excludes `unit economics`/`cost optimisation` deliberately so it cannot fire off
+`cloud-waste-finops` (delivered 26 Oct) — two cost candidates must not share keywords. And check the
+same morning's `content-ideas-<date>.md`: that lane already owned the DRAM-renewal and data-centre-levy
+angles, which is why **no** Pocock candidate was added despite the signal being in the day's top four.
+
+**Ledger.** The two never-delivered 31 Oct lines (the verbatim 16 Oct repeats) were pruned per Rule 72,
+keeping a `.bak` copy; the 16 Oct originals remain, and the twin rule — not a ledger artifact — is what
+keeps them off the same cycle.
+
+---
+
+## Rule 83 (Nov 1 2026) — the feed-reference strip must CLOSE the parenthetical it opened
+
+`_strip_leading_feed_ref` drops a bookkeeping head joined to the headline by `:` or a dash. When the
+head OPENED a parenthetical — `UPDATE to the 31 October feed (what changed: the London outage was …
+not an unavoidable utility fault)` — removing the head left the closing `)` behind, so two of five
+delivered display titles (the H3 Haris copies) ended on an orphan bracket. The hooks read clean, which
+is why every existing gate passed: Rule 50 resolved the OPENING side (`_balance_fragment` loops on
+unbalanced parens) but nothing re-balanced the text after a head was removed, and the display title never
+passes through `_balance_fragment` at all.
+
+**Fix:** count the head's own paren deficit and remove that many unmatched `)` from the tail, scanning
+with a depth counter so a balanced pair inside the tail (`(Article 50(2) date)`) is untouched. Applied
+inside `_strip_leading_feed_ref`, i.e. for every surface the function feeds (display title and hook via
+`_short_title`) — the Rule 73/78 lesson applied at the source instead of per surface.
+
+**Replay:** 47 titles / 8 days → **2 changed (both today), 0 regressions, 0 unbalanced after**.
+
+**Practice note (Rule 45 recurrence, Cloud slot).** Today's five findings were 4 × CloudProof AU on a
+Cloud & Infrastructure day, and the engine shipped **3/3 blog ideas on AI Agents & Governance**. The
+own-pillar pool was genuinely empty: the only Cloud candidate with real hits (`sovereign-cloud-procurement`,
+4) is RETIRED against a published post, `cloud-concentration-resilience` sat inside the 10-day window,
+and `eval-egress-containment`'s 3 "hits" were context vocabulary (`egress` from the ACM's data-EGRESS
+fees, `sandbox` from GovAI's Sandbox tier) — the Rule 49 class again, caught only by printing the
+sentences the keywords fired in. Fixed by ADDING three subject-bound candidates for today's own signals:
+`datacentre-maintenance-posture` (single-feed / LOTO'd feeder / PLC sensing; **10 hits today, 0 on eight
+prior days** once the location noun `europe-west2` was dropped), `data-act-switching-charges`
+(`switching charge`, `leidraad`, `egress fee`, `12 january 2027`; **9 / 0**) and
+`provider-control-plane-compromise` (`idcf`, `206 of 495`, `portal authentication`; **6 / 0**).
+No gate was loosened. The `content-ideas-<date>.md` lane covered the same four signals for the AML/
+real-estate audience, so the curated section names the sequencing rather than suppressing the post.
+
+---
+
+## Rule 84 (Nov 1 2026) — run the hook guards on the FINAL text, at every return path
+
+Two of five hooks left `_short_title` mid-clause: `…gated by IRAP: GovAI Hosting runs` (88 chars, `runs`
+IS in `_DANGLE_VERBS`) and `…had virtual servers encrypted — backup coverage` (a bare noun phrase after
+an em-dash). The verb guard at the slice stage had already run by the time the later completion steps
+(`_complete_tail`'s Rule-65 token restore, the scaffolding pops) rebuilt the clause, so the classification
+was correct but stale — Rule 44's lesson, three rules later.
+
+**Fix:** two final-text helpers applied via `_finalize_hook()` at **all four** return paths of
+`_short_title` (the `len(head) <= limit` early return, both delimiter-cut returns, and the final
+`_complete_tail` return):
+
+- `_drop_dangling_verb_tail()` — if the finished hook ends on a `_DANGLE_VERBS` token, drop the subordinate
+  clause or the verb, keeping the result only when it still stands alone (>=30 chars).
+- `_drop_dash_fragment()` — drop a trailing `— <1-4 tokens>` that carries no finite verb; a complete
+  dash-joined clause (`UPDATE — the argument graduated from opinion to causality`) is untouched.
+
+**Replay:** 47 titles / 8 days → **2 changed, 0 regressions, 0 still ending on a verb or an unbalanced
+bracket.** The fix is deliberately at the exit, not at the slice, because every earlier guard can be
+undone by a step that runs after it.
+
+---
+
+## Rules 85–87 — Nov 3 2026 (final-text guards, single-token verb test, weak-regulator dominance)
+
+### Rule 85 — a single token is not a tail: `_tail_has_verb`'s suffix heuristic misclassifies plural nouns
+
+**Symptom:** the day's #1 hook shipped as `Banks block third-party AI agents: five US and four Canadian
+banks shut agent access to customer` — truncated one token short of the noun phrase.
+
+**Cause:** Rule 65's noun-phrase completion refuses to append a token when `_tail_has_verb(t)` is true.
+That helper's heuristic (`len > 3 and ends es|ed|ing|s`) is correct for a multi-token tail and wrong for a
+single token: `accounts` ends in `s`, so the completion was rejected and the hook ended on `customer`.
+
+**Fix:** `_is_verb_token(tok)` — for ONE token, only a known finite form (`_FINITE_VERBS`) or an
+`-ed`/`-ing` participle counts. Used at the Rule 65 extension only; `_tail_has_verb` keeps its suffix
+heuristic everywhere it inspects a *tail*.
+
+**General rule:** a heuristic tuned on multi-token text is not valid unchanged on a single token. When a
+guard is reused at a different granularity, re-derive it for that granularity rather than reusing it.
+
+### Rule 86 — guards that need tokens AFTER a conjunction cannot see a hook ENDING on one
+
+**Symptom:** `A contractor's personal Claude Code agent ran on the Pentagon's NIPRNet for two months and`
+delivered as a hook.
+
+**Cause:** every subordinate-tail guard (`_SUBORD`, Rule 44's widened re-check) is written as
+`\s(?:and|but|or|while|…)\s+(\S+\s*){1,N}$` — it requires at least one token after the conjunction. A
+clause whose LAST token is the conjunction matches nothing, and `_ends_on_verb` does not list coordinators.
+
+**Fix:** `_drop_trailing_coordinator()` in `_finalize_hook`, applied to the final text at every return
+path (Rule 84's lesson): strip a trailing coordinator/preposition (≥30 chars must survive). `_finalize_hook`
+is now `_drop_dangling_verb_tail(_drop_trailing_coordinator(_drop_dash_fragment(text)))`.
+
+**General rule:** for every "dangling X" guard, ask what the text looks like when X is the LAST token, not
+only when X is followed by something.
+
+### Rule 87 — a WEAK regulator mention must lose to an AI/agent subject, not only to a cloud one
+
+**Symptom:** the SailPoint agent-governance finding (85% of APAC enterprises run agents, 5% have
+governance tooling) pillared **Australian Fintech Regulation** and closed with an AUSTRAC CTA.
+
+**Cause:** `pillar_for()` ranked `reg_weak` (a passing "APRA CPS 234" mention) above the AI vocabulary
+*because the weakness check only had a cloud branch to lose to* (`if cloud-subject: Cloud` came first).
+Rules 66/76/80 had each added a dominance check on one branch; the `reg_weak` branch had none for AI.
+
+**Fix:** before `if reg_weak: return Fintech`, count AI/agent terms vs regulatory terms in the blob and
+return **AI Agents & Governance** when `ai_n >= 3 and ai_n > reg_n`.
+
+**Replay:** 9 retained research days → **1 pillar change** (today's SailPoint finding, intended), 0 others.
+
+**General rule:** every "X loses to Y" rule needs a branch for each subject class the generator can
+recognise, or the class with no branch silently inherits the default. When adding a dominance check,
+enumerate the classes rather than patching the one that failed today.
+
+### Practice note — the day's slate had three separate grounding defects
+
+Nov 3 2026 ran on an agent-security corpus with no AU regulatory news (see the AMLHive content-ideas lane:
+whole inbox byte-identical to the prior day). All three auto blog ideas failed a ground check:
+
+| Candidate | Defect | Fix |
+|---|---|---|
+| `nhi-agent-identity` | gap cited AppViewX, a CSA "82%", an AI Bill of Materials and an agent kill switch — **all zero occurrences** in the corpus (the `82%` rows in mempalace-inputs are RBA rate-hike odds) | restated onto NIST's tenets, which the corpus carries (nist 7, agent identity 3, tenets 3) |
+| `agent-incident-register` | gap claimed "EU confirmed an unreported agent incident"; the `incident report` keyword had actually fired on the NIPRNet 72-hour sentence | restated onto that sentence |
+| `psp-regulated-software` | keyword list carried bare `payments`, which fired on "agentic payments and CDD" inside the NIST finding | keywords rebound to PSP/payment-service-provider vocabulary; scores 0 today, which is the honest answer |
+
+The day's Cloud signal had no candidate at all, so `agent-discovered-exploit` was ADDED (mptcp 2,
+"53 minutes" 2, kernel exploit 1, cve-2026-98432 1, patched kernel 1, go 1.24 1 — 0 on the eight prior
+retained days) and twinned BOTH WAYS with `php-version-window-evidence` as one patch-window gap family.
+Never loosen a grounding gate to fill a slot: three grounded ideas from two pillars beat a fabricated
+third. Also prune a never-delivered title from the ledger (Rule 72) — this run pruned *From PSP to
+Regulated Software…* and collapsed duplicate same-day rows (the recorder appends once per run, so three
+generator runs in one morning write nine rows; dedupe by title keeping the earliest date).
+
+**Hook replay today:** 47 titles / 8 days → **2 changed, 0 regressions, 0 still broken** (both changes are
+the two defects above).

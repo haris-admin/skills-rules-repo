@@ -391,7 +391,13 @@ When you see `last_status: error` on a cron, classify before escalating:
   17 unmerged files incl. application code, while `~/code/amlhive1-pluto-pr` carried **2173 dirty entries**
   — so Option B is NOT the one-line retarget the 1 Oct report called it; its BRANCH is still 0-behind dev,
   so the only clean path is a FRESH worktree off `pluto_pr`. Same cause blocks `31ac1948416f` (Fri Codex
-  Review). Any future content run must also use the current bundle path `assets/YYYY-MM-DD-<slug>/`, not
+  Review). **2026-10-30: that job's signature moved — `BLOCKED: origin/dev merge conflicted:
+  CONFLICT (content): Merge conflict in .version`** (plus auto-merges of `CHANGELOG.md`,
+  `backend/.env.example`, `backend/app/api/internal/sync.py`). Same standing block, different surface:
+  the script still stops cleanly and produces no report, and the blocker is still the lane's drift, which
+  only the owner's A/B/C choice clears. Classify as the standing owner-decision block — do NOT open it
+  as a new fault — but note `.version` is exactly the file a long-diverged branch collides on first, so
+  this is the expected shape of the same unresolved decision, not a worsening. Any future content run must also use the current bundle path `assets/YYYY-MM-DD-<slug>/`, not
   `assets/blog-migration/<slug>/` (dev moved it 21 Sep). Detail: `environment.md` → "codex_pr IS NO LONGER
   A CONTENT LANE" + the 2026-10-06 status append.
 - **A paused job's stale `last_status: error` is NOT a current failure — read `enabled` before classifying.**
@@ -482,6 +488,43 @@ When you see `last_status: error` on a cron, classify before escalating:
   consecutive runs → ESCALATED as real failure`. So the whitelisted `reduced-motion` composition is no
   longer a benign 2/3 shape: **from 10-29 a further E2E red counts as a REAL leg**, and run 1 of a new
   counter is the only state that resets it.
+  **2026-10-29 (day 23) — the escalated leg produced its first REAL E2E failure; this one is a code bug,
+  not flaky noise.** `47 passed, 3 failed` (186.7s) and the diagnosis names it: test #18
+  `"forgot password shows recovery copy and sign-in link CTA"` (`tests/e2e/amlhive.spec.ts:106`)
+  timed out at 17.6s against 1-6s for its peers — the SAME regression seen 10-11/10-12 and then marked
+  superseded. Third recurrence ⇒ treat as a real frontend regression to fix, and stop re-labelling the
+  `reduced-motion` whitelist as the explanation for every E2E red. Band otherwise flat:
+  backend 16 genuine, vitest 267p/1f (24 consecutive), OVERALL `9588 passed, 55 failed, 3 errors`.
+  Read the diagnosis line before classifying any E2E red: a NAMED non-whitelisted test is a regression.
+  **2026-10-30 (day 24) — band FLAT; the useless diagnosis got root-caused and FIXED.** backend
+  `9274 passed / 51 failed`, ⚪35 gaps, 🔴16 genuine (identical to days 20-22); vitest `267p/1f`
+  (25 consecutive); OVERALL `9589 passed, 54 failed, 3 errors`. E2E `48 passed, 2 failed` — the
+  escalation counter is now 5 consecutive runs. The E2E diagnosis again read `output is truncated at
+  test 41 … no failures visible`, and this time it was root-caused: `codex_diagnose()` was called
+  WITHOUT `tail=True` on the playwright leg, and `window = test_output[-6000:] if tail else
+  test_output[:6000]` fed the model the **FIRST** 6000 chars — 41 passing test lines — never the
+  failure block at the end. Fixed 2026-10-30 (playwright call site now `tail=True`; vitest deliberately
+  left on the head slice because its head slice DID name four real failures). Verified by exec'ing the
+  extracted function with a stub `chat_with_fallback` in a forked child that writes what the model
+  actually receives: `tail=True` → sees the named failure; default → head only. **Rule: a diagnosis that
+  says "output truncated / no failures visible" on a leg that reported N failed means the SLICE is
+  wrong — fix the slice; never conclude the failures are unreproducible, and never let a slice bug erase
+  the test NAMES the escalation rule depends on.**
+  **2026-10-31 (day 25) — NEW fault class at the install step, and the band move is explained.**
+  `❌ Frontend dep install failed: … npm error code EUSAGE` (`npm ci` can only install when
+  package.json and package-lock.json are in sync — `Missing: webpack@5.112.2 …`). Cause: commit
+  `50fb44a55` (zod 3→4.6.7) rewrote `frontend/package-lock.json` deleting 580 lines without a full
+  regeneration; it is on **`origin/dev`**, so `npm ci` fails for every clone and every CI job.
+  `npm ci --dry-run` on the CLEAN tree reproduces it — verify reach with
+  `git merge-base --is-ancestor <sha> origin/dev` before blaming a lane. **The dangerous half is the
+  silent one: the runner printed this error and then ran vitest anyway against the stale
+  `node_modules`, reporting `282 passed / 1 failed` from the WRONG tree.** When an install line fails,
+  classify that leg as an ENVIRONMENT BLOCKER and do not diagnose its failures as code.
+  Counts: backend `9518/53` (`⚪35` + `🔴18`), vitest `282p/1f` (26 consecutive), E2E `46 passed / 4 failed`
+  (6 consecutive, diagnosis names a React hydration mismatch on inline `caret-color`), OVERALL
+  `9846 passed / 58 failed / 3 errors`. The +244 collected vs day 24 is a **202-commit `origin/dev`
+  merge**, not a trend break — size the merge (`git log --oneline <merge>^1..<merge>^2 | wc -l`) before
+  escalating a count move.
   **`4689311b6ad0` STALE_BUILD — root cause is the ECR repo's IMMUTABLE tags** (`tag invalid: The image
   tag 'a202c80' already exists`), so a failed deploy retried on the same commit can never push and
   `Deploy to EC2 via SSM` is SKIPPED; worse, a deploy can report SUCCESS with a green post-deploy version

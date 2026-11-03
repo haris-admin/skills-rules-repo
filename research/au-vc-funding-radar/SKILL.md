@@ -15,6 +15,8 @@ AEST week (Sat–Fri), so anchor on the current date rather than on the supplied
 1. **Overnight Success weekly** (`overnightsuccess.vc/p/<N>th-<month>-<year>`) — the single best
    ANZ round-up; usually published Sat, so on a Friday cron the *previous* Saturday's issue is current.
    Its "Startup Retro" section is the deal list; headlines carry policy/fund news.
+   **Access: `curl` gets 403 on the `/p/…` URLs and the `/archive` + `/t/os-weekly` pages expose no post
+   links — fetch the issue directly with `web_extract` on `https://overnightsuccess.vc/p/<N>th-<month>-<year>`.**
 2. **Startup Daily** funding topic (`startupdaily.net/topic/funding/`) — canonical per-deal articles
    with round size, lead investor and follow-ons. **Fastest dated inventory: the funding-only feed
    `curl -s https://www.startupdaily.net/topic/funding/feed/ | grep -E "<title>|<pubDate>"`** — gives
@@ -32,6 +34,11 @@ AEST week (Sat–Fri), so anchor on the current date rather than on the supplied
 - **Tracxn's geography pages contradict its own reports.** The Australia geo page has shown both
   "till June 2026: US$1.77B / 82 rounds" and "till August 2026: US$4.57B / 119 rounds" — an impossible
   jump. Never quote a Tracxn YTD figure; quote the dated semi-annual/quarterly report instead.
+- **Government co-investment is not a VC round.** ARENA (Driving the Nation) and Innovation Victoria
+  (University Innovation Platform) cheques arrive as grant/co-investment and land in the funding feed —
+  separate "equity VC" from "government" in the digest total rather than counting them as rounds.
+  Also expect currency splits on the same deal (MP Space: A$23M = US$16M, so Dealroom/Tech in Asia
+  report "$16M" — quote the AUD figure from the primary article).
 - **"$5.48B" is calendar 2025, not FY25.** Cut Through/Folklore's State of Australian Startup Funding
   figure (A$5.48B, 390 deals, +31%) covers Jan–Dec 2025. Cut Through's *FY* fintech baseline is
   different (FY25 fintech = A$730M vs FY26 A$1.73B, +137%). Don't mix FY and CY labels.
@@ -54,6 +61,10 @@ AEST week (Sat–Fri), so anchor on the current date rather than on the supplied
   event of a quiet week.
 - **A quiet week is a real finding.** Micro-rounds (A$0.5–3M) are often the only new deals; say so
   rather than padding with last week's larger raises (label those clearly as prior week).
+- **Search hits can be a year stale.** A generic query for an in-window deal can return the *same-named
+  round-up from the prior year* as a top hit (e.g. a "Cheque-in … to end October" article dated 31 Oct 2025
+  surfacing during an Oct 2026 window, full of 2025 deals). Always read the article's own dateline before
+  reusing it — the slug/Google snippet carries no year.
 - **Regtech/AML supply signal ≠ equity round.** Demand is driven by Tranche 2 AML/CTF (live 1 Jul 2026,
   ~100k entities: real estate, legal, accounting, precious metals, gaming) and shows up as vendor
   partnerships, club/enterprise signings, M&A and follow-on seed — not necessarily a fresh round.

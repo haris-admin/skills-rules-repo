@@ -222,12 +222,16 @@ recovered in-window items that extractor-based fetches missed).** Read them with
  a browser UA, not `curl` (WAF-blocked on aph.gov.au) and not the extract backend.
 - **ASX announcements — THE UNIVERSAL METHOD, use it first for all five (verified 24 Oct 2026).**
   `https://asx.api.markitdigital.com/asx-research/1.0/companies/<CODE>/announcements?pageSize=40&page=0`
-  returns JSON with `headline`, `date`, `announcementType`, `documentKey`, `isPriceSensitive` — a complete,
-  dated, enumerable list for **CBA · WBC · NAB · ANZ · CCL**. The PDF resolves at
+  returns JSON with `headline`, `date`, `announcementType`, `documentKey`, `isPriceSensitive` for
+  **CBA · WBC · NAB · ANZ · CCL**. ⚠️ **`pageSize` is ignored — the response caps at FIVE items** under
+  `data.items` (not `data.announcements.data`). Five items is usually enough for a 7-day window, but when a
+  run needs to re-enumerate a 2–4 week stretch it must say so as a coverage gap rather than imply completeness. The PDF resolves at
   `https://newsfile.futunn.com/public/NN-PersistNoticeAttachment/7781/<YYYYMMDD>/732_ASX-FTP-<DOCID>_en-us_0.PDF`
   where `<DOCID>` is the **last hyphen-segment of `documentKey`** and `<YYYYMMDD>` is the announcement date.
   Read via pypdf in `~/.hermes/venv`. This closed a four-run **"Cuscal ASX state UNKNOWN"** gap and also
-  delivered the Westpac FY26 "Items Impacting Results" and ANZ s249N PDFs. `openbriefing.com`,
+  delivered the Westpac FY26 "Items Impacting Results" and ANZ s249N PDFs. ⚠️ **Date the PDF path by the
+  announcement's AEDT date, not its UTC date** — WBC's 15 Oct 22:34Z filing resolves only at `20261016`
+  (404 at `20261015`). Half of these filings land after 14:00Z. `openbriefing.com`,
   `company-announcements.afr.com` and `marketindex` inline PDFs all 403 — do not bother with them.
 - **ANZ** — `anz.com.au/newsroom/media/archive/2026/` is a JS shell to extractors but its **raw HTML carries
   the whole dated list**: `YYYY-MM-DD 00:00 --> --> <Type> <Title>`. Regex the `(\d{4}-\d{2}-\d{2}) 00:00` hits
@@ -262,6 +266,28 @@ to state the newest item's date and prove a null week.
   misleading documents and the repeated use of mortgage brokers, accountants and law firms"*, CEO Brendan Thomas
   *"a wake-up call for every lender"* — the strongest precedent for the forged-document narrative and **precedent
   only**; and **ANZ's re-posted 2018 APRA self-assessment (stamped 20 Oct 2026)**.
+- **Momentum Media titles (Australian Broker / brokernews, The Adviser, MPA) date reliably from raw HTML**, not
+  from the extractor: fetch with a browser UA and read `"datePublished"` in the JSON-LD (the meta
+  `article:published_time` duplicates it with an escaped offset). The **body often extracts only partially
+  (paywall-ish) — read the `<p>` tags directly**. Sibling titles syndicate each other, so one dated
+  brokernews URL dates the whole cluster. ⚠️ **`ia.acs.org.au` (Information Age) carries no recoverable
+  publication date** in HTML, metadata or JSON-LD — cite the Momentum Media version of the same story instead,
+  or quarantine it. This is how the 23 Oct OurTop10 document-fraud survey and the 29 Oct SFG/AFG
+  "verify at the source" piece were both dated and read in full.
+- **Shareholder-requisition (s249N) coverage is a two-PDF job.** The **first** filing carries the resolution
+  text and the requisitioning statement; a later **withdrawal** filing carries the concession. Read both. For
+  Westpac the pair was 16 Oct (resolutions) + 26 Oct (withdrawal) — and the operative content sat in the
+  withdrawal's last paragraph (a Sustainability Report commitment plus a review "by end of FY27 … and
+  technology suppliers"), which no wire summary carried. The requisitioning investors' own rationale usually
+  lives on the **PRI Collaboration Platform** (`collaborate.unpri.org/group/<id>/home`), whose reference list
+  names the frameworks being tested.
+- **ASIC's newsroom index is a client-rendered shell**: enumerate it in `browser_navigate` +
+  `browser_console` (`document.querySelectorAll('main li')` → innerText, which includes the **date and
+  category** the accessibility snapshot drops), then fetch the individual release URLs directly.
+- **Requisition-offender added 31 Oct 2026** — the analyst-note class: a **Morningstar initiation** (Cuscal,
+  A$5.80 fair value) reads as fresh commentary for weeks; it is a dated market view, never news. Same for
+  **CPI-day rate-call revisions** (CBA/NAB/ANZ/WBC "now expect a hike"): record once as macro context, never
+  as a partner development.
 - **aph.gov.au JSCAI hearings**: the working URL is the **doubled path**
 `/Parliamentary_Business/Committees/Joint/Artificial_Intelligence/ArtificialIntelligence/Public_Hearings` —
 the single-path `/Artificial_Intelligence/Public_Hearings` **404s**. It gives Past/Upcoming tables with

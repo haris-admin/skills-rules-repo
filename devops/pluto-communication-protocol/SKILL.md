@@ -104,7 +104,7 @@ ALL cron jobs that deliver to Telegram now go to the **AMLHive group** (`telegra
 | 5:10 AM | Cross-Chamber Synth | local | Internal — feeds briefing |
 | 5:15 AM | Action Bridge | local | Internal — feeds briefing |
 | 5:20 AM | Briefing Improver | local | Internal — saves file, consumed by 6AM |
-| 5:25 AM | Chamber Refresh | local | Internal — background |
+| 5:10 AM | Chamber Refresh | local | Internal — background |
 | **6:00 AM** | **★ Briefing (Mon-Fri)** | **origin** | **THE ONE: text + audio → Telegram** |
 | **6:00 AM** | **★ Sat Weekly Review** | **origin** | **Weekend retro: perf, repos, signals, builds** |
 | **6:00 AM** | **★ Sun System Review** | **origin** | **Proposed — adversarial/blind spots** |
