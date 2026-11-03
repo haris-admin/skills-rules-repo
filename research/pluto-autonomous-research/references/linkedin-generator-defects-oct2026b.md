@@ -424,3 +424,30 @@ generator runs in one morning write nine rows; dedupe by title keeping the earli
 
 **Hook replay today:** 47 titles / 8 days → **2 changed, 0 regressions, 0 still broken** (both changes are
 the two defects above).
+
+---
+
+## Rules 88–89 (Nov 4 2026)
+
+**Rule 88 — a CTA is READER-FACING copy, so the content firewall applies to the static constants.**
+Every close in `CTA_BY_PILLAR` and `CTA_BY_PORTFOLIO` ended in one of Haris's own product names, and on
+4 Nov the day's #1 Startup post shipped *"Modelling this for a cap table or an ESOP? That's what ExitLens
+AU exists for."* Under the Data Mesh Group policy that is a hard breach on a personal channel. The blog
+gap strings legitimately carry `(ExitLens AU)` as INTERNAL routing annotation, which is exactly why nobody
+noticed the CTAs: the same file mixes internal annotation with publishable copy, and the constants sat in
+the publishable half. Portfolio CTAs stay KEYED by product (that is internal routing) — their TEXT must
+be product-free. Verify by grepping the day's file for every firewalled name and reading where each hit
+lands: `Gap filled:` lines are internal, `Hook:`/`Angle:`/`CTA:` lines are not.
+
+**Rule 89 — a bounded WINDOW that trims the left edge can cut inside a proper noun, and no right-edge
+guard sees it.** `_hook_clause` kept the last six words before the number, so *"The West Australian
+reports a float size around A$142bn"* became *"Australian reports a float size around A$142bn"* — a
+sentence whose subject does not exist, and it passed every gate because the clause reads as complete
+(it ends on a noun, not a verb). Fix: walk the left edge back while the retained head token is
+capitalised and the token before it is capitalised or a leading article; the existing `lead` pop then
+strips the article, resolving "The West Australian" → "West Australian". General rule: for every window
+or slice, the check is what the cut REMOVED at each edge — Rule 36 guards the right edge of the same
+function and the left edge had no equivalent.
+
+**Replay:** 47 hooks / 8 days → 1 changed (the broken one), 0 regressions. The repaired stat then failed
+`_hook_stat_ok` on title overlap, so the hook correctly fell back to title-only.
