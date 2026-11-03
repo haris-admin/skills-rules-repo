@@ -38,3 +38,7 @@ pointed at markdown-rendering code, and the feature was only partly built).
 - **088** — frontend-only SEO canonical bug → `frontend/prod_issues/issue-088-….md` only.
 - **068** — backend-only audit PDF → `backend/prod_issues/issue-068-….md` only.
 - **050** — auth session bug → matching files in `frontend/prod_issues/` and `backend/prod_issues/`.
+
+## Linking an issue to its spec
+
+Each issue file names its origin OpenSpec and the amendment that fixes it (issue in spec 39 gets 39a, the next issue in 39 gets 39b). See `openspec-issue-fixes-amend-the-origin-spec`.

@@ -64,6 +64,17 @@ Content, doc-only edits, issue triage, deploy-runner skills, and read-only diagn
 
 Reference example: `openspec/changes/custom-term-id-and-serial-refund-endpoints/`.
 
+## Issue fixes amend the origin spec: 40 then 40a, 40b (owner rule, 3 Nov 2026)
+
+A bug or defect found in a feature is a requirement correction for that feature, so its fix is an amendment of the OpenSpec change where the feature originated: the next free letter on that spec's number.
+
+1. Issue in spec `40` gets `40a`. A later issue in `40` gets `40b`, then `40c`. If `13a` exists, the next one on `13` is `13b`. Find the next letter with `ls openspec/changes | grep '^13[a-z]-'`.
+2. Never batch a review's fixes under one new number, and never create an umbrella or parent spec for a set of fixes (the owner rejected that). Several issues from one origin may share one amendment if they are the same defect class; otherwise each gets its own letter.
+3. Work with no single origin spec (a new capability) gets a new number as usual.
+4. The amendment keeps the numbering style `NNx-short-slug/` with the normal four files, and sets `amends: <origin spec folder>` in `.openspec.yaml`. It records the owner's decision verbatim, requirements, acceptance criteria and tasks. Tests for the amendment cite its task ids (`T40a.01`).
+5. The issue file records both ends: `Origin spec: 40` and `Amendment: 40a`. The `prod-issues/README.md` index row links the amendment.
+6. If the origin spec is unknown, find it with `git log` or the feature's route and component names; record the reasoning. Ask the owner only when two origins are equally plausible.
+
 ## Retroactive backfill
 
 Releases sometimes ship without a change dir. To backfill:

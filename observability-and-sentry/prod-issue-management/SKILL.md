@@ -13,6 +13,9 @@ Each defect document (`issue-NNN-<slug>.md`) must contain:
 4. **Fix & Prevention**: Code changes, regression tests added, and standing rules updated.
 5. **Verification Evidence**: Test commands and logs demonstrating resolution.
 
+## Link every issue to its origin spec and its amendment (owner rule, 3 Nov 2026)
+Add two lines to the issue header: `Origin spec: <NN>` and `Amendment: <NNx>`. The fix is specified as an amendment of the OpenSpec change where the feature originated (issue in 39 gets 39a, a later one gets 39b); see rule `openspec-issue-fixes-amend-the-origin-spec`. Never open a new unrelated spec number for a defect in an existing feature, and never group fixes under an umbrella spec.
+
 ## Long-running incidents: one doc, numbered sections — not a new file per check-in
 
 When an incident stays open across multiple sessions (root cause unconfirmed,
