@@ -536,6 +536,12 @@ When you see `last_status: error` on a cron, classify before escalating:
   `46 passed / 4 failed` with the SAME React hydration diagnosis (inline `caret-color`) — now **9
   consecutive** escalated runs. The `npm ci` EUSAGE lockfile blocker from day 25 is still present, so
   the vitest leg is STILL an ENVIRONMENT BLOCKER reading a stale tree. No action from a daily tick.
+  **2026-11-04 (day 30) — band flat, same blocker.** backend `9529/51` (⚪35, 🔴16), vitest `282p/1f`
+  (30 consecutive), E2E `47 passed / 3 failed` (10 consecutive, same hydration diagnosis), OVERALL
+  `9858 passed / 55 failed / 3 errors`. The frontend install leg still prints `npm ci` EUSAGE — now
+  TRUNCATED to `❌ Frontend dep install failed: l dependencies will be packed and installed as`, with
+  only the `aliases: clean-install, ic, install-clean, isntall-clean` tail surviving: that tail IS the
+  lockfile-mismatch error, so do not read the new wording as a new fault or the blocker as cleared.
 - **`SSM: Error response from daemon: No such container: amlhive-app-1` on `3ebed4e59ee3` (AML Hive Daily
   Business Report, 21:15) — a CONTAINER RENAME, and production is uniformly HEALTHY. Class this as a
   script fault, NOT a prod outage.** Seen 2026-10-26 21:15, the first report after the 0.50.185 deploy:
@@ -693,7 +699,11 @@ When you see `last_status: error` on a cron, classify before escalating:
 - **`FATAL: password authentication failed`**: Credential is wrong or expired. For env-var-based scripts: check the env var. For SSM-based scripts (`amlhive_daily_report.py`): the AWS Secrets Manager secret (`amlhive/prod/rds`) is out of sync with the actual RDS password — needs AWS console fix (see RDS Credential Isolation pitfall below).
 - **`Traceback` in script**: Genuine Python error. Read the traceback to diagnose.
 - **`401 Unauthorized` on 3+ crons same day**: Systemic credential failure — check provider API keys, not individual crons.
-- **`delivery_failed` with an EMPTY `last_error`**: the script ran and wrote its artifact — the failure is the outbound send, not the job. Confirm in `~/.hermes/logs/agent.log`: `Job '<id>': delivery error: Telegram send failed: Timed out (target telegram:<id>)`. Transient network / flood-control (seen 2026-09-13 07:00 on `8d3be30eb9f7`, whose output file was complete and healthy). Do not escalate unless it repeats on consecutive days — the next scheduled run resends.
+- **`delivery_failed` with an EMPTY `last_error`**: the script ran and wrote its artifact — the failure is the outbound send, not the job. Confirm in `~/.hermes/logs/agent.log`: `Job '<id>': delivery error: Telegram send failed: Timed out (target telegram:<id>)`. Transient network / flood-control (seen 2026-09-13 07:00 on `8d3be30eb9f7`, whose output file was complete and healthy). Do not escalate unless it repeats on consecutive days — the next scheduled run resends. Seen 2026-11-04
+  on `937bb914c497` (`last_status: delivery_failed`, `last_error` empty, though the job had printed
+  `OVERALL: ✅ PASS` four runs running): `agent.log` read `live adapter delivery to
+  telegram:-1004485329864 failed: Timed out, falling back to standalone` — the sync was green and the
+  owner simply never received that day's report, so report the MISSING DELIVERY, not a sync failure.
 
 ## "Never Ran" — Genuine Bug vs Expected
 
