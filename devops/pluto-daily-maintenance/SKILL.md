@@ -536,11 +536,11 @@ When you see `last_status: error` on a cron, classify before escalating:
   `46 passed / 4 failed` with the SAME React hydration diagnosis (inline `caret-color`) — now **9
   consecutive** escalated runs. The `npm ci` EUSAGE lockfile blocker from day 25 is still present, so
   the vitest leg is STILL an ENVIRONMENT BLOCKER reading a stale tree. No action from a daily tick.
-  **2026-11-04 (day 30) — band flat, same blocker.** backend `9529/51` (⚪35, 🔴16), vitest `282p/1f`
-  (30 consecutive), E2E `47 passed / 3 failed` (10 consecutive, same hydration diagnosis), OVERALL
-  `9858 passed / 55 failed / 3 errors`. The frontend install leg still prints `npm ci` EUSAGE — now
-  TRUNCATED to `❌ Frontend dep install failed: l dependencies will be packed and installed as`, with
-  only the `aliases: clean-install, ic, install-clean, isntall-clean` tail surviving: that tail IS the
+  **2026-11-04/05 (days 30-31) — band flat, same blocker.** backend `9529/51` (⚪35, 🔴16), vitest
+  `282p/1f` (31 consecutive), E2E `47 passed / 3 failed` (11 consecutive, same hydration diagnosis),
+  OVERALL `9858 passed / 55 failed / 3 errors` on BOTH days. The frontend install leg still prints
+  `npm ci` EUSAGE, now TRUNCATED to `❌ Frontend dep install failed: l dependencies will be packed and
+  installed as` + the `aliases: clean-install, ic, install-clean, isntall-clean` tail — that tail IS the
   lockfile-mismatch error, so do not read the new wording as a new fault or the blocker as cleared.
 - **`SSM: Error response from daemon: No such container: amlhive-app-1` on `3ebed4e59ee3` (AML Hive Daily
   Business Report, 21:15) — a CONTAINER RENAME, and production is uniformly HEALTHY. Class this as a
