@@ -451,3 +451,55 @@ function and the left edge had no equivalent.
 
 **Replay:** 47 hooks / 8 days → 1 changed (the broken one), 0 regressions. The repaired stat then failed
 `_hook_stat_ok` on title overlap, so the hook correctly fell back to title-only.
+
+**Rule 90 (Nov 5 2026) — a stop-list of FUNCTION WORDS is only as complete as the defects that built it.**
+`_TRAIL_COORD` (Rule 86) held the coordinators and the prepositions earlier hooks happened to end on, so
+`without` was absent and the ETSI/TTC/TTA hook shipped as *"…a 3GPP-style global AI standards body
+without"*. A hook that ends on ANY preposition is broken, so the set must enumerate the class, not the
+history: `without, within, between, against, through, during, per, via, upon, onto, toward(s), across,
+beyond, among, about, under, over, into, despite, since, until, versus` were added alongside the
+originals. Same discipline as Rule 63 (labels) and Rule 75 (`_META_LABEL_TAILS`): when the guard is a
+word list over a closed grammatical class, complete the class.
+
+**Rule 91 (Nov 5 2026) — a slice can end on a PARTICIPLE whose complement follows, and every existing
+guard is blind to it.** *"…while 59% have AI embedded"* shipped for *"…embedded in core processes"*:
+`_ends_on_verb` does not treat a participle as clause-final (so Rule 32's verb-tail cut never fires),
+Rule 65's noun-phrase completion refuses to extend past a function word (`in`), and the subordinate-tail
+guards only match conjunctions FOLLOWED by tokens. Fix: `_extend_participle_complement(head, sliced,
+limit)` — when the slice ends on a verb token (`_is_verb_token`) and the next source token is a
+preposition, append the preposition plus up to three lowercase content tokens, bounded by `limit + 30`.
+It must run AFTER `_complete_tail` because that function can rebuild the tail. General rule: an
+adjective/participle that takes a mandatory PP complement is a truncation risk a verb-based guard
+cannot see — check what the SOURCE says next, not just whether the slice reads as a clause.
+
+**Replay (Rules 90–91):** 151 titles / 9 days → 4 changed (the two defects, each appearing twice in the
+corpus), 0 regressions.
+
+**Rule 92 (Nov 6 2026) — the blog repeat window was NARROWER than the topic cycle, so every title
+returned verbatim as soon as it lapsed.** `repeat_blob` / `_ledger_recent` were built with `days=10`,
+which is only two turns of the `date % 5` slot. On the Cloud slot of 6 Nov the auto-slate emitted
+*Power, Not Land: The Data Centre Constraint That Will Re-Price Your Cloud* (delivered **16 Oct**, 21
+days earlier) and *FIRB Is Not the Last Hurdle* (delivered **21 Oct**), and the registered twin gate
+could not save either: `_repeat()`'s twin branch reads `repeat_blob`, so a twin that is itself outside
+the window is invisible (the Rule 81 failure, one layer down). Both titles were fresh by every gate and
+took slots #1 and #3. **Fix:** the blog repeat window is now 21 days (`days=21` for both the file scan
+and the ledger) — four turns of the cycle. This does not reintroduce Rule 18/29d starvation because a
+repeat was never *suppressed*: it ranks last (`t[5]`) and pads only when fewer than two fresh grounded
+candidates exist, and Rule 39 already prefers two unwritten ideas to three with one the reader has seen.
+General rule: a repeat window must be at least as long as the rotation period of the thing being
+repeated; at 2× a 5-day cycle you have built a 10-day amnesia, not a dedupe.
+
+**Replay (6 Nov, same run):** the third pick, *When Compute Goes to Market* (`compute-securitisation-
+lockin`), was ungrounded — its only hit was `bookbuild`, fired on the **NextDC raid**, a different
+company entirely, while its gap asserted a Firmus float the 14 Oct record says was withdrawn (Rule 57/58
+class: an entity keyword drifting onto a co-occurrence). Three subject-bound candidates were ADDED
+(`datacentre-firming-obligation` 9 hits, `datacentre-committed-capacity` 8, `datacentre-ownership-change`
+7; 0 on the seven prior retained days), each verified by printing the sentence its keywords fired in.
+Slate 16/21-Oct-repeat ×2 + ungrounded ×1 → 9/8/7 genuine fresh. `datacentre-firming-obligation` was
+registered one-way to `datacentre-energy-grid`: the twin map holds one value per key, so a three-member
+family (firming / energy-grid / grid-connection-financing) can only be partially closed — Rule 92's
+window is the general protection. **Also:** when the day's regulator story is already owned by the
+AMLHive lane (that morning's `content-ideas-<date>.md` shortlisted CDD-for-infrastructure-buyers,
+beneficial-ownership aggregation *and* firming-as-land-due-diligence off the same three findings),
+frame the blog on the buyer-side contract question and say so in the slate — same research, two
+audiences, no double-publish.
