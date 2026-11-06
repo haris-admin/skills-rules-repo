@@ -538,7 +538,14 @@ When you see `last_status: error` on a cron, classify before escalating:
   the vitest leg is STILL an ENVIRONMENT BLOCKER reading a stale tree. No action from a daily tick.
   **2026-11-04/05 (days 30-31) — band flat, same blocker.** backend `9529/51` (⚪35, 🔴16), vitest
   `282p/1f` (31 consecutive), E2E `47 passed / 3 failed` (11 consecutive, same hydration diagnosis),
-  OVERALL `9858 passed / 55 failed / 3 errors` on BOTH days. The frontend install leg still prints
+  OVERALL `9858 passed / 55 failed / 3 errors` on BOTH days.
+  **2026-11-06 (day 32) — the 🔴 count FELL 16 → 11, everything else held.** backend `9547 passed /
+  46 failed` (⚪35, 🔴11) after a clean `origin/dev` merge into `pluto_pr` (`f8cfd2671`); vitest `283p/1f`
+  (32 consecutive); E2E `46 passed / 4 failed` (12 consecutive, same hydration diagnosis); OVERALL
+  `9876 passed / 51 failed / 3 errors`. Frontend leg unchanged (`npm ci` EUSAGE lockfile), so vitest is
+  still an ENVIRONMENT BLOCKER on a stale tree. **A FALLING 🔴 count is never an escalation trigger** —
+  read it as the band improving; escalate only on a RISE or a named non-whitelisted E2E regression.
+  The frontend install leg still prints
   `npm ci` EUSAGE, now TRUNCATED to `❌ Frontend dep install failed: l dependencies will be packed and
   installed as` + the `aliases: clean-install, ic, install-clean, isntall-clean` tail — that tail IS the
   lockfile-mismatch error, so do not read the new wording as a new fault or the blocker as cleared.
