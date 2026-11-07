@@ -69,6 +69,10 @@ required, goes to Step 5 as a structured question. Record both answers.
   requirement (OpenSpec change, RCA, or explicit instruction) and a test that cites it.
   A change with no test is "not implemented" for closeout purposes. List it as a gap.
 - Confirm the API contract was not changed as a side effect (status codes, response fields).
+- Run the project's CI gate commands locally (format check, lint, security scan under the CI Python version, contract guard, snapshot checks) and
+  never chain a commit after a pipeline ending in `| tail`. Treat every ticked task as a claim: verify it against the test or file.
+- Check what the session's subagents left: `git worktree list`, `git branch`, remote branches, and that their branches were merged and removed.
+- Re-check every register row against `git log` and the live system before keeping it: rows go stale after pushes and deploys (RW-08 and RW-09 stayed open after the push in 2026-11). Close them with the commit hash.
 
 ## Step 3: Update documentation
 
@@ -83,6 +87,7 @@ Update only what the session actually changed. Read each file before editing.
 | `docs/api_version_tracking.md` and API/frontend guides | Any route or response shape changed. |
 | `prod_issues/` (RCA files) | A defect was investigated or fixed. Search existing RCAs first. |
 | `openspec/` | A requirement changed. Tests and spec change together, with Haris confirming. |
+| **Remaining work register** (`context.md`, section `Remaining work register`; create it if missing, above `Not yet done`) | EVERY closeout. Rewrite the table from Step 5 item 2: close finished rows, add new ones with the next free `RW-nn` id, keep each row's what, why, blocker, owner. Never drop an unfinished row silently; say why in the row or the change log. Date the heading. |
 | Memory (`~/.claude/projects/.../memory/`) | Durable facts, decisions or feedback. Update an existing memory before creating a new one. Do not save what the repo already records. |
 
 Rules for what you write:
@@ -91,6 +96,7 @@ Rules for what you write:
 - Label interpretations of free or voice text as "my reading".
 - Do not hardcode values a person might change. Do not pin counts or rosters in tests or docs.
 - Dates absolute (e.g. 2026-11-05), never "today" or "last week".
+- Future agents pick up from the register, so write each row to stand alone: a fresh agent with no chat history must be able to start it. Reference files, OpenSpec ids and commit hashes, not conversation. Also make sure `AGENTS.md` section 4 (handoff routine) tells new sessions to read the register; add that step if missing.
 
 ## Step 4: Clean up
 
@@ -112,7 +118,8 @@ unless the item is clearly one of this session's own temporary files.
 1. List every open decision as a structured question with options and a recommendation
    (use AskUserQuestion). Do not relay status while decisions are pending.
 2. List remaining work, each with: what, why it matters, blocker, owner (Haris, agent,
-   third party).
+   third party). Write this same list into the
+   `Remaining work register` in `context.md` (Step 3) so it survives the session.
 3. Flag review debt: requirement changes void reviews of the changed scope.
 4. Flag release state: version bumped in all files? CI gate run? Production push
    needed, and if so the plain warning that pushing `main` deploys.
@@ -128,15 +135,15 @@ Output, concise and skimmable:
 Changed:        <grouped list>
 Verified:       <commands run and results; what was NOT run>
 Conflicts:      <found, fixed, escalated>
-Docs updated:   <files>
+Docs updated:   <files, always including the context.md register>
 Docs skipped:   <files and why>
 Cleaned:        <items>   Needs your OK to delete: <items>
 Uncommitted:    <count and summary>   Unpushed commits: <count>
 Open decisions: <list or "none">
-Remaining work: <list>
+Remaining work: <list; also written to the context.md register, say which RW ids>
 Safe to close:  yes / no, because <reason>
 ```
 
 "Safe to close" is "no" while any of these is true: unresolved conflicts, failing checks, uncommitted work
 Haris has not chosen to leave, undocumented contract change, unrecorded decision,
-or a handoff command not yet confirmed run.
+a handoff command not yet confirmed run, or the remaining-work register not updated.
