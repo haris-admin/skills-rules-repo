@@ -402,7 +402,9 @@ When you see `last_status: error` on a cron, classify before escalating:
   A CONTENT LANE" + the 2026-10-06 status append.
 - **A paused job's stale `last_status: error` is NOT a current failure — read `enabled` before classifying.**
   `daily_cron_audit.py` and this skill's own standing-fault records both key off `last_status`, so a job
-  the owner PAUSED keeps appearing as a live red indefinitely. Seen 2026-09-30: `0e14d2e1095f`,
+  the owner PAUSED keeps appearing as a live red indefinitely. **`daily_cron_audit.py` now prints
+  `DISABLED (paused by owner …)` instead of the old ambiguous `CHECK` verdict for `enabled: false` jobs
+  (patched 2026-11-07, verified live) — a `DISABLED` verdict needs no action; a `CHECK` verdict does.** Seen 2026-09-30: `0e14d2e1095f`,
   `57e72391a773` and `a2ff28e23482` are `enabled: false` (retired INTO the chain orchestrator
   `7e4a2379157d`, 09:00 daily, silent when green) while still carrying `error` from their last run. Pull
   `enabled` + `next_run_at` for every non-ok job, and verify the REPLACEMENT job instead of the retired one.
@@ -539,16 +541,15 @@ When you see `last_status: error` on a cron, classify before escalating:
   **2026-11-04/05 (days 30-31) — band flat, same blocker.** backend `9529/51` (⚪35, 🔴16), vitest
   `282p/1f` (31 consecutive), E2E `47 passed / 3 failed` (11 consecutive, same hydration diagnosis),
   OVERALL `9858 passed / 55 failed / 3 errors` on BOTH days.
-  **2026-11-06 (day 32) — the 🔴 count FELL 16 → 11, everything else held.** backend `9547 passed /
-  46 failed` (⚪35, 🔴11) after a clean `origin/dev` merge into `pluto_pr` (`f8cfd2671`); vitest `283p/1f`
-  (32 consecutive); E2E `46 passed / 4 failed` (12 consecutive, same hydration diagnosis); OVERALL
-  `9876 passed / 51 failed / 3 errors`. Frontend leg unchanged (`npm ci` EUSAGE lockfile), so vitest is
-  still an ENVIRONMENT BLOCKER on a stale tree. **A FALLING 🔴 count is never an escalation trigger** —
-  read it as the band improving; escalate only on a RISE or a named non-whitelisted E2E regression.
-  The frontend install leg still prints
-  `npm ci` EUSAGE, now TRUNCATED to `❌ Frontend dep install failed: l dependencies will be packed and
-  installed as` + the `aliases: clean-install, ic, install-clean, isntall-clean` tail — that tail IS the
-  lockfile-mismatch error, so do not read the new wording as a new fault or the blocker as cleared.
+  **2026-11-06/07 (days 32-33) — 🔴 fell 16 → 11 then held flat.** 11-06: backend `9547/46` (⚪35,
+  🔴11) after a clean `origin/dev` merge into `pluto_pr` (`f8cfd2671`), vitest `283p/1f` (32 consecutive),
+  E2E `46p/4f` (12 consecutive), OVERALL `9876/51/3`. 11-07 (day 33): backend **identical** `9547/46`
+  ⚪35 🔴11, vitest `283p/1f` (33), E2E `47p/3f` (13), OVERALL `9877/50/3`. Frontend leg still `npm ci`
+  EUSAGE, TRUNCATED to `❌ Frontend dep install failed: l dependencies will be packed and installed as`
+  + the `aliases: clean-install, ic, install-clean, isntall-clean` tail — that tail IS the
+  lockfile-mismatch error, so do not read the wording as a new fault, and vitest stays an ENVIRONMENT
+  BLOCKER on a stale tree. **A FALLING 🔴 count is never an escalation trigger** — read it as the band
+  improving; escalate only on a RISE or a named non-whitelisted E2E regression.
 - **`SSM: Error response from daemon: No such container: amlhive-app-1` on `3ebed4e59ee3` (AML Hive Daily
   Business Report, 21:15) — a CONTAINER RENAME, and production is uniformly HEALTHY. Class this as a
   script fault, NOT a prod outage.** Seen 2026-10-26 21:15, the first report after the 0.50.185 deploy:
