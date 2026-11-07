@@ -25,3 +25,9 @@ Added 18 Oct 2026 (Haris). Long paths wrapped and split in his terminal and a re
 ## Verification & Guardrails
 
 - If the user reports a wrapped or split command, the fix is a shorter path, not repeating the long one.
+
+7. **One script path per `!` line.** `! ~/a.sh, ~/b.sh` is read as the single file name `~/a.sh,` and nothing runs (AMLHive, 8 Nov 2026). Give one command per line, in order, and wait for each result.
+8. **Never test a gate through a truncating pipe.** A push script that ran `check | tail -3` and then `grep -q "RESULT: PASS"` refused a passing release. Send the full output to a file, show the part you want, and grep the file.
+9. **A script that makes many API calls (Plane closes) outlasts the 120 second foreground limit** and moves to the background. Tell the user not to start a second copy and report from its output file.
+10. **macOS bash 3.2 mishandles a quoted heredoc inside `$( ... )`.** Write the remote script to a file with a top-level `cat > "$F" <<'EOF'`, substitute placeholders with Python, and give the script a dry-run switch that stops before any remote call. Run the dry run before handing it over.
+11. **Delete handoff scripts of a release once it is live and verified**, and remove its worktree (`git worktree remove`, never force). The branch stays.
