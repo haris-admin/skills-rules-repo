@@ -84,3 +84,10 @@ the open items that matter — don't dump raw JSON at the user.
 - `productivity/notion` — `references/plane-integration.md`
 - `devops/notion-cmdb-operations` — the CMDB side
 - Rule: `rules/fleet-records-system-of-record.md`
+
+## Bulk updates and rate limits (HandleDispute, 8 Nov 2026)
+
+- Plane answered HTTP 429 after about 30 calls in a minute. Read the ticket list once into a file, sleep 3 seconds between writes, and on a 429 wait 40 seconds and retry that one call. Do not re-run a whole batch: it repeats comments.
+- Move a ticket to Done only with evidence that it is released and checked live, and write that evidence in a comment on the ticket. A ticked task is not evidence.
+- A script that creates tickets from specs can duplicate one you created by hand: dry run it first and search titles for the spec id.
+
