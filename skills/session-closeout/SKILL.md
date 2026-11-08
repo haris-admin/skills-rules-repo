@@ -72,6 +72,7 @@ required, goes to Step 5 as a structured question. Record both answers.
 - Run the project's CI gate commands locally (format check, lint, security scan under the CI Python version, contract guard, snapshot checks) and
   never chain a commit after a pipeline ending in `| tail`. Treat every ticked task as a claim: verify it against the test or file.
 - Check what the session's subagents left: `git worktree list`, `git branch`, remote branches, and that their branches were merged and removed.
+- Before saying all work is checked in, inspect the status of each relevant checkout, including the shared checkout. Compare uncommitted content and parallel commits with the delivered version; a different commit hash alone does not establish different content. Report remaining edits and ownership accurately. Preserve another session's work and do not remove its worktree or overwrite its edits without authorization.
 - Re-check every register row against `git log` and the live system before keeping it: rows go stale after pushes and deploys (RW-08 and RW-09 stayed open after the push in 2026-11). Close them with the commit hash.
 
 ## Step 3: Update documentation
