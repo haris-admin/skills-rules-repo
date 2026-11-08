@@ -541,15 +541,21 @@ When you see `last_status: error` on a cron, classify before escalating:
   **2026-11-04/05 (days 30-31) — band flat, same blocker.** backend `9529/51` (⚪35, 🔴16), vitest
   `282p/1f` (31 consecutive), E2E `47 passed / 3 failed` (11 consecutive, same hydration diagnosis),
   OVERALL `9858 passed / 55 failed / 3 errors` on BOTH days.
-  **2026-11-06/07 (days 32-33) — 🔴 fell 16 → 11 then held flat.** 11-06: backend `9547/46` (⚪35,
-  🔴11) after a clean `origin/dev` merge into `pluto_pr` (`f8cfd2671`), vitest `283p/1f` (32 consecutive),
-  E2E `46p/4f` (12 consecutive), OVERALL `9876/51/3`. 11-07 (day 33): backend **identical** `9547/46`
-  ⚪35 🔴11, vitest `283p/1f` (33), E2E `47p/3f` (13), OVERALL `9877/50/3`. Frontend leg still `npm ci`
-  EUSAGE, TRUNCATED to `❌ Frontend dep install failed: l dependencies will be packed and installed as`
-  + the `aliases: clean-install, ic, install-clean, isntall-clean` tail — that tail IS the
+  **2026-11-06→08 (days 32-34) — band flat at 🔴 11-12.** 11-06: backend `9547/46` (⚪35, 🔴11) after a
+  clean `origin/dev` merge into `pluto_pr` (`f8cfd2671`), vitest `283p/1f` (32 consecutive), E2E `46p/4f`
+  (12), OVERALL `9876/51/3`. 11-07: backend identical, `283p/1f` (33), `47p/3f` (13), `9877/50/3`.
+  11-08: backend `9546/47` (⚪35, **🔴12**), vitest `287p/1f` (34), E2E `46p/4f` (14), `9879/52/3`.
+  Frontend leg still `npm ci` EUSAGE, TRUNCATED to `❌ Frontend dep install failed: l dependencies will
+  be packed and installed as` + the `aliases: clean-install, ic, isntall-clean` tail — that tail IS the
   lockfile-mismatch error, so do not read the wording as a new fault, and vitest stays an ENVIRONMENT
   BLOCKER on a stale tree. **A FALLING 🔴 count is never an escalation trigger** — read it as the band
-  improving; escalate only on a RISE or a named non-whitelisted E2E regression.
+  improving; a ±1 drift inside a flat band is counter noise; escalate only on a sustained RISE or a
+  named non-whitelisted E2E regression.
+  **The runner's header prints its START time labelled `AEST` while the host runs AEDT** (`★ AML Hive
+  Daily Test Suite — 2026-11-08 02:40:11 AEST` for a `03:40` AEDT dispatch; the header clock is UTC+10),
+  and the run takes ~51 min, so `last_run_at` and the output-file mtime are COMPLETION (04:36), not
+  dispatch. Neither is a late fire — convert the header (+1 h to AEDT) and compare that to the expr;
+  never re-derive a dispatch delay from the output file name.
 - **`SSM: Error response from daemon: No such container: amlhive-app-1` on `3ebed4e59ee3` (AML Hive Daily
   Business Report, 21:15) — a CONTAINER RENAME, and production is uniformly HEALTHY. Class this as a
   script fault, NOT a prod outage.** Seen 2026-10-26 21:15, the first report after the 0.50.185 deploy:
