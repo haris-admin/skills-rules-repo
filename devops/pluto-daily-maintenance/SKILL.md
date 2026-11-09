@@ -202,7 +202,8 @@ When you see `last_status: error` on a cron, classify before escalating:
 
 ### By-Design (NOT errors — do NOT escalate)
 - **The podcast leg is RED by design: `cc76c11d35d2` (Capture Watchdog 06:25) and the chain's `verify`
-  row.** ~62.5% of the corpus has no readable transcript (YouTube IP block), so the watchdog tripping is
+  row.** ~63% of the corpus has no readable transcript (YouTube IP block; 63.2% / 1,657 episodes on
+  2026-11-09 and rising as the corpus grows faster than transcripts resolve), so the watchdog tripping is
   the designed signal, not a regression — the corpus grows faster than transcripts resolve. **The chain is
   judged by the ONE 09:00 assertion job `7e4a2379157d`**, whose other rows (`ingest/chunk/export/
   alexandria/contract/palace/feed`) carry the real status. A `verify` leg reporting `locked=N error=1`
