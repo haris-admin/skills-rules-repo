@@ -541,14 +541,20 @@ When you see `last_status: error` on a cron, classify before escalating:
   **2026-11-04/05 (days 30-31) — band flat, same blocker.** backend `9529/51` (⚪35, 🔴16), vitest
   `282p/1f` (31 consecutive), E2E `47 passed / 3 failed` (11 consecutive, same hydration diagnosis),
   OVERALL `9858 passed / 55 failed / 3 errors` on BOTH days.
-  **2026-11-06→08 (days 32-34) — band flat at 🔴 11-12.** 11-06: backend `9547/46` (⚪35, 🔴11) after a
-  clean `origin/dev` merge into `pluto_pr` (`f8cfd2671`), vitest `283p/1f` (32 consecutive), E2E `46p/4f`
-  (12), OVERALL `9876/51/3`. 11-07: backend identical, `283p/1f` (33), `47p/3f` (13), `9877/50/3`.
-  11-08: backend `9546/47` (⚪35, **🔴12**), vitest `287p/1f` (34), E2E `46p/4f` (14), `9879/52/3`.
-  Frontend leg still `npm ci` EUSAGE, TRUNCATED to `❌ Frontend dep install failed: l dependencies will
-  be packed and installed as` + the `aliases: clean-install, ic, isntall-clean` tail — that tail IS the
-  lockfile-mismatch error, so do not read the wording as a new fault, and vitest stays an ENVIRONMENT
-  BLOCKER on a stale tree. **A FALLING 🔴 count is never an escalation trigger** — read it as the band
+  **2026-11-06→09 (days 32-35) — band flat at 🔴 11-12, and the npm-ci blocker is GONE (fixed in code).**
+  11-06: backend `9547/46` (⚪35, 🔴11) after a clean `origin/dev` merge into `pluto_pr` (`f8cfd2671`),
+  vitest `283p/1f` (32 consecutive), E2E `46p/4f` (12), OVERALL `9876/51/3`. 11-07: backend identical,
+  `283p/1f` (33), `47p/3f` (13), `9877/50/3`. 11-08: backend `9546/47` (⚪35, **🔴12**), vitest `287p/1f`
+  (34), `46p/4f` (14), `9879/52/3`. 11-09: backend **identical `9546/47`** (⚪35, 🔴12), vitest `287p/1f`
+  (35), E2E **`44p/6f`** (15 consecutive — failures up from 4, same hydration diagnosis; watch it, do not
+  escalate on a single run), OVERALL `9877/54/3`.
+  **The frontend install now SELF-HEALS — this SUPERSEDES the day-25 ENVIRONMENT BLOCKER.** The runner
+  (patched 2026-11-08, `amlhive_daily_test_runner.py:195`) prints `⚠️ npm ci failed (lockfile drift) —
+  falling back to npm install --package-lock=false` then `✅ Frontend deps installed via fallback
+  (lockfile untouched)`, so vitest again runs on a FRESHLY installed tree. Stop classifying that leg as
+  "stale tree": a `npm ci` fallback line is now the HEALTHY shape. `origin/dev`'s lockfile (`50fb44a55`,
+  zod 3→4.6.7) is still out of sync — fix it if you want `npm ci` itself green, but the cron no longer
+  depends on it. **A FALLING 🔴 count is never an escalation trigger** — read it as the band
   improving; a ±1 drift inside a flat band is counter noise; escalate only on a sustained RISE or a
   named non-whitelisted E2E regression.
   **The runner's header prints its START time labelled `AEST` while the host runs AEDT** (`★ AML Hive
