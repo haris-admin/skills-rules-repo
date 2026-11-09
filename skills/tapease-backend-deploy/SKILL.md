@@ -177,3 +177,18 @@ commit + the 7-file bump, no tag.
 - **Production check without credentials:** after the `main` push the site returns 502 for about 4 minutes (CI gates, then restart; longer than the older 2 to 3 minute figure). Read-only SSM to `i-062b8ef5437ea6e2f` is allowed when the owner has asked for the push: `systemctl is-active tapease-backend`, `systemctl show tapease-backend -p ActiveEnterTimestamp`, the `VERSION` line of `/home/ec2-user/app/backend/app/config.py`, `curl 127.0.0.1:8000/health`, and COUNTS of log lines (never print production log lines: they hold customer data).
 - **Order that worked:** commit on `dev` (no `[skip deploy]` on dev), `git push origin dev`, SSM staging deploy, staging proof, then `git push origin <sha>:refs/heads/main` as a fast-forward. Check `git ls-remote origin main dev` and `merge-base --is-ancestor` immediately before.
 
+## Learned in the v4.5.21 release (9 Nov 2026)
+
+- **The auto-mode classifier blocked `git push origin <sha>:refs/heads/main` and a remote command that wrote a file to the production box.** Do not work
+  around it. Write a short guarded script (`~/release-main.sh`: refuses unless `origin/dev` is the expected release commit and `origin/main` is its ancestor,
+  then pushes the fast-forward), `bash -n` it, and give Haris `! ~/release-main.sh`. A direct push to `main` shows "Bypassed rule violations" (PR and status
+  check rules); that is the owner bypass and is expected.
+- **`gh run list` returned HTTP 404** (token has no Actions scope). Watch the deploy by polling `https://api.tapease.com.au/health` for the new `version`
+  (it flipped within about 5 minutes), then verify on the box over read-only SSM.
+- **The production deploy moves and prunes `app/log/`**, so the day's log starts at the restart (here 02:59 UTC). Compare windows, and re-check anything that
+  happened just before the release against the database.
+- **The staging SSM deploy (`deploy_dev_docker.sh dev`) worked** from the Claude session; staging's dev instance role has no SES send permission and an S3
+  log-upload bucket that does not exist, so those two errors are old noise there and a staging run cannot prove an email.
+- Release checklist reminder: full suite on the final code (not the code before a simplify pass), `ruff format --check`, `ruff check`, `bandit -ll` exit code
+  (not through `| tail`), mypy on new modules, the 7-file bump, then staging, then production.
+

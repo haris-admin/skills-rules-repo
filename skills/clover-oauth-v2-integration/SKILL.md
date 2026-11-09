@@ -27,8 +27,14 @@ mapp/backend (hop 2) --Tapease M2M key--> Portal backend (hop 3) --Bearer--> Clo
   so two refreshers destroy each other. The Lambda must never refresh; it asks the backend (shared-secret internal endpoint, not built yet).
 - **One token pair per merchant**, never one for the company. Clover has no client-credentials grant and no umbrella token; each merchant
   approves once (a market install, or a staff-run in-person session).
-- **Legacy and OAuth run in parallel.** `clover_merchant_credentials.use_oauth` (default false) is the per-merchant switch. A merchant already in
-  `trans_devices` stays on the legacy token; an unknown merchant (Fiserv's own test install) is accepted OAuth only.
+- **Legacy and OAuth run in parallel.** `clover_merchant_credentials.use_oauth` is the per-merchant switch. **Since backend 4.5.21 (9 Nov 2026) every
+  successful approval stores `use_oauth = true`**, from a Tap-Ease link or a Clover install, for a known or a new merchant, first approval or re-approval
+  (Haris: "Set the flag as true on the backend once we get the successful credentials"; spec `oauth-approval-sets-use-oauth`). Before 4.5.21 a merchant
+  already in `trans_devices` stayed on legacy and needed a manual `UPDATE`; a merchant approved before that release still does.
+- **An OAuth merchant with no terminal assigned to a driver gets no Lambda sync** (token answer `skipped`, `no_assigned_terminal`; decisions 67 to 71).
+  Its cursor is held, so nothing is lost, but the sync alert ("skipped x1") repeats every run until a driver is assigned. A portal assignment
+  (`POST /admin/assign_device_to_user`, status 1) also runs a safeguard: it makes sure the merchant is switched on, logs
+  `Clover OAuth at terminal assignment | outcome=...` and sends a temporary email to `NOTIFICATION_EMAIL`.
 - **The single redirect URI** `GET /integrations/clover/oauth/callback` serves two modes: with `state` a staff connect (single use, expiring,
   merchant-bound, hash stored), without it a Clover install (the code exchange is the proof, and the merchant is confirmed with Clover).
 - **Secrets** live only in `portal/clover-oauth/<env>` (app secret, Fernet encryption key, internal API secret), created by
@@ -59,12 +65,31 @@ mapp/backend (hop 2) --Tapease M2M key--> Portal backend (hop 3) --Bearer--> Clo
 - The Lambda Gold devices sync (`devices_gold_service.py`) already creates `trans_devices` rows (`ACTIVE`) from Silver devices that have a `terminal_id`, matching existing rows by `terminal_id`. A placeholder row with no `terminal_id` would be missed and duplicated unless a merge rule is added.
 - Onboarding direction (Haris, 27 Oct 2026, verbatim in the backend repo's `docs/clover_dashboard_install_assessment_2026-10-27.md`): install creates an unlinked device row at the callback (reverses the callback's documented no-write property; spec R20 is the no-API-key rule), `link_status` column, pending user activated by invite, staff link. Merge rule (fill the placeholder) and email (Clover if returned, else staff) decided; plan in the backend repo's `openspec/changes/clover-install-unlinked-onboarding/`. Terms gate (O7), O9a and the launch endpoint still open.
 
+- **An OAuth token is refused for the WHOLE call if any `expand` field needs a permission the app lacks** (9 Nov 2026): Clover answers
+  `403 {"message":"Invalid permissions for expandable fields."}`. The old merchant API token carried every permission, so the same call worked.
+  `customers` and `metadata` were refused; the Lambda's payment fetch (`bronze_payments_extended_fetcher.py`) asked for both, so the first payment of
+  every merchant moved to OAuth failed with 403 on every run. Fixed in Lambda 0.10.14 (customers) and 0.10.15 (metadata). Request only the expansions the
+  pipeline reads. Find the culprit by calling Clover for ONE payment once per expansion and printing only status codes (never the token): see
+  `references/probe_expand.py` (run it as `ec2-user` on the production box through a short script Haris starts; the auto-mode classifier blocks an agent from running it).
+- **The first thing a customer sees is usually our error page, not Clover's.** Clover first calls the callback with no `code` (only `merchant_id` and
+  `client_id`; a launch request), we answer 400, then after consent a second call arrives with the `code` and works. Seen for three merchants on 9 Nov. A
+  repeated code gives a 502 (Clover: "Failed to validate authentication code") even though the merchant is already connected. A friendly handling of both
+  is proposed, not built: it changes the callback's frozen 400 and needs Haris's approval.
+- **A Clover "installed" list entry proves nothing about our side.** Only a `clover_merchant_credentials` row does. Merchants showed "installed" in
+  Clover with no callback at all, and 1086's first attempt was refused by Clover for redirect `https://api.tapease.co` before reaching us.
+- **A log search proves absence only for the window the log covers.** The backend deploy moves and prunes `app/log/`, so after a release the day's file
+  starts at the restart. Confirm "no approval" with the credential row (database), not a log (`rules/a-log-search-proves-absence-only-for-the-window-it-covers.md`).
+
 ## Verify
 
 ```bash
 # read-only check of staging (no secrets printed): infra/staging-clover-oauth/verify.sh in the backend repo
 ./infra/staging-clover-oauth/verify.sh
 ```
+
+After a switch, check three things (read-only): the Lambda's token answer for the merchant is `source: oauth` (backend log, within about 4 minutes), the
+Lambda's `Clover token sources this run` line lists the merchant under `oauth_merchants` with `skipped=0`, and the Lambda log has no
+`FETCH_FAILED` or `403 Forbidden` for it. Then watch the first payment through bronze, silver and gold.
 
 ## Related
 

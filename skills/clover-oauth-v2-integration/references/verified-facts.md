@@ -67,3 +67,11 @@ Dashboard permission names: Customers, Employees, Inventory, Merchant, Orders, P
 - Production Fiserv hosts for Australia are the `ap` region (`api.ap.clover.com`). Whether an AU **sandbox** merchant is served by `sandbox.dev.clover.com` / `apisandbox.dev.clover.com` is not documented; it was asked of Clover.
 - A Flex 4 moved from the US Test Merchant to an AU sandbox merchant reported `FATAL: SRED_KEY_MISSING` on every card payment (provisioned, but SRED DUKPT, SRED TA and PIN DUKPT keys all false). Moving it back restored card payments.
 
+## 9 Nov 2026 (production, from the backend and Lambda logs)
+
+- `GET /v3/merchants/{id}/payments/{paymentId}` with an OAuth token: plain 200, list 200, each of 26 `expand` values 200 except `customers` and `metadata`, which
+  return 403 "Invalid permissions for expandable fields"; the full list returns the same 403 (probe by Haris on the production box, status codes only).
+- Callback sequences seen: no `code` (400) then with `code` (200) for merchants 1015, 1032 and 1045; a second request with the same `code` returned Clover 401
+  "Failed to validate authentication code" and our 502 for 1045. Exchange with a valid code takes about 2.2 s; the no-code refusal about 6 to 9 ms.
+- Clover's installed-app list (version 1.1.11, AU free subscription) showed merchants as installed that had no credential row and no callback in 30 days.
+
