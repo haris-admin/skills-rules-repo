@@ -24,3 +24,4 @@ Passenger/customer receipts and driver settlement reports serve distinct audienc
 ## Why this exists
 
 **8 Nov 2026 (Tapease POS Driver Terminal v1.1.12):** Initial draft footers grouped the 1300 number, mobile SMS number, and email together on both passenger receipts and driver shift reports. Haris clarified that passenger receipts must be email-only, driver settlement reports should include the 1300 number, and mobile numbers must remain reserved exclusively for automated SMS dispatch.
+

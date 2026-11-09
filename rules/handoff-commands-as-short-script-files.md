@@ -21,6 +21,9 @@ Added 18 Oct 2026 (Haris). Long paths wrapped and split in his terminal and a re
 7. **Make the name typo-proof.** On 3 Nov 2026 `~/hd-ses-apply.sh` was typed with a trailing comma, and `~/hd-` and `~/hd` were sent twice as truncated fragments. Prefer a name of 10 characters or fewer, give a second short alias (`ln -s`) when the first fails, and tell the user the exact command with no trailing punctuation.
 8. **Infrastructure applies are always handed over.** The auto-mode classifier blocks agent `terraform apply`. Save the plan with `-out`, show the summary, then write a script that applies that exact plan file. Never chain a dry run and its apply into one command (see `dry-run-output-read-before-apply`).
 9. **Tell the user which scripts are finished** and to delete them (token and apply scripts are one-time).
+10. **One command per line, no trailing punctuation.** On 9 Nov 2026 `~/prod-tunnel.sh` and `open` pasted on two lines ran as two commands (the second was the macOS `open`), and `~/chk-stuck.sh,` with a trailing comma failed three times. Give each command on its own single line. If a stray name keeps recurring, a symlink with that exact name is a harmless way to unblock.
+11. **Do not assume a port or a process pattern.** Let the script find the tunnel (`lsof -nP -iTCP -sTCP:LISTEN`, the `session-manager-plugin` row). A `pkill -f` pattern that does not match leaves the production tunnel open.
+12. **Close what you opened before deleting the script that closes it.** When a tunnel script is deleted first, give the user the PID and `kill <pid>`, then ask them to confirm the port is silent.
 
 ## Verification & Guardrails
 

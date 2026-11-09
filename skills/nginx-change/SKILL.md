@@ -29,8 +29,8 @@ write-up: `context/RCA-2026-08-29-nginx-502-outage.md`. Process rules:
 | `tapease.com.au/api/` upstream | `http://10.0.2.161:80/` (prod backend) — legacy path |
 | `tapease.com.au/stg-api/`, `/stage-api/` | `http://3.26.61.230:8000/` (dev backend) |
 | `api.tapease.com.au/` | `http://10.0.2.161:80/` (prod backend) — canonical public API |
-| `api-stg.tapease.com.au/` | `http://3.26.61.230:8000/` (staging backend) |
-| `api-pos-stg.tapease.com.au/` | `http://3.26.61.230:8001/` (POS staging backend — same box as api-stg, different dev port) |
+| `api-stg.tapease.com.au/` | `http://54.79.142.20:8000/` (staging backend; the repo mirror still said `3.26.61.230` until 2026-11-09, the live box is the truth) |
+| `api-pos-stg.tapease.com.au/` | `http://54.79.142.20:8001/` (POS staging backend, same box as api-stg, different port; live value as of 2026-11-09) |
 | API TLS | one SAN cert `/etc/letsencrypt/live/api.tapease.com.au/` covers `api.` + `api-stg.` + `api-pos-stg.` |
 | DNS | Route53 zone `tapease.com.au.` (`Z03467402O9680BIPVEOP`). Every `api*` name is an A-record to `13.210.208.34` — same frontend box, never the backend's own IP. |
 | Deploy scripts on the box | **NOT pre-staged.** `/home/ec2-user/scripts/safe-nginx-reload.sh` does not exist — the app deploy only ships the Next.js build, not `infra/`. Upload `safe-nginx-reload.sh` + `preflight-nginx.sh` + `postdeploy-smoke.sh` together to a scratch dir (e.g. `/tmp/nginx-safe-reload/`) before every use; they must sit in the same directory (the script finds its deps via its own dirname). See step 7. |
@@ -59,7 +59,7 @@ The root `location /` in the **`tapease.com.au`** `443` server **must** proxy to
    diff -u "infra/nginx/$FILE" /tmp/live.conf
    ```
    If they differ, reconcile first (update the mirror from the box, commit) before
-   making your change.
+   making your change. **Build your change on the live file, never on a stale mirror**: on 2026-11-09 the mirror still held the old staging backend IP, and applying it as it stood would have pointed staging at a dead address. Also remember this box serves production `api.` and the marketing site, so a person runs the apply script and reads PASS lines for preflight and smoke.
 3. **Edit `infra/nginx/$FILE`** — smallest change possible.
 4. `git diff infra/nginx/` — review every line with the user.
 5. **`grep -n '\\$' infra/nginx/$FILE` → must be empty.** Any `\$` is an

@@ -44,7 +44,7 @@ safely. Escalate the rest as open decisions.
 2. **Behind the remote:** `git fetch`, then `git rev-list --left-right --count origin/<branch>...HEAD`.
    If behind, integrate (fast-forward or rebase) only when the tree is clean or the changes
    are safely stashed or committed. Never force anything. Do not push.
-3. **Mixed work in one tree:** changes from different tasks or sessions sharing the working
+3. **Mixed work in one tree, and sibling checkouts:** `git worktree list` also shows sibling directories of the same repo (for example `<repo>-fix`) that another session may be using. Read their `git status` and `git diff` (never change them) and compare with what was delivered: on 9 Nov 2026 a parallel session held an uncommitted duplicate of the released fix, claiming the same version, that would have conflicted with `master`. Changes from different tasks or sessions sharing the working
    tree. Group files by task and propose separate commits (`git add -p` or explicit paths).
    A fix that unblocks CI is committed on its own, ahead of unrelated feature work.
 4. **Branch mismatch:** compare the current branch with the one the session started on and
@@ -107,6 +107,7 @@ unless the item is clearly one of this session's own temporary files.
 - Handoff scripts Haris was asked to run (e.g. `~/*.sh`): remind him to delete them
   (rule: he runs `rm`), or delete only if he confirmed the run succeeded and asked.
 - Scratch files, debug prints, `.orig`, `__pycache__` noise, stray logs, temp SQL.
+- **Stale-document sweep.** List tracked files by last commit date and inbound references (`git log -1 --format=%cs -- <file>`, `grep -rIlF <name>`). Check every document index in `AGENTS.md` and `README` for entries whose target does not exist, and every markdown link for dead targets. Remove only tracked files that are clearly historical, have no live inbound reference and are recoverable from git (for example a progress file stuck on an old version, finished migration prompts, a scratch test), in a local commit, and fix the pointers that named them. List borderline files (duplicates, plans, policy JSON, anything an index or script still cites) for approval instead of deleting.
 - Untracked files: classify as keep (commit), ignore (.gitignore), or delete.
 - Stale branches and worktrees created in the session (`git branch -vv`, `git worktree list`).
 - Anything in the scratchpad directory is disposable; anything in the repo is not

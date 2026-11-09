@@ -53,3 +53,4 @@ Standard Type 1 fonts in PDF 1.4 do not parse multi-byte UTF-8. Without an expli
 ## Why this exists
 
 **8 Nov 2026 (Tapease POS Driver Terminal v1.1.12):** Digital PDF receipts downloaded via on-screen QR codes displayed `Mastercard ¢¢¢¢ 5678` instead of bullets because Helvetica lacked `/WinAnsiEncoding` and raw UTF-8 bytes were emitted into the PDF content stream.
+

@@ -132,6 +132,16 @@ production data repair (see `prod-issue-management`'s stuck-vs-slow section
 for how to size a backlog before deciding whether a hand-off script is even
 worth writing).
 
+## Read-only production check scripts: lessons (9 Nov 2026)
+
+- **Print named columns, not `to_jsonb(row)`.** A whole-row dump printed `card_first6`, `card_last4` and a device `current_setup_otp`. If a row dump is needed, subtract `clover_token` and `current_setup_otp` and name the other columns.
+- **`bronze_sync_state.last_successful_sync_start_time_ms` is text in production** although the Lambda model says `BigInteger`. Cast behind a guard: `CASE WHEN col ~ '^[0-9]+$' THEN to_timestamp(col::bigint/1000.0) END`.
+- **`UNION` needs matching types**: `processed_status` is an integer in Silver and text in Bronze, so cast both to text.
+- **Column names confirmed in production:** `trans_devices` key is `device_id` (not `id`) with `custom_term_id`, `terminal_id`, `terminal_merchant_id`, `merchant_id_clover`, `is_tapease_pos_enabled`, `last_paired_at`; `trans_device_users` has `device_id`, `user_id`, `status` (1 is ACTIVE); `clover_merchant_credentials` has `merchant_id`, `status`, `use_oauth`, `approved_at`, `last_refreshed_at`, `access_token_expires_at`, `last_error` and no scope column; Gold payments are in `trans_clover_transaction_payments` (`transaction_id`, `net_amount`, `surcharge_amount`, `payment_tip_amount`, `additional_charge_type`, `processed_status`).
+- **A script finds the tunnel itself** (the `session-manager-plugin` row from `lsof -nP -iTCP -sTCP:LISTEN`); the port was 5434 but is not guaranteed. The tunnel drops when idle, so a connection refused means reopen it, not a bad script.
+- **Lambda log checks need no database.** Each JSON log line carries a `version` field, and the `Clover token sources` line shows which merchants use OAuth; `PAYMENT_CALC_AUDIT` lines show each flagged-device payment's gross, net and surcharge. An audit line is written when the amounts are calculated, not when the Gold row is inserted.
+- **Close the tunnel by PID before deleting the script that closes it** (rule `handoff-commands-as-short-script-files.md`).
+
 ## Seeding / fixtures
 
 - **Full reseed**: `scripts/seed_dev_data.py` — wipes + regenerates users,
