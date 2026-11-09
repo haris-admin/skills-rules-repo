@@ -128,3 +128,16 @@ These are the highest-value tests in the repo and the easiest to write vacuously
 
 - **A Red or Green result can depend on the environment, not the code.** An S1-33 "no row written" test passed on the old code because `AWS_PROFILE` was set to an empty string (boto3 raised `ProfileNotFound` while the code under test imported a module that builds a client at import time), so the audit write failed silently and the test saw no row. With the variable unset the Red appeared. Run Red and Green under the same environment, unset (not empty) any variable the code reads, and show that the swallowed-error warning is absent from the Green run.
 - **When a test asserts that something was not written, prove the write path could have run.** Break the production code once and watch the row appear, in the same environment as the Green run.
+
+## Lessons 10 Nov 2026 (C559 Red tests)
+
+- **A Red test for a migration that does not exist yet finds its revision by content.** Match the
+  policy, constraint or index name, restrict to ids after the current head, and assert exactly one
+  file matches; while it is missing that assertion is the Red reason ("the revision does not
+  exist"). Once written, derive `revision` and `down_revision` from the file, never a head literal.
+  Seed below the revision, upgrade, assert, downgrade, each on its own fresh database.
+- **Harness mechanics.** A wrapper that runs pytest from an empty scratch folder needs absolute test
+  paths and is run through `bash`. Never end a heredoc command with a command that reads stdin (a
+  stray `cat >> /dev/null` hangs the shell). Run the SQLite and PostgreSQL lanes separately.
+- **Resuming after a usage-limit stop.** Read the stopped builder's uncommitted files first; finish
+  them if intact. Resume the same agent with `SendMessage` after the limit resets.
