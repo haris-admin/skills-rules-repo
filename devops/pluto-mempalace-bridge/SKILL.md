@@ -122,7 +122,7 @@ python3 pluto_mempalace_feeder.py --status
 - `aie-podcast`: 372 episodes from @aiDotEngineer (AI Engineer by swyx) mapped and ready for transcript ingestion. Covers agents, MCP, LLM ops, evals, coding agents, agent architecture. Blocked by YouTube IP until cookies exported. Ingestion script: `/tmp/aie_chamber_ingest.py`.
 - `critical-infra`: 15 Moonshots podcast episodes (AI, geopolitics, consciousness, future-of-work) with frameworks + quiz questions
 - `startup-vc`: 11 ranked podcasts (The Pitch) + 10 categorized podcasts (The Investors Podcast) — 21 podcast reviews total
-- **Moonshots Daily Learning cron** (`0fb6bf47f704`, 8:15 PM AEST): Picks random topic from these chambers, teaches concept, quizzes Haris
+- **Moonshots Daily Learning cron** (`0fb6bf47f704`, 6:15 AM AEST — `15 6 * * *`): Picks random topic from these chambers, teaches concept, quizzes Haris
 - **Podcast knowledge ingestion at scale:** The `pluto-podcast-knowledge` skill covers multi-source podcast ingestion (30+ shows), Supabase+pgvector vector storage architecture, twice-weekly monitoring crons, and Lenny's Podcast credential integration. See `pluto-podcast-knowledge` skill and `references/supabase-pgvector-schema.md` for the full Supabase pgvector schema (4 tables with hybrid search function). ChromaDB is retained for small-scale knowledge bases (<100 docs); Supabase+pgvector is recommended for 500+ episodes.
 
 ## Components
@@ -458,6 +458,13 @@ python3 ~/.hermes/scripts/mempalace_watcher.py --status
 # Force-process all pending
 python3 ~/.hermes/scripts/mempalace_watcher.py
 ```
+
+### Oversized sidecars and the temp-payload leak (fixed 2026-11-10)
+
+- **Feed findings in bounded chunks, never in one subprocess per file.** A single podcast sidecar can carry ~18k findings (`podcast-filter1-general-*.md.findings.json`); one feeder call for it cannot finish inside any sane timeout, so the file never gets its `.done` marker and the watcher retries it every 5 minutes forever. `feed_to_mempalace()` now feeds `FEED_CHUNK = 400` findings per call with `FEED_TIMEOUT = 240`. Chunking is dedup-safe (the feeder skips what the chamber already holds), so partial completion is retried harmlessly — never write a partial `.done` marker to make the loop stop.
+- **Always `unlink()` the feeder payload in a `finally`.** The watcher writes each chunk to `research_outputs/inbox_<ts>.json`; before the fix a failed attempt left a ~15MB file behind and leaked 25,019 files / 55.5GB. If `du -sh ~/.hermes/research_outputs` is in the tens of GB, that is this leak: `find ~/.hermes/research_outputs -maxdepth 1 -name 'inbox_*.json' -mmin +60 -delete` (only `inbox_*.json` — the other ~138 files there are real research outputs).
+- **Guard the writer with a lock when a run can outrun its cadence.** Chunked feeds can exceed the 5-minute cron interval; `main()` takes an exclusive `fcntl.flock` on `mempalace-inputs/.watcher.lock` and exits `skipped` rather than feeding the same chamber concurrently.
+- **A repeated `subprocess.TimeoutExpired` in the watcher is a payload-size signal, not a chromadb problem** — check the sidecar's findings count before touching the venv or pins.
 
 If files from days/weeks ago are still sitting unprocessed, the watcher cron needs investigation — run it manually first, then check `cronjob list` for the cron's `last_status`.
 
