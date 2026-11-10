@@ -492,9 +492,71 @@ episode, show, quote hash) is noise with good manners: pass `source_type`, `epis
    skips what is already there. `mempalace_dedup_podcast.py` cleans up a collection that predates the
    rule. A re-run must be a no-op, not a doubling.
 
+**A markdown-only producer now feeds ZERO (verified 2026-10-07, content-ideas cron):** writing
+`mempalace-inputs/<name>.md` with `## [AMLHive Content Idea] <n>. <title>` blocks and `Source:`/`Type:`/`Confidence:`
+lines returns `{"findings": 0, "status": "failed", "needs_contract": true}` — the watcher reads the sidecar and will
+not scrape headings any more. Files fed before the change are grandfathered by their existing `.done` marker, which
+hides the breakage from every legacy producer. So every content/ideas producer must write BOTH the human `.md` AND
+`<name>.md.findings.json` (`{topic, tags, source, generated_at, findings:[{title, content, type, confidence, url, chamber}]}`),
+setting `"chamber"` per finding so the tag-router cannot mis-file it.
+
+**The sidecar's TOP-LEVEL `tags` must be a JSON LIST, never a comma-joined string (2026-10-15).** The feeder
+joins a list into the `tags` metadata correctly, but iterating a *string* splits it character-wise — a producer
+that wrote `"tags": "amlhive,content-ideas,..."` stored `a,m,l,h,i,v,e,,,c,o,n,t,e,n,t,...` in every doc of that
+day's topic. Routing still landed in the right chamber (the tag-router ran on the parsed tag set), so the only
+symptom is poisoned metadata that breaks later tag-based dedupe/filters — a silent fault that a count check
+passes. Assert the TYPE before feeding: `assert isinstance(sidecar['tags'], list)`, and after feeding read one
+doc back and confirm `metadatas['tags']` reads as a normal comma-joined string, not single characters. Re-feed
+repair is the standard one: `col.delete(ids=…)` the mangled docs, fix the sidecar, remove the `.done` marker,
+re-run `mempalace_watcher.py --file <bare-name>`, then assert the per-topic count AND unique-text count are
+unchanged — a re-feed after a delete must not change the collection total. Two self-inflicted traps: mirror the prior file's
+heading INCLUDING its `## ` prefix (stripping it while copying the convention writes headings the parser cannot see),
+and repair an already-appended section with plain `open(path,'w')` Python I/O — the `write_file()` tool refuses a file
+whose on-disk state changed since your read, silently leaving the old text in place while reporting success.
+
 `mempalace_sidecar_from_md.py` converts legacy bullet/section artefacts into the contract with a shape
 cascade (bullets → bold headings → whole document). Verify with `mempalace_reconcile.py`, which reports
 anything unlanded across queue → palace → Alexandria.
+
+## Liveness is not coverage — the dual-store rule (2026-11-10)
+
+A job reporting `ok` proves the job RAN. It proves nothing about whether content reached a store. The S&C
+weekly job (`90115d0e06ce`) committed a 30–40 KB note to Alexandria every Saturday for a month while **zero**
+of it entered MemPalace: its prompt mentioned `alexandria` 3 times and `mempalace` 0 times, and no weekly note
+had ever been queued in `mempalace-inputs/`. Every distinctive string ("technology simplification agenda",
+"single AI platform", "1,347m", "independent third-party report") returned 0 documents against
+`stone-chalk-partnership`. IdeaLab was the same story: 9 assessments in the window, vault-only.
+
+**Three instruments now enforce the rule:**
+
+1. `scripts/weekly_research_to_mempalace.py` — feeds `*-weekly-enterprise-research.md` into
+   `stone-chalk-partnership`, one finding per `##`/`###` section. Cron `8baeeb2f7edd`, daily 08:05,
+   `no_agent`, `local`. Backfilled 109 findings across 9 notes.
+2. `scripts/idealab_to_mempalace.py` — feeds IdeaLab assessments + briefs into `pluto_research`
+   (source `idealab_daily`). Cron `8ffeda84f112`, daily 08:10. Backfilled 259 findings.
+3. `scripts/knowledge_flow_audit.py` — asks the coverage question per producer: fresh Alexandria artefact
+   AND fresh MemPalace document? Verdicts `DUAL` / `VAULT-ONLY` / `PALACE-ONLY` / `DEAD`; exits 1 when an
+   `EXPECTED_DUAL` producer is single-store. Cron `4ea6752ed5c4`, Mon 08:15, `origin`.
+
+**Rule: verify at the CONSUMER, never at the producer's status.** Probe the target collection with a string
+that exists *only* in the artefact you expect to find. `collection.count()` rising is not proof — other feeds
+grow it too.
+
+**Feeders must key on SHA-256 of the file body, never a date watermark.** A date watermark is what made
+`sc_watch_to_mempalace.py` report "nothing new to feed" on 2026-10-13 while the chamber entry was missing; the
+weekly note and the daily sweep share a date. Hash-based skip + `feed_research`'s exact-text dedup means a
+changed file only adds genuinely new sections, and a re-run is a no-op.
+
+**Trap when writing a new feeder:** relative globs must be joined against the Alexandria root — a bare
+`Path('vault/...')` resolves against CWD and silently reports "no vault artefact", which reads as a gap that
+isn't there.
+
+**Monitor:** `mempalace_health.py` check 6 asserts feed recency per expected-active chamber
+(`stone-chalk-partnership` 3d, `regulatory-ai` 3d, `fintech-aml` 4d, `pluto_research` 4d,
+`podcast-knowledge` 10d) and alerts when the newest doc exceeds its threshold. A feed that silently stops is
+indistinguishable from a healthy palace by counts alone — recency is the only signal that catches it. Job
+`0e14d2e1095f` had been **disabled since 29 Sep with a stale `chromadb` error**; re-enabled 2026-11-10 and
+returning `ok`.
 
 ## Pitfalls
 
