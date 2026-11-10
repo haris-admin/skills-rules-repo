@@ -179,6 +179,14 @@ from *patience and rotation*, never from a bigger timeout.
  candidates vs the `done` set and the verdict (`CAUGHT UP` / `STARVED`) — it loads the router's own
  `pick_ids`/`fetch_episodes`, so its candidate count cannot drift from the lane's, and it carries the
  cron env guard, so it runs unchanged from a cron tick.
+ **A probe REMAINING of a few ids can be a TIMING artifact, not starvation — compare
+ `episodes.created_at` against the tick's start before escalating.** The 04:00 router tick and the 04:00
+ ingest leg run concurrently, so an episode inserted a couple of minutes after the router's `pick_ids`
+ query is invisible to that tick and then shows up as STARVED to a probe run minutes later. Measured
+ 2026-11-04 04:00: `free-routed=0 … cooling=[]`, probe said `REMAINING: 1` (id 2461, created 04:03 AEST,
+ i.e. after the 04:00:44 tick); re-running the worker's own selection confirmed `['2461']` queued for the
+ next tick. The tell is `created_at > tick start` plus an id that re-queues cleanly — that is the lag the
+ 2-hour cadence exists to absorb, so stay silent.
 - **A single `failed=N` is usually TRANSIENT — retry the id once before investigating.** The episode is
   NOT written to `done` on failure, so it re-queues on the next tick by design. 2026-10-03 ep=152 (Logan
   Bartlett, 2273 chars): the maker returned `JSONDecodeError: Extra data: line 1 column 4009` (the model
@@ -330,8 +338,57 @@ shape cascade — bullets → bold section headings → whole document — and a
   on CONTENT CHANGE, not on first sighting.** After the fix (compare `file_hash`), a single watcher run
   recovered **540 findings** (knowledge 792→1155, australia 38→127, projects 49→137). Symptom to watch
   for: the queue reports clean, reconcile is green, and the palace count simply never moves again.
+- **Content-change re-processing is UNBOUNDED when the producer rewrites a corpus-wide day file.**
+  `podcast_filters_report.py` writes `<lens>-<day>.md` holding the WHOLE corpus's items and rewrites it on
+  every router tick (measured 2026-11-10: general 19,315 findings, 10 MB, "1242 episodes"), so the hash
+  changes ~12×/day and each change re-feeds every item. Worse, `get_pending_files()` lists the
+  `.md.findings.json` sidecar as a SEPARATE pending file, so the same findings are fed twice (the `.md`
+  pass reads the sidecar via `with_suffix('.md.findings.json')`). With `feed_to_mempalace(timeout=180)`
+  the pass cannot finish → no marker → the identical work retries next tick. Measured on job
+  `5678a363ce3b` (`*/5`): every run took 100-110 min, four runs/day hit the 7200s timeout (11-09/11-10),
+  one died on the 180s feeder timeout. Landing still mostly happens (palace 19,184 vs 19,315 in that
+  day's sidecar), so it looks healthy to `mempalace_reconcile.py` and to the 09:00 assertor, which judges
+  leg STATUS and not run DURATION. Fix direction: feed only unseen findings (quote-hash ledger) or make
+  the day report incremental per episode, and skip the `.md` when its sidecar exists. Diagnose with
+  `executions.db`: `started_at`→`finished_at` durations, not `last_status`.
 - **Non-knowledge files get a NAMED exception, never a silent one.** Telegram relay fragments and similar
   short-form files cannot become findings and would fail the reconciler forever; move them to
   `mempalace-inputs/_relays/` with a README stating why, so the queue stays honest instead of permanently
   red. An exception must be visible and enumerable — a file that vanishes without a trace is the exact
   failure this contract exists to prevent.
+
+---
+
+### Domain-chamber routing in `pluto_chamber_refresh.py` — the catch-all trap (fixed 2026-10-26)
+
+The podcast→16-domain-chamber map (used by the autonomous-research/Pluto pipeline, NOT the three-filter
+router above) had `else: chamber = 'critical-infra'`. Every episode that matched no keyword was therefore
+filed under **Critical Infrastructure**. Measured on the 2026-10-26 synthesis window: **16 of 16**
+`critical-infra` docs were generic podcast insights — neurodiversity/boredom, "He Built a Browser With No
+Tabs", inference economics — with **zero** infrastructure content. Consequences: it was the largest
+chamber in the corpus (16 of 60 docs), it manufactured a "critical" top signal, and it made the
+2026-10-25 `critical-infra` pairings added to the synthesizer bridge on noise.
+
+Rules that now hold, and must keep holding:
+
+1. **A domain chamber is never a default.** `route_podcast_chamber()` returns `None` when nothing matches;
+   the caller logs `⏭ unrouted … NOT ingested`, marks the id seen, and skips. Content with no domain is
+   *not ingested* rather than mislabelled — an explicit named refusal, per the NAMED-exception rule.
+2. **Critical infrastructure must be earned** (`CRITICAL_INFRA_KW`: data cent{,er}, electricity, power grid,
+   utilit, telecom, scada, outage, grid connection, water supply, airport, railway, CPS 230, NPP…).
+3. **Substring pitfalls, both directions.** `'ai' in show` matched **"The D-ai-ly"**, so every daily-format
+   show was filed to `regulatory-ai` before its title was read (an AUSTRAC/BNPL episode on "The Daily"
+   routed away from `fintech-aml`); fixed with `re.search(r'\bai\b', show_lower)`. Conversely do NOT add
+   bare `port` (support/report), `rag` (storage/average) or `eval` (medieval) as keywords — they re-poison
+   the chamber from the other side.
+4. **Order matters**: show-specific → fintech-aml → agentic-security → cloud-infra → payments-npp →
+   critical-infra → regulatory → agent-architecture. A title-level regulatory route (`ai act`, policy,
+   governance, privacy, legislation, decree, enforcement) had been missing entirely, so "EU AI Act
+   enforcement begins" was eligible for the infrastructure fallback.
+5. Verify a routing change by replaying **real stored titles**, not invented ones:
+   `route_podcast_chamber('', title)` over `critical-infra` metadata — 2026-10-26 replay sent 12 of the 16
+   to `agent-architecture` and left 4 genuinely domainless episodes unrouted.
+
+Corollary for the synthesizer: it reports chunk counts, so a polluted chamber silently inflates
+`total_documents_analyzed` and `top_signals`. Check the largest chamber's topics are on-topic before
+quoting the headline number.
