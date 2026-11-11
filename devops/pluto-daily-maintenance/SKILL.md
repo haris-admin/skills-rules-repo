@@ -201,6 +201,7 @@ When you see `last_status: error` on a cron, classify before escalating:
 - When auditing a cron that reports "ok" but skips work, read the script's reason classification before trusting the summary icon.
 
 ### By-Design (NOT errors — do NOT escalate)
+- **`5678a363ce3b` (MemPalace Inbox Watcher, `*/5`) reading `Script timed out after 7200s` on every pass is a THROUGHPUT signal, not a hang — verify progress before classifying.** The cron fires every 5 min but one pass drains the entire pending set and is killed at the job's 7200 s ceiling, so the status is red ~every 2 h while it is actively feeding. Health check (30 s, no writes): `find ~/.hermes/mempalace-inputs/.processed -name '*.done' -newermt '-2 hours' | wc -l` (healthy ≈ 25-30) plus `pgrep -af mempalace_watcher.py` for a live child feeder. Measured 2026-11-11: 330 pending (~330 files/day inflow), ~15 files/h drain, ~248 s/file — i.e. roughly break-even, so the red will persist until either the inflow drops or the job is re-sized. **Do NOT "fix" it by deleting markers or widening retention** (that re-feeds stored content); the real lever is Saturday scope. Same day: `pluto-mempalace-bridge`'s "≤5 minutes" latency claim was false and was retracted — never quote that figure.
 - **The podcast leg is RED by design: `cc76c11d35d2` (Capture Watchdog 06:25) and the chain's `verify`
   row.** ~63% of the corpus has no readable transcript (YouTube IP block; 63.2% / 1,657 episodes on
   2026-11-09 and rising as the corpus grows faster than transcripts resolve), so the watchdog tripping is
