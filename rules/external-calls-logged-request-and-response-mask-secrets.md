@@ -15,8 +15,7 @@ the raw request response that we received, we need to capture that. We cannot af
 2. Inbound requests and their responses are logged by one middleware that wraps receive and send, never consumes the body, skips
    non-text bodies (record type and size) and cannot break a request.
 3. Log the body exactly as sent or received. Mask only secrets: credentials by field name (and any name ending token, secret or
-   password), card numbers, and one-time digit codes in SMS and email text. Personal data is logged only if the owner has decided so, and
-   the decision is recorded verbatim. A field named `state` is an address in a body and a secret in a URL query.
+   password), card numbers, and one-time digit codes in SMS and email text. Personal data is logged in full (Haris, 6 Nov 2026 and again 11 Nov 2026: "The risk of not storing PII data is much bigger than not having logs"). A field named `state` is an address in a body and a secret in a URL query.
 4. Before deny-listing a field, read the code to learn what it means (Oxygen `pincode` is the postcode, the PIN is `newPIN`).
 5. A key-name deny-list cannot catch a secret echoed under an innocent key. If a rule says provider replies must never be logged raw,
    keep it until the owner retires it; the owner did retire it for Clover OAuth refusals on 6 Nov 2026.
