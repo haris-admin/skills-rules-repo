@@ -91,3 +91,14 @@ the open items that matter — don't dump raw JSON at the user.
 - Move a ticket to Done only with evidence that it is released and checked live, and write that evidence in a comment on the ticket. A ticked task is not evidence.
 - A script that creates tickets from specs can duplicate one you created by hand: dry run it first and search titles for the spec id.
 
+
+
+## Learned in Claude Code on macOS (11 Nov 2026, Tap-Ease TAPEA board)
+
+- **Where the key is:** the TAPEA key is `PLANE_API_KEY_TAPEASE` in the POS repo's gitignored `backend/.env` (and the Lambda repo's `.env`). Read it inside a script; never print it or put it on a command line. The workspace is `tapease`, project TAPEA `bf288c51-c781-43bd-a5b7-99b06559e99c`.
+- **Rate limit:** bursts of reads return HTTP 429. Sleep about 1.5 s between calls and retry with a growing wait (20 s times the attempt number).
+- **Pagination:** list issues with `?cursor=<next_cursor>` while `next_page_results` is true; `sequence_id` is the number in `TAPEA-<n>`.
+- **Labels:** `GET /labels/` lists them (POS, BACKEND, FRONTEND, LAMBDA, POS_APP exist); create one with `POST /labels/` and `{name, color}`. When setting labels on an issue with `PATCH`, send the full list (existing ids plus the new one); the patch replaces the list.
+- **State and text:** `PATCH {"state": <uuid>}` with the uuid from `GET /states/` (Backlog, Todo, In Progress, Done, Cancelled); `description_html` is HTML and replaces the whole description, so read it first and append a dated status block.
+- **Create:** `POST /issues/` with `name`, `description_html`, `state`, `priority`, `labels`. **Delete:** `DELETE /issues/<uuid>/` is permanent; verify the state and title before deleting and only when asked.
+- **Practice:** search the board before building a screen (a ticket for the same screen may already exist); move tickets to Done only when the owner says so or the work is submitted and verified; add a status note to each touched ticket.

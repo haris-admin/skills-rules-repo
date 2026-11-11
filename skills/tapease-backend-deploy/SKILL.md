@@ -12,6 +12,8 @@ description: >
 
 # Deploy the Tap-Ease backend (dev / staging)
 
+> This skill is for the **Portal** backend (`tapease_portal_fastapi_a2square`). The POS terminal backend (`tapease-termianl-pos-app`, `api-pos`) has its own skill: `tapease-pos-backend-deploy`. The terminal app release is `tapease-clover-release`.
+
 `tapease_portal_fastapi_a2square` runs as Docker containers on a single EC2 box.
 There is no ALB — a bad deploy takes staging down. Production backend is a
 **separate** instance and is out of scope here: never deploy backend to prod from
