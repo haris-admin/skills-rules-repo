@@ -35,8 +35,8 @@ competitor news (`competitor-news-monitor`).
 
 - **Script:** `~/.hermes/scripts/upstream_watch.py` (the only engine — `clover_updates_watch.py` is
   deprecated; do not add logic to it).
-- **Cron:** `★ TAPEase upstream watch — Clover + Oxygen Global (every 2h → group)`, job `e68234a738eb`,
-  `0 */2 * * *`, `no_agent: true`, script `upstream_watch.py`,
+- **Cron:** `★ TAPEase upstream watch — Clover + Oxygen Global (hourly → group)`, job `e68234a738eb`,
+  `0 * * * *`, `no_agent: true`, script `upstream_watch.py`,
   `deliver=telegram:-5552363922` (the TapeEase announcements group; **not** the fleet-monitor group
   `-1003834479227`), `failure_deliver` the same.
 - **State:** `~/.hermes/state/upstream-watch-state.json` (baselines, failure streaks, notified flags).
@@ -76,7 +76,7 @@ competitor news (`competitor-news-monitor`).
 - **A website change is not automatically an announcement.** The Oxygen posts/pages API reports edits
   (copy, pricing, product pages) as well as news; label the section by what moved and let the reader judge.
 - **Alert once, not every tick.** A source fetch failure is silent for the first run and announces only at
-  the second consecutive failure (≈4h at a 2h cadence), then stays quiet until it recovers — recovery is
+  the second consecutive failure (≈2h at an hourly cadence), then stays quiet until it recovers — recovery is
   reported once. Never let a transient Cloudflare blip post to the group.
 - **Write the state file on EVERY run, including quiet ones.** The first version returned before writing,
   so failure streaks reset each tick and the threshold was unreachable. A watermark only written when
@@ -85,7 +85,7 @@ competitor news (`competitor-news-monitor`).
   is quiet: the page is client-rendered, JS-gated or blocked. Measure the normalised text length before
   trusting a forever-green hash.
 - **Availability transition gating, not per-run alarm.** Oxygen availability alerts on up↔down only, so a
-  sustained outage is one message (plus the recovery) rather than a message every two hours.
+  sustained outage is one message (plus the recovery) rather than a message every hour.
 - **Proof harness before trusting it:** `scripts/test_upstream_watch.sh` (failure → threshold → silence →
   recovery) and `scripts/test_change_paths.sh` (tampered state proves each detector fires and that a
   reported change is consumed exactly once). Both run against a temp `UW_STATE` copy, so they never touch
