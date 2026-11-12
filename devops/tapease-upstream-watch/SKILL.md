@@ -35,8 +35,8 @@ competitor news (`competitor-news-monitor`).
 
 - **Script:** `~/.hermes/scripts/upstream_watch.py` (the only engine — `clover_updates_watch.py` is
   deprecated; do not add logic to it).
-- **Cron:** `★ TAPEase upstream watch — Clover + Oxygen Global (hourly → group)`, job `e68234a738eb`,
-  `0 * * * *`, `no_agent: true`, script `upstream_watch.py`,
+- **Cron:** `★ TAPEase upstream watch — 16:00 Sydney daily (Clover + Oxygen → group)`, job `e68234a738eb`,
+  `0 16 * * *`, `no_agent: true`, script `upstream_watch.py`,
   `deliver=telegram:-5552363922` (the TapeEase announcements group; **not** the fleet-monitor group
   `-1003834479227`), `failure_deliver` the same.
 - **State:** `~/.hermes/state/upstream-watch-state.json` (baselines, failure streaks, notified flags).
@@ -60,6 +60,14 @@ competitor news (`competitor-news-monitor`).
 - Oxygen Global content — WordPress REST API: `/wp-json/wp/v2/posts` and `/wp-json/wp/v2/pages` with
   `_fields=id,date,modified,link,title(,slug)`; fingerprint over ids + `modified` stamps, so reports name
   the actual post/page that changed
+- TapeEase website + www — `tapease.com.au` / `www.tapease.com.au` (marker `eftpos`)
+- TapeEase API — `https://api.tapease.com.au/` is a JSON health route (`status`, `version`, `environment`);
+  assert the FIELDS and quote the version, so a stale deploy is visible
+- touchSMS website — `https://touchsms.com.au/` → www (marker `touchsms`)
+- AWS security bulletins — `aws.amazon.com/security/security-bulletins/rss/feed/`, filtered to
+  `\brds\b | \baurora\b | \blambda\b | \bpostgres(ql)?\b`
+- AWS What's New — `aws.amazon.com/about-aws/whats-new/recent/feed/`, same filter (upgrades, 🆕)
+- AWS service health — `status.aws.amazon.com/rss/rds-ap-southeast-2.rss` and `…/lambda-ap-southeast-2.rss`
 
 ## Adding a source
 
@@ -95,6 +103,20 @@ competitor news (`competitor-news-monitor`).
   trusting a forever-green hash.
 - **Availability transition gating, not per-run alarm.** Oxygen availability alerts on up↔down only, so a
   sustained outage is one message (plus the recovery) rather than a message every hour.
+- **AWS status feeds are EMPTY when healthy** — 0 items is the good state, so liveness is asserted on the
+  parsed channel title, never on item count. A content feed (bulletins, What's New) returning 0 items IS a
+  failure and must raise.
+- **Filter feeds on WORD boundaries.** `'rds'` as a substring matches "records", "towards", "standards";
+  the filter uses `\brds\b`. Same class of bug as alerting on a generic word inside an identifier.
+- **A keyword hit is not applicability.** The bulletins feed matched "Babelfish for Aurora PostgreSQL" on
+  `aurora`/`postgres`, but Babelfish is AWS's SQL Server emulation layer — TAPEase runs plain PostgreSQL, so
+  that is a keyword match, not an exposure. Report it, label the applicability question, never escalate to
+  "you are vulnerable" from the title alone.
+- **touchSMS's status page is not monitorable from outside.** `status.touchsms.com.au` is a Pulsetic SPA
+  (client-rendered, no public JSON API on the usual paths). Monitor the site itself and record incident
+  visibility as a gap rather than hashing the SPA shell and calling it covered.
+- **One engine, one job.** Every new target is a new entry in `AVAILABILITY` / `FEEDS` / `MD_SOURCES` — never
+  a second cron job on the same cadence, which would double every alert.
 - **Proof harness before trusting it:** `scripts/test_upstream_watch.sh` (failure → threshold → silence →
   recovery) and `scripts/test_change_paths.sh` (tampered state proves each detector fires and that a
   reported change is consumed exactly once). Both run against a temp `UW_STATE` copy, so they never touch
