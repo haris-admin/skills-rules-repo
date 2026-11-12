@@ -25,7 +25,15 @@ allowed-tools: [delegate_task, execute_code, terminal, read_file, write_file, sk
    echo "Actually pending .md: $pending"
    echo "Processed markers: $(ls ~/.hermes/mempalace-inputs/.processed/*.done 2>/dev/null | wc -l)"
    ```
-   **⚠️ Only if actually-pending >20 AND the oldest pending file is >1 day old is the watcher DOWN.** The watcher's parser was also updated (line ~49 uses `glob("*")` not `glob("*.md")`) and DOES parse gmail-briefing files (verified Aug 16, 2026 — 3 findings per file). See Pitfalls #1 below.
+   **⚠️ Check BOTH marker forms or the count is a false alarm (verified 13 Nov 2026).** The watcher writes two different markers depending on producer: `content-ideas-<date>.done` (bare stem) and `podcast-*` files get `.processed/<stem>.md.findings.done`. A pending loop that tests only `.processed/${stem}.done` reported 23 *pending* podcast files on 13 Nov when the watcher was in fact alive and draining — the newest marker on disk was created 05:06 that morning (for an Oct input file being drained from backlog). Treat a file as processed if ANY marker exists:
+   ```bash
+   cd ~/.hermes/mempalace-inputs
+   for f in *.md; do stem="${f%.md}";
+     [ -f ".processed/${stem}.done" ] || [ -f ".processed/${f}.findings.done" ] || [ -f ".processed/${stem}.findings.done" ] || echo "PENDING: $f";
+   done
+   ```
+   Then confirm liveness by mtime, not by count: `ls -1t .processed | head -1` and `stat -c '%y' "$(ls -1t .processed | head -1)"` — a marker created in the last few minutes proves the watcher is running; the recent files are simply queued behind an older backlog (it drains oldest-first).
+   **⚠️ Only if the newest marker is >1 hour old AND files have been pending >1 day is the watcher DOWN.** The watcher's parser was also updated (line ~49 uses `glob("*")` not `glob("*.md")`) and DOES parse gmail-briefing files (verified Aug 16, 2026 — 3 findings per file). See Pitfalls #1 below.
 2. The watcher cron (`5678a363ce3b`, every 5 min) should auto-process `.md` files — check `processed/` to see what was handled. An empty `processed/` directory with many pending inputs = watcher not functioning.
 3. For urgent requests, run manually: `python3 ~/.hermes/scripts/mempalace_watcher.py`
 4. See `pluto-mempalace-bridge` skill → `references/mempalace-inputs.md` for the complete operational workflow
