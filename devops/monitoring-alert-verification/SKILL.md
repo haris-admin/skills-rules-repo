@@ -303,6 +303,26 @@ non-executable wrapper (mode 644 → `bash: Permission denied`, rc 126) looked l
 the status before piping, and gate delivery on the monitor's own rc:
 `out=$(python3 monitor.py); rc=$?` then decide what to print.
 
+## Probe for a path-based API before inventing an `api.` subdomain
+
+A product can serve its whole API on the **apex** — ChargeRail answers `https://chargerail.com.au/api/health`
+while `api.chargerail.com.au` has no DNS at all. Creating a hopeful `api.` entry produces a permanent
+"planned" line and no real coverage. Order of discovery on a new site:
+
+1. Read the deploy/infra commits in the repo (`route /api through the edge`, nginx proxy) — they name
+   the real path.
+2. Probe candidates on the apex: `/api/health`, `/api/docs`, `/api/openapi.json`, `/health`. A FastAPI
+   backend gives itself away with an OpenAPI JSON payload.
+3. Prefer a host that answers with **JSON health telemetry** (`status`, `version`, `database`) over any
+   content marker — it is a far stronger signal, and it also gives you a deployed-version number to
+   diff against the repo manifest.
+4. When one host carries both the site and the API, assert **both**: health at the path AND the page
+   marker at `/`. A healthy API behind a broken front page is still a broken site.
+
+Also: **de-shallow any repo clone you monitor** (`git fetch --unshallow`). A `--depth N` clone still
+counts `HEAD..origin/main` and reports a false "N commits behind", which is exactly the number a
+watcher is trusted to report.
+
 **Repairing the data is half the fix; the missing MONITOR is the other half.** When a store or write
 path is found broken with nothing alerting — a connector that failed 100% of its writes for weeks
 while every scheduled job reported `ok`, a collection that stopped decoding — treat "build the check"
@@ -326,6 +346,11 @@ site, monitor the pairing:
   origin HEAD can prove a genuine release bug.
 - **A live site whose repo has hundreds of uncommitted files is running code that is not in
 git.** Print it as that sentence; it changes how the next deploy should be read.
+- **Quote the SHAs and the newest commit's timestamp beside any behind/ahead count.** While the
+  founder is pushing, the count moves between two runs minutes apart, so a bare number is
+  unreproducible and cannot be checked by the reader. Print `HEAD <sha> → origin/<branch> <sha>`,
+  the newest commit's date and subject, and state which side is stale — the checkout or the
+  deploy. Re-verify the count against the real refs immediately before putting it in a report.
 - **A watcher fetches, never pulls.** `git fetch --all --prune` is safe against a dirty
   production checkout; `git pull` can conflict and destroy uncommitted work. Report the lag and
   offer options (pull-and-report, read-only mirror, or let the user stash) instead of acting.
@@ -430,6 +455,21 @@ tick, or it stops firing and nobody notices.
   distinct line (`RESULT: FETCH_FAILED`) so the change itself wakes the agent, and tell the waking
   prompt that an unverifiable watch is the finding. A monitor that goes silent when its source
   breaks is worse than no monitor.
+- **Prove the page CONTAINS the content you are hashing before trusting the hash.** A docs site built
+  on ReadMe/GitBook, or any SPA, serves a static shell whose entries are rendered client-side: the
+  `/changelog` page measured **947 normalised chars of pure navigation**, so a hash over it can never
+  move when an entry is posted — a permanent blind spot that reports as "quiet upstream". Measure the
+  normalised length and assert a marker you expect (an actual entry title) on first run; if it is
+  absent, the source is client-rendered → use the site's JSON/status API or a genuinely server-rendered
+  page instead, and record which sources you EXCLUDED and why. Then confirm byte-stability by fetching
+  twice and comparing hashes before scheduling, which also rules out dynamic-content false positives.
+- **An outage is not a release — but a permanently blind watcher is an incident.** Do not count a
+  failed fetch as a change, and do not let it pass as silence either: keep a per-source consecutive
+  failure counter and alert once it crosses a threshold (3 runs), so "no upstream news" can never be
+  confused with "we stopped being able to read upstream".
+- **Fingerprint status feeds on IDs, not on the payload.** A statuspage `summary.json` carries a
+  constantly-changing `updated_at`, so hashing the response fires on every tick; hash only the
+  incident IDs/statuses, scheduled-maintenance IDs and the names of non-operational components.
 - Page-specific capture traps, baseline storage and the waking prompt's language rules:
   `references/page-change-monitors.md`.
 
