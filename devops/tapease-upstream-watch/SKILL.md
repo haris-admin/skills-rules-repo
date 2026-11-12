@@ -48,8 +48,11 @@ competitor news (`competitor-news-monitor`).
 
 ## Sources
 
-- Clover announcements — `docs.clover.com/dev/docs/release-notes-announcements` (static HTML, hashed)
-- Clover Android / Clover Go SDK release notes — `docs.clover.com/dev/docs/androidclover-go-sdk-release-notes`
+- Clover announcements — `docs.clover.com/dev/docs/release-notes-announcements`.md`, clean and dated
+- Clover Android / Clover Go SDK release notes — `…/androidclover-go-sdk-release-notes.md`
+- Clover announcement index — the page's nav block between the `RELEASE NOTES` and `RESOURCES`
+  markers, captured as a line set (the index body lags the nav, so this is what catches a brand-new
+  entry)
 - Clover status — `status.clover.com/api/v2/summary.json`, fingerprinted on incident/maintenance IDs and
   non-operational components only (the payload carries a changing timestamp)
 - Oxygen Global availability — `https://oxygen-global.com/`: HTTP 200 **and** the marker `Oxygen Global`
@@ -70,9 +73,15 @@ competitor news (`competitor-news-monitor`).
 
 ## Pitfalls
 
-- **`docs.clover.com/changelog` is deliberately excluded.** Its entries are client-rendered — the static
-  HTML is ~950 characters of navigation, so no hash over it can ever move when an entry is posted. Use the
-  announcements page and the SDK release notes instead.
+- **Clover docs are ReadMe.io — every page has a markdown twin: append `.md` to the URL.** It is
+  server-rendered, byte-stable and carries `updatedAt` in its frontmatter, so a diff reads as content
+  instead of 20k characters of sidebar navigation. The script asserts a `# ` title in the first 2k chars;
+  a non-markdown response is a PROBLEM, never a change. This also fixes the old reason the plain
+  `/changelog` HTML was excluded (client-rendered entries) — the `.md` twin has them.
+- **The announcements INDEX body lags the sidebar.** Two live entries ("Clover billing system upgrade",
+  "Clover Compact … Canada") were linked from the nav while absent from the index page's own list, so an
+  index-only capture would have missed them. Watch both: `.md` body for content edits, nav line set for
+  new entries.
 - **A website change is not automatically an announcement.** The Oxygen posts/pages API reports edits
   (copy, pricing, product pages) as well as news; label the section by what moved and let the reader judge.
 - **Alert once, not every tick.** A source fetch failure is silent for the first run and announces only at
