@@ -503,3 +503,58 @@ AMLHive lane (that morning's `content-ideas-<date>.md` shortlisted CDD-for-infra
 beneficial-ownership aggregation *and* firming-as-land-due-diligence off the same three findings),
 frame the blog on the buyer-side contract question and say so in the slate — same research, two
 audiences, no double-publish.
+
+
+### Rule 107 — a slice can stop ON a preposition, and every existing extension helper is gated on a VERB
+
+The two completion helpers each have a precondition that excludes this case by construction:
+`_complete_tail` (Rule 65) only fires when the next token is a single lowercase content word,
+and `_extend_participle_complement` (Rule 89) only fires when the slice's LAST token is a verb.
+On 13 Nov the BluePhishing title cut at 100 chars and landed on `inside`, so both helpers
+returned unchanged and `_drop_trailing_coordinator` did not strip it either — `inside` was not in
+`_TRAIL_COORD` — and the hook shipped as "…creates working agent identities inside".
+
+Fix: `_complete_trailing_prep(head, sliced, limit)` puts the preposition's OBJECT back (≤3 content
+tokens, stop at punctuation/punctuation-that-opens-a-clause/verb, inside limit+30), wired into
+both slice return paths plus the main path before `_extend_participle_complement`. The delivered
+hook completes to "…inside a victim tenant" (118 chars). `_TRAIL_COORD` also gained the locative
+prepositions (`inside`, `outside`, `behind`, `below`, `above`, `along`, `around`, `throughout`,
+`amid`, `past`) so a failed extension still drops rather than ships the preposition.
+
+General rule: for every "dangling X" guard, ask which stage gates on X and which stage RECOGNISES
+X. The guard ran; its trigger set did not contain the token class. Enumerate the closed set from
+the grammar (the prepositions that can take an object), never from the defect of the day.
+
+Replay: 48 titles / 8 days → 0 flagged (ends-on-prep / ends-on-verb / ends-on-punct checks).
+
+### Rule 108 — `.get(key, default)` does not protect against an explicit JSON `null`
+
+`himalaya envelope list --output json` returned an envelope whose `from.name` was present and
+`null`. `from_field.get("name", "")` returns the DEFAULT only when the key is absent, so
+`from_name` was `None` and `"Perplexity" in from_name` raised `TypeError` out of `main()` before
+any output file was written — the whole cron produced nothing while the run looked like it had
+started normally. Coerce every external-payload field with `(value or "")`, not a `.get` default.
+
+This is the Rule 30 class one layer down: Rule 30 made himalaya FAILURES non-fatal (swallow the
+exception, return ""), which is why the crash moved to the payload PARSING instead of the call.
+When hardening an external source, harden both the transport and the shape of what it returns.
+
+### Rule 109 — the context-vocabulary defect keeps returning through new words (Rule 49/102 recurrence)
+
+`agent-control-channel` carried `["telegram", "control", "hijack", "phishing", "okta",
+"credential"]`. On 13 Nov its ONLY hit was `phishing`, from the BluePhishing story — OAuth consent
+phishing against an agent identity, with no human control channel anywhere in the corpus
+(`telegram`, `control plane`, `control channel`, `hijack` all ZERO). The candidate was ranked #1
+of the blog slate on a word that appears on every security day. The file had ALREADY recorded that
+bare `credential` in this same list "has fired off unrelated stories" — the note was written and
+the list was left alone, so the defect simply changed word.
+
+Fix: bound to the control plane itself (`telegram`, `control plane`, `control channel`, `command
+channel`, `chat interface`, `whatsapp`, `slack`, `human control`, `hijack`); today 1 → 0, and the
+candidate keeps its genuine prior grounding. Practice: when a comment records that a keyword is
+dirty, remove it in the SAME edit — a documented-but-live context word is a scheduled recurrence.
+
+That free slot went to `nhi-agent-identity` (genuine `agent identity` hit), whose gap then had to
+be REWRITTEN (Rule 58) from the NIST NCCoE story to today's BluePhishing evidence, and the other
+two gaps in the slate were likewise restated onto today's sentences — a candidate that is fresh
+and grounded can still carry a gap describing a source the day never mentioned.
