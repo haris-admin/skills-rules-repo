@@ -67,7 +67,12 @@ competitor news (`competitor-news-monitor`).
 - AWS security bulletins — `aws.amazon.com/security/security-bulletins/rss/feed/`, filtered to
   `\brds\b | \baurora\b | \blambda\b | \bpostgres(ql)?\b`
 - AWS What's New — `aws.amazon.com/about-aws/whats-new/recent/feed/`, same filter (upgrades, 🆕)
-- AWS service health — `status.aws.amazon.com/rss/rds-ap-southeast-2.rss` and `…/lambda-ap-southeast-2.rss`
+- AWS service health — `status.aws.amazon.com/rss/rds-ap-southeast-2.rss`, `…/lambda-ap-southeast-2.rss`,
+  `…/elasticache-ap-southeast-2.rss`, `…/ses-ap-southeast-2.rss`
+- Statuspage.io pages (incidents, maintenance IDs, non-operational components) — Clover, **Cloudflare**,
+  **Cloudinary**, **Expo / EAS**
+- Apple developer news RSS — filtered to policy / review / submission / deadline / privacy terms
+- Expo changelog RSS — filtered to SDK / EAS / breaking / deprecation terms
 
 ## Adding a source
 
@@ -83,6 +88,9 @@ competitor news (`competitor-news-monitor`).
 
 - **Monoova** — `MONOOVA_*` keys exist in `.env`, but the integration is **not live** (Haris, 12 Nov 2026).
   Do not add it to FEEDS/AVAILABILITY until the integration is switched on; a dead vendor watch is pure noise.
+- **m-Pay** — `api.m-pay.com.au` returns 404 and `m-pay.com.au` refuses connections from this host
+  (checked 12 Nov 2026), and the integration is not live. Adding it would create a permanent DOWN, so it
+  is excluded until Haris confirms the endpoint.
 - **touchSMS status page** — SPA, see the pitfall above.
 - **Python/Node runtime CVEs** — already covered by `pip-audit` / `safety` / `bandit` in the backend repo;
   duplicating them here would buy a second copy of the same answer.
@@ -125,6 +133,16 @@ competitor news (`competitor-news-monitor`).
   visibility as a gap rather than hashing the SPA shell and calling it covered.
 - **One engine, one job.** Every new target is a new entry in `AVAILABILITY` / `FEEDS` / `MD_SOURCES` — never
   a second cron job on the same cadence, which would double every alert.
+- **Cloudflare's status page lists ~200 PoPs, so unfiltered it is an alert firehose.** `STATUS_SOURCES`
+  carries a per-page `focus` regex set used ONLY for the degraded-component list (incidents are never
+  filtered, and the fingerprint is computed over the focused set). For Cloudflare that is Australian
+  PoPs + `Sites and Services` + DNS. Without it, a maintenance in Algiers reads as an outage.
+- **"Partially Degraded Service" is the vendor's global headline, not our region.** Cloudflare reads
+  that way permanently while unrelated PoPs are worked on — quote the focused components and the
+  incident list instead of the headline.
+- **Adding a keyword re-baselines that feed's matched set.** Widening AWS_KW (e.g. adding SES/ElastiCache)
+  makes previously-unseen historical items look new on the next run and sends one real email — expected,
+  but do it knowingly, not mid-incident.
 - **Proof harness before trusting it:** `scripts/test_upstream_watch.sh` (failure → threshold → silence →
   recovery) and `scripts/test_change_paths.sh` (tampered state proves each detector fires and that a
   reported change is consumed exactly once). Both run against a temp `UW_STATE` copy, so they never touch
