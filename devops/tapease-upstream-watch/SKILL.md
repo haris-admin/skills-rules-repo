@@ -79,6 +79,14 @@ competitor news (`competitor-news-monitor`).
 4. Availability → add to `AVAILABILITY` with a marker string that cannot appear on a parked or empty page.
 5. Then re-run `--dry-run` and confirm the new source shows as **armed** (first run baselines silently).
 
+## Candidate targets that are deliberately NOT watched
+
+- **Monoova** — `MONOOVA_*` keys exist in `.env`, but the integration is **not live** (Haris, 12 Nov 2026).
+  Do not add it to FEEDS/AVAILABILITY until the integration is switched on; a dead vendor watch is pure noise.
+- **touchSMS status page** — SPA, see the pitfall above.
+- **Python/Node runtime CVEs** — already covered by `pip-audit` / `safety` / `bandit` in the backend repo;
+  duplicating them here would buy a second copy of the same answer.
+
 ## Pitfalls
 
 - **Clover docs are ReadMe.io — every page has a markdown twin: append `.md` to the URL.** It is
