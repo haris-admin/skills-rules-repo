@@ -116,3 +116,11 @@ The agent writes, tests and plans. A person applies.
 - [issue-173](../../prod_issues/issue-173-terraform-drift-cron-never-runs-default-branch-mismatch.md) —
   the still-open gap (no automated drift detection) that let all of the above go unnoticed until a
   human manually ran a full plan
+
+## Drift check lessons (AMLHive issue-423, 13 Nov 2026)
+
+1. A read-only plan role needs the provider's whole refresh read set, not the one action in the first error; enumerate reads per resource type up front.
+2. A laptop plan and a CI plan differ when an input is git-ignored: tfvars values (use CI repository variables plus an unset guard), untracked files in an `archive_file` source folder (use `excludes`), a root output embedding a secret. Compare both before trusting either.
+3. Apply only a saved, checked plan, run by the owner; refuse create, destroy and replace; verify with `plan -detailed-exitcode`.
+4. Never read `terraform.tfvars` to compare; give the owner a script that prints only absent, empty or set.
+5. Keep repository variables in step with tfvars; add new managed Lambdas to the code signing read list.
