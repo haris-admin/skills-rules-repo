@@ -290,6 +290,27 @@ to state the newest item's date and prove a null week.
   A$5.80 fair value) reads as fresh commentary for weeks; it is a dated market view, never news. Same for
   **CPI-day rate-call revisions** (CBA/NAB/ANZ/WBC "now expect a hike"): record once as macro context, never
   as a partner development.
+- **Per-partner content-page maps (verified 14 Nov 2026 — go straight to these, they carry the material the media releases omit).**
+  **ANZ:** the FY26 **AI content lives in the CEO/CFO *investor-briefing remarks* page, NOT the news release** — the news release and the
+  2-page *Tracking ANZ2030* summary contain **zero** strings in {artificial intelligence, AI, financial crime, AML, scam, fraud}. Grep the
+  `Speeches & Presentations` items on the newsroom archive. ⚠️ **`anz.com/content/dam/anzcom/shareholder/results-announcement/…` returns 403
+  (WAF) for every filename tried** — the *MD&A / Appendix 4E* is therefore unreachable by curl; the only working PDF route is
+  `/content/dam/anzcomau/mediacentre/pdfs/mediareleases/<YYYY>/<month>/…` (news release, Promontory reports, Chairman's letter). Say so as a
+  gap rather than implying the MD&A was read. **Westpac:** the FY26 *Results Presentation & Investor Discussion Pack* is the richest document
+  any partner publishes — **p21–22 = the St.George migration cost/benefit attribution, p62 = the quantified "AI in action" table, p65–66 =
+  the scam metrics (averted-losses and SafeBlock/JESS), p68 + the FY result's "Our approach" = responsible-AI governance incl. the *central AI
+  inventory*.** **NAB:** the FY26 **media-call transcript** carries the named-product and agentic numbers (Ruby/Anthropic, 40,000 staff, 50
+  squads) that the written result does not.
+- **JS-shell newsrooms: three different working methods, pick per site.** **Westpac** — media releases are all stacked on
+  `…/media-releases/2026/<D>-<month>` and raw HTML carries **zero** body strings (*scam* ×0), so the **extraction backend is the only reader**
+  (it renders the statement in full). **NAB** — `nab.com.au/news/…` pages are 480 KB shells of navigation for curl but the **extraction backend
+  renders them cleanly** (FWO undertaking, Chair announcements); use the **sitemap `<loc>/<lastmod>` diff for the date list only**. **ANZ
+  newsroom archive** — raw HTML is fine, but **extract hrefs with a dedicated `href="(/newsroom/media/2026/<month>/[^"]+)"` regex and fetch the
+  full value**; slugs are long and truncating them yields a 200-with-404 body that looks like a page (the site returns the error page with status
+  200 in some paths, so always check the rendered title).
+- **The ASX five-item cap has a real casualty: ANZ.** ANZ's FY26 result (9 Nov) sits **just below the cut** of the Markit JSON feed, so a
+  results-week run that trusts only the JSON will silently miss the headline event of the window. Cross-check every partner's JSON against its
+  own newsroom archive before concluding "no result filed".
 - **aph.gov.au JSCAI hearings**: the working URL is the **doubled path**
 `/Parliamentary_Business/Committees/Joint/Artificial_Intelligence/ArtificialIntelligence/Public_Hearings` —
 the single-path `/Artificial_Intelligence/Public_Hearings` **404s**. It gives Past/Upcoming tables with
@@ -490,6 +511,11 @@ claiming a Notion update.
   When a file IS CRLF, never round-trip it through `Path.read_text()/write_text()` — Python's universal-newline
   translation silently rewrites CRLF as LF and the next commit diffs as the whole file. Read bytes, decode, edit,
   re-encode, set the ending.
+- **The CHANGELOG is only *nominally* reverse-chronological — the daily sweeps append at the BOTTOM while the weeklies insert at the top.** Before
+  inserting a weekly entry, confirm where the newest daily entry actually lives (`grep -n "^## 2026-" CHANGELOG.md | head -12`); do **not**
+  "fix" the ordering, and do not assume a top insert displaced anything. A `+N lines, 0 deletions` diff stat is the proof nothing was overwritten.
+- **A 200 status is not a page.** Two ANZ paths returned **HTTP 200 with a 200 KB generic error body** (the site's soft-404). Always assert a
+  content marker (the rendered `<title>`, or a string you expect in the body) after a fetch, not the status code.
 - **Never `git checkout --` a pack file to clear "uncommitted churn".** The day's sweep writes stay
   uncommitted until the next sync, so a checkout silently destroys that day's CHANGELOG/chamber entry
   (happened 23 Sep 2026; recovered from the sweep's own scratch script). Diff first — dirty usually
