@@ -80,6 +80,11 @@ implementer being clever, remembering the project, or guessing intent.
   env file, never printed.
 - Plain Australian English, no em dashes, sentence case headings.
 
+- **Approval is a hash, not a state.** Keep the plan at `docs/plans/agent_ready/<ticket>.md`. The implementer starts only when the ticket is in Todo AND Haris has commented the first 12 characters of the plan's `shasum -a 256`. Any later edit voids the old approval; post a new hash comment. The plan's first step checks this and stops if it is missing.
+- **Never post placeholder text.** A promotion script must reject arguments containing `<` or `>` and print the comment before posting it. Comments cannot be deleted by an agent, so a rerun duplicates them: check `show` for a marker line first.
+- **The tool cannot retitle or label.** Name the Plane UI steps (new title, `agent-ready`, one tier label) in the ticket and as the last line of the script.
+- **Run every embedded test and script in a scratch folder** before calling the plan ready, then run one blind review by a different model. Re-check each reviewer claim against the code.
+
 ## Verification before you finish
 
 - [ ] The readiness checklist passes, every box.
