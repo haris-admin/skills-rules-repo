@@ -27,3 +27,11 @@ and let a person apply (hand over a one-line command with short symlinks). Gener
 * Private subnet egress through a NAT instance needs swap and at least t3.micro; use `user_data_replace_on_change` and make the dependent instance wait for the network.
 * Access via SSM Session Manager only (no SSH, no key pairs). Separate IAM roles per tier; the backend role reads only its own `/<app>/prod/*` parameters.
 * Related rule: `rules/static-export-and-production-image-gotchas.md`.
+
+## Lessons from the HandleDispute move to its own AWS account (14 Nov 2026)
+
+* Resize an instance type in place with a saved plan that shows `1 to change, 0 to destroy`; a replace or destroy means stop.
+* Reboot a new host once after its first deploy: a container created on a deleted staging network does not start again (`rules/a-new-host-is-proven-by-a-reboot-and-a-real-send.md`).
+* SES in the sandbox authorises the recipient identity and the default configuration set as well as the sender; scope to account and region, pin `ses:FromAddress`, and test with one real send.
+* The cutover order and the checks that must pass before DNS changes: `rules/an-account-cutover-freezes-first-and-compares-every-table.md`.
+
