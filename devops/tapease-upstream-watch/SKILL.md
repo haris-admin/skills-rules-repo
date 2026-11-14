@@ -42,9 +42,10 @@ competitor news (`competitor-news-monitor`).
 - **State:** `~/.hermes/state/upstream-watch-state.json` (baselines, failure streaks, notified flags).
   `UW_STATE=<path>` overrides it for tests; `--dry-run` prints without writing or emailing;
   `--no-email` writes state but suppresses mail; `--test <email>` sends a delivery test.
-- **Email:** `help@tapease.com.au`, `shoaib.habib@a2square.com.au`, `hhsiddiqui@gmail.com`
-  (only when there is news or a standing problem). The group post is built from the same change list
-  with a per-source line cap, so the two views cannot drift.
+- **Email:** `shoaib.habib@a2square.com.au`, `hhsiddiqui@gmail.com` — **not** `help@tapease.com.au`
+  (removed 14 Nov 2026 by Haris; the group is the ops-facing channel). Sent only when there is news or a
+  standing problem. The group post is built from the same change list with a per-source line cap, so the
+  two views cannot drift.
 
 ## Sources
 
@@ -143,6 +144,16 @@ competitor news (`competitor-news-monitor`).
 - **Adding a keyword re-baselines that feed's matched set.** Widening AWS_KW (e.g. adding SES/ElastiCache)
   makes previously-unseen historical items look new on the next run and sends one real email — expected,
   but do it knowingly, not mid-incident.
+- **A statuspage value that came back from JSON is a LIST, not a tuple.** `if c not in prev` then matches
+  nothing, so every degraded component is reported as newly degraded on every single status change (seen
+  in production: a report listing Canberra/Sites-and-Services as new while both sat in the baseline).
+  Normalise both sides (`{tuple(c) for c in prev}`) before comparing.
+- **An incident changing status is not "new" + "resolved".** Matching incidents on the whole tuple makes a
+  status transition (`investigating` → `identified`) emit a fake new incident and a fake resolution. Key
+  incidents on their ID and render three separate classes: new, status update (old → new), resolved.
+- **Apply the `focus` filter to scheduled maintenance too.** Cloudflare schedules windows across every PoP
+  on earth; unfiltered, one report carried 26 maintenance lines for Albuquerque, Tokyo, Singapore, Taipei…
+  Filter maintenance names with the same regex set, and cap the rendered list.
 - **Proof harness before trusting it:** `scripts/test_upstream_watch.sh` (failure → threshold → silence →
   recovery) and `scripts/test_change_paths.sh` (tampered state proves each detector fires and that a
   reported change is consumed exactly once). Both run against a temp `UW_STATE` copy, so they never touch
