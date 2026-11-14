@@ -73,8 +73,13 @@ for agent in aurora caduceus lumen sol vigil vulcan; do
   fi
 done
 
-# 3. commit + push repo
-cd "$REPO" && git add -A && git commit -m "feat(skills): sync <skill>" && git push origin main
+# 3. validate, regenerate README catalog, and commit by pathspec + push repo
+cd "$REPO"
+python3 scripts/validate.py
+python3 scripts/generate_catalog.py
+git add -- "<cat>/<skill>" README.md
+git commit -m "feat(skills): sync <skill>" -- "<cat>/<skill>" README.md
+git push origin main
 ```
 
 ## Importing a new fleet skill (profile → repo)
@@ -85,7 +90,9 @@ When a Windows profile has a skill the repo lacks:
    `software-development/`).
 3. Copy SKILL.md + linked files; use the aurora profile copy as canonical when a
    shared skill appears identically in all 6 profiles.
-4. Update `fleet-agents.md` if it's an agent-protocol skill; commit + push.
+4. Update `fleet-agents.md` if it's an agent-protocol skill, then run `python3 scripts/validate.py`
+   and `python3 scripts/generate_catalog.py`. Commit by pathspec (including `README.md` and
+   `fleet-agents.md` if changed) and push.
 
 ## Vendoring a third-party skill pack (upstream repo → our library)
 

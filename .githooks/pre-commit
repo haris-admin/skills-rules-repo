@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+if ! python3 scripts/validate.py >/dev/null 2>&1; then
+  echo "❌ Pre-commit check failed: scripts/validate.py reported errors:"
+  python3 scripts/validate.py
+  exit 1
+fi
+
+if ! python3 scripts/generate_catalog.py --check >/dev/null 2>&1; then
+  python3 scripts/generate_catalog.py
+  echo "❌ README.md catalog was out of date and has been regenerated."
+  echo "   Include README.md in your staged files / commit pathspec and re-run git commit."
+  exit 1
+fi

@@ -29,6 +29,9 @@ python3 scripts/generate_catalog.py --check    # exit 1 if README.md is stale (C
 python3 scripts/audit_skill_quality.py             # full per-skill report
 python3 scripts/audit_skill_quality.py --summary   # aggregate counts only
 
+# Enable the repo's pre-commit hook (runs validate.py + generate_catalog.py --check; also set by ./sync.sh)
+git config core.hooksPath .githooks
+
 # Distribute skills/rules to agent tools
 ./sync.sh --global                 # ~/.claude/skills, ~/.Codex/skills, ~/.gemini/config/{skills,rules}
 ./sync.sh --project <dir>          # <dir>/.agents, <dir>/.claude/skills, <dir>/.cursor/rules
@@ -37,8 +40,10 @@ python3 scripts/audit_skill_quality.py --summary   # aggregate counts only
 ```
 
 CI (`.github/workflows/validate.yml`, on push/PR to `main`) runs `validate.py` **and**
-`generate_catalog.py --check`. Any PR that adds, removes, or renames a skill/rule without
-regenerating the README fails the build.
+`generate_catalog.py --check`. On PRs, a stale `README.md` fails the check; on direct pushes to
+`main`, CI auto-regenerates and commits `README.md` (`[skip ci]`) so automated fleet/cron pushes
+cannot leave `main` red. Locally, `.githooks/pre-commit` blocks commits when `validate.py` fails
+or `README.md` is stale (regenerating `README.md` on disk so you can include it in the commit).
 
 There are no unit tests; `validate.py` is the test suite. To check one skill, run `validate.py`
 (it validates all and lists per-item results) or eyeball the specific `SKILL.md` frontmatter.

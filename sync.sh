@@ -114,6 +114,10 @@ sync_project() {
   echo "✨ Project sync complete!"
 }
 
+if [ -d "$REPO_DIR/.git" ] && [ -d "$REPO_DIR/.githooks" ]; then
+  git -C "$REPO_DIR" config core.hooksPath .githooks 2>/dev/null || true
+fi
+
 case "$1" in
   --global)
     sync_global

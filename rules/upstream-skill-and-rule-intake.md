@@ -8,7 +8,7 @@ Establish strict compliance, structural, and verification requirements before ac
 
 ## 1. Core Directives
 
-1. **Never commit without local validation**: All imported skills and rules must pass `python3 scripts/validate.py` and `python3 scripts/generate_catalog.py --check` before check-in.
+1. **Never commit without local validation**: All imported skills and rules must pass `python3 scripts/validate.py` and `python3 scripts/generate_catalog.py --check` before check-in. Enable the repo hook (`git config core.hooksPath .githooks`, also configured by `./sync.sh`) so commits fail locally if `README.md` is stale.
 2. **Strict separation of skill and rule formats**:
    - **Skills** MUST live in `<category>/<skill-name>/` or `skills/<skill-name>/` and contain a `SKILL.md` with YAML frontmatter (`name`, `description`).
    - **Rules** in `rules/*.md` MUST start directly with `# <Title>` followed by a summary paragraph. They **MUST NOT** contain YAML frontmatter (`---`).
