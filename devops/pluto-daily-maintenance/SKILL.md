@@ -570,14 +570,14 @@ When you see `last_status: error` on a cron, classify before escalating:
   and the run takes ~51 min, so `last_run_at` and the output-file mtime are COMPLETION (04:36), not
   dispatch. Neither is a late fire — convert the header (+1 h to AEDT) and compare that to the expr;
   never re-derive a dispatch delay from the output file name.
-  **2026-11-10→11-13 (days 36-39) — band FLAT and improving on the 🔴 count; nothing to escalate.**
+  **2026-11-10→11-14 (days 36-40) — band FLAT and improving on the 🔴 count; nothing to escalate.**
   backend `9549/44` (⚪35, **🔴9**, down from 12 — a FALLING genuine count is the band improving, never an
-  escalation trigger), vitest `286-287p/1f` (**39 consecutive**), E2E `43-46 passed / 4-7 failed`
+  escalation trigger), vitest `286-287p/1f` (**40 consecutive**), E2E `43-46 passed / 4-7 failed`
   oscillating with the SAME hydration-mismatch diagnosis (inline CSS-in-JS `marginTop` camelCase vs
-  `margin-top`; 19 consecutive escalated runs), OVERALL `9879/52/3`. The `⚪ 'poetry' not found —
-  fallback to venv pytest` line is the PERMANENT path on this host, not a fault. `7 failed` on E2E is
-  still inside the observed 4-7 band — escalate only on a NAMED non-whitelisted test or a sustained rise
-  past 7.
+  `margin-top`; 20 consecutive escalated runs), OVERALL `9879-9880 passed / 51-52 failed / 3 errors`. The
+  `⚪ 'poetry' not found — fallback to venv pytest` line is the PERMANENT path on this host, not a fault.
+  `7 failed` on E2E is still inside the observed 4-7 band — escalate only on a NAMED non-whitelisted test
+  or a sustained rise past 7.
 - **`SSM: Error response from daemon: No such container: amlhive-app-1` on `3ebed4e59ee3` (AML Hive Daily
   Business Report, 21:15) — a CONTAINER RENAME, and production is uniformly HEALTHY. Class this as a
   script fault, NOT a prod outage.** Seen 2026-10-26 21:15, the first report after the 0.50.185 deploy:
