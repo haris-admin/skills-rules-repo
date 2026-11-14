@@ -62,8 +62,14 @@ description: Pluto's lightweight daily maintenance engine — 4-task health chec
    counts to read 0 before `git add -- <path>`. Seen 2026-10-11 on `fleet-skill-governance`: WSL ahead by
    23 lines (`## Adopting a new STANDARD (not just a skill) — it lands on four surfaces`), repo-only 0 →
    additive mirror, commit `ff21de9`, repo/WSL 0/0 afterwards. If repo-only > 0, it is a MERGE — Saturday scope.
-   **Re-measured 2026-10-13: repo 380 SKILL.md vs WSL 191 by name; 64 WSL-only and 86 content-differing
-   (2026-10-11: 64/90; 2026-10-01: 65/97) — unchanged in character, Saturday/merge scope.**
+   **Re-measured 2026-11-12: repo 406 SKILL.md vs WSL 264 by name; 73 WSL-only and 152
+   content-differing (2026-10-13: 191/380, 64 and 86; 2026-10-01: 65/97) — unchanged in character,
+   Saturday/merge scope, but the DIFFERS count is inflating: the hash keys by parent-dir NAME, the repo
+   carries 4 duplicated names (`apple-notes`, `apple-reminders`, `monitoring-alert-verification`,
+   `vulnerability-watcher`), and a TRAILING-NEWLINE-only difference hashes as a full divergence while
+   `diff … | grep -c '^[<>]'` reads **0/0**. So never treat a DIFFERS hit as content drift without the
+   line count — 0/0 means the copies agree and nothing needs mirroring (seen 2026-11-12 on
+   `tapease-upstream-watch`).**
    **Re-measured 2026-10-01: repo 389 SKILL.md vs WSL 254; 65 WSL-only (excluding `.archive/`) and 97
    content-differing.** Compare by skill NAME, not by path — `devops/fleet-skill-governance` reads as
    repo-absent only because the repo files it under `agent-governance-and-git/` (byte-identical).
@@ -564,6 +570,14 @@ When you see `last_status: error` on a cron, classify before escalating:
   and the run takes ~51 min, so `last_run_at` and the output-file mtime are COMPLETION (04:36), not
   dispatch. Neither is a late fire — convert the header (+1 h to AEDT) and compare that to the expr;
   never re-derive a dispatch delay from the output file name.
+  **2026-11-10→11-14 (days 36-40) — band FLAT and improving on the 🔴 count; nothing to escalate.**
+  backend `9549/44` (⚪35, **🔴9**, down from 12 — a FALLING genuine count is the band improving, never an
+  escalation trigger), vitest `286-287p/1f` (**40 consecutive**), E2E `43-46 passed / 4-7 failed`
+  oscillating with the SAME hydration-mismatch diagnosis (inline CSS-in-JS `marginTop` camelCase vs
+  `margin-top`; 20 consecutive escalated runs), OVERALL `9879-9880 passed / 51-52 failed / 3 errors`. The
+  `⚪ 'poetry' not found — fallback to venv pytest` line is the PERMANENT path on this host, not a fault.
+  `7 failed` on E2E is still inside the observed 4-7 band — escalate only on a NAMED non-whitelisted test
+  or a sustained rise past 7.
 - **`SSM: Error response from daemon: No such container: amlhive-app-1` on `3ebed4e59ee3` (AML Hive Daily
   Business Report, 21:15) — a CONTAINER RENAME, and production is uniformly HEALTHY. Class this as a
   script fault, NOT a prod outage.** Seen 2026-10-26 21:15, the first report after the 0.50.185 deploy:

@@ -90,6 +90,29 @@ The guard is a `write_file`-tool check, not a filesystem permission, so `execute
 Python write landed 11,131 bytes on the first try. Still archive the previous day's copy first: on 4 Oct
 the prior version was overwritten before archiving, and only the chamber record survived it.
 
+## For the signal-balance count, take counter-signals from the PRIMARY corpus, not a separate sweep (Oct 20 2026)
+
+On the AI Regulation 5-day cycle the two counter-sweep queries (`AI deregulation compliance burden
+innovation`, `AI Act criticism overregulation cost small business`) returned 56 items of which **one** fell
+inside 30 days, and 0 inside 21 — abstract policy vocabulary is not how news is headlined, so the sweep
+delivers an old corpus and the balance ratio is computed against nothing.
+
+The light-touch side is already in the primary corpus and is cheaper to count there: `self regulation`,
+`preemption`, `omnibus`/`delay`/`defer`, `voluntary`, `back adoption`, `shifts … from restrictive lists`.
+Classify the 20-30 unique recent headlines plus the articles you actually extracted (18 intervention /
+10 light-touch / 2 neutral on 20 Oct → 2.07:1), record both raw→filtered RSS counts and the classifier
+inputs in `meta.signal_balance.note`, and run a counter-sweep only if that count still exceeds 5:1.
+
+**Topic exception — capital-markets cycles are the reverse, and the greedy-regex trap is what inflates them (verified 14 Nov 2026).** On Startup & VC the counter-sweep DID work: 5 queries (`startup failures`, `down round valuation markdown`, `Australian startup collapse administration`, `LP pullback`, `tech layoffs`) returned 38 dated items inside 30d, because layoff/funding-winter vocabulary is genuinely how the press headlines a contraction. The Oct 20 warning applies to *abstract policy* vocabulary, not to market-stress vocabulary — decide per topic. The real trap on a bullish cycle is the classifier: a bull regex containing `\$[0-9]`/`record`/`invests` scored the primary corpus at 11.50:1 and looked like a blind spot, but it was matching any headline carrying a dollar figure. Classify on the story SUBJECT (is the subject raising capital, or cutting/contracting?) and count mixed headlines (record dollars AND falling deal counts) as bear-side; the same 148 items then read 74 bull / 21 bear = 3.52:1. Print the bear-side headlines and audit them by eye before accepting any ratio above 5:1.
+
+## Topic → chamber for the AI-regulation cycle is `regulatory-ai` — pass `--chamber` explicitly
+
+The feeder routes by tags, and the AI-regulation vocabulary (`ai-regulation`, `ai-governance`,
+`frontier-ai`) can resolve to `agentic-security` or `data-sovereignty` on a tag-order change. Passing
+`--chamber regulatory-ai` plus a read-back assert of `pluto_<YYYYMMDD>_` ids in that collection and **zero**
+in the neighbours is the cheap guard; on 20 Oct the tagged feed and the explicit chamber agreed (6/6 docs,
+6 unique, 0 misroutes), so an explicit `--chamber` costs nothing.
+
 ## Verify the feed by reading the chamber back, not by the feeder's own status
 
 The feeder's `{"status": "stored", "findings_added": 6}` is a self-report. Confirm independently that
@@ -99,8 +122,8 @@ other chambers gained **zero** `pluto_<YYYYMMDD>_` ids (no misroute into `pluto_
 
 ### Match today's feed by ID PREFIX — the metadata `date` is UTC, so an AEST date filter returns 0 (Oct 15 2026)
 
-A read-back filtered with `[m for m in metas if '2026-10-15' in str(m)]` returned **0**, which reads exactly like
-"the feeder reported stored but stored nothing". It had stored all 6. The feeder stamps `date` with
+I filtered the read-back with `[m for m in metas if '2026-10-15' in str(m)]` and got **0**, which reads exactly
+like "the feeder reported stored but stored nothing". It had stored all 6. The feeder stamps `date` with
 `datetime.utcnow()` — the 05:07 AEST run carries `2026-10-14T18:07:35+00:00` — so a local-date substring match
 **always** misses for any run before 11:00 AEST. On the ~05:00 daily cron that is every single run.
 
@@ -119,8 +142,8 @@ unverified check to re-run with the id prefix, never as evidence the feed failed
 When a run is re-fed after the findings are edited (e.g. novelty labels added, titles rewritten), the feeder's
 dedup compares **document text**, so every edited finding no longer matches its stored copy and is added again.
 The chamber then holds **both** versions for that date — 12 docs for a 6-finding run — and the next run's
-dedupe sees the stale copy too. The `.processed/*.done` re-feed recipe solves this only for the **watcher**
-path; a direct `pluto_mempalace_feeder.py` feed has no marker to remove.
+dedupe sees the stale copy too. The `.processed/*.done` re-feed recipe in SKILL.md solves this only for the
+**watcher** path; a direct `pluto_mempalace_feeder.py` feed has no marker to remove.
 
 **Fix — delete by today's id prefix, then re-feed, then assert:**
 
@@ -131,8 +154,8 @@ col.delete(ids=stale)
 # then assert len(ids-with-prefix) == finding count AND len(set(texts)) == finding count
 ```
 
-Prefer getting the content right the first time: run the chamber repeat-check **before** drafting, so the
-novelty labels are in the JSON on the first feed.
+Prefer getting the content right the first time: run the chamber repeat-check (step 2 of "Budget the pipeline")
+**before** drafting, so the novelty labels are in the JSON on the first feed.
 
 ## A near-miss chamber name can swallow a whole feed (Oct 6 2026)
 
@@ -171,6 +194,36 @@ col = client.get_collection(name="agentic-security")   # no embedding_function
 
 Pass an EF only for `query()`/`add()`. Combine with the standalone-call rule (one chamber read per
 `terminal()` call, never nested in `$( )`) so the traceback is never swallowed.
+
+## SEO/AI content farms invent incidents — verify Cloud headlines against the official status page (Nov 1 2026)
+
+On the Cloud & Infrastructure cycle the 21-day Google News RSS corpus (41 unique headlines) carried two
+fabrication-shaped stories that would have shipped as findings: `AWS Outage Hits 28 Hours, Third us-east-1
+Failure [2026]` (shattered.io) and `Australia's 40 Data Centres: Only 23% Have Power [2026]`
+(tech-insider.org). Both are wrong. AWS's own health dashboard incident history lists NO 2026 us-east-1 event
+of that shape, and the described details match the Oct 2025 DynamoDB DNS race condition; Data Centres
+Australia tracks 163 facilities at 1.6GW operational, not 40 sites with 77% unpowered.
+
+Domains that repeatedly produce dated, plausible, entirely invented items: `tech-insider.org`, `shattered.io`,
+`streamlinefeed.*`, `dars.gov.et` (a government domain being used as a content host). They rank well in
+Google News RSS because the headline carries a number, a year and a bracket tag.
+
+**Fix:** for any headline claiming an incident, an outage or a hard count, resolve it against the primary
+record before drafting — `status.cloud.google.com/incidents/<id>`, `health.aws.amazon.com/health/status`,
+the vendor's own blog/newsroom, a regulator page, or a named industry body's published report. A status
+dashboard incident history is the cheapest kill: if the event is not in the provider's own history, the story
+does not exist. Record what you discarded and why in `meta.signal_balance.note` so the next run does not
+re-litigate it.
+
+## EU AI Act dates as amended — do not restate the 2024 schedule (verified 10 Nov 2026)
+
+Regulation (EU) 2026/1744 (Digital Omnibus on AI) entered into force 27 July 2026 and **deferred Chapter III
+high-risk obligations** to **2 December 2027** (stand-alone Annex III systems) and **2 August 2028**
+(Annex I embedded systems). The deferral is limited to Chapter III: **Article 50 transparency has applied since
+2 August 2026**, the Article 50(2) marking/watermarking duty for generative systems placed on the market
+before 2 August 2026 falls due **2 December 2026**, and the NCII/CSAM prohibitions (Art 5(1)(ba)/(bb), 5(1a)/(1b))
+become applicable the same day. Cite this schedule, not the pre-Omnibus "everything applies 2 Aug 2026" framing —
+a future AI-regulation cycle that restates the 2024 dates ships a factually wrong finding.
 
 ## Budget the pipeline in this order
 
