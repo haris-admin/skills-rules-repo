@@ -24,13 +24,19 @@ import sqlite3
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
-LOG_FILE = pathlib.Path("/home/habib/.hermes/state/predispute_worker_log.jsonl")
-STATE_FILE = pathlib.Path("/home/habib/.hermes/cache/scratch/predispute_worker_state.json")
+LOG_FILE = pathlib.Path("/home/habib/.hermes/state/predispute_prod_worker_log.jsonl")
+STATE_FILE = pathlib.Path("/home/habib/.hermes/cache/scratch/predispute_prod_worker_state.json")
 EXEC_DB = pathlib.Path("/home/habib/.hermes/cron/executions.db")
 JOBS_FILE = pathlib.Path("/home/habib/.hermes/cron/jobs.json")
 ENV_FILE = pathlib.Path("/mnt/c/Users/habib/.hermes/.env")
-CLAIM_JOB = "e3cc72366dd7"
-WORKER_JOB = "ff18d93e2d10"
+CLAIM_JOB = "57805756dcc3"      # PROD claim tick (the live lane)
+WORKER_JOB = "0128a604a0f5"     # PROD enrichment worker
+# The owner renamed PLUTO_HERMES_PREDISPUTE_* -> PLUTO_HERMES_HANDLEDISPUTE_*; accept both.
+KEY_VARS = ("PLUTO_HERMES_HANDLEDISPUTE_AGENT_API_KEY", "PLUTO_HERMES_PREDISPUTE_AGENT_API_KEY",
+            "HANDLEDISPUTE_AGENT_KEY", "PREDISPUTE_AGENT_API_KEY")
+BASE_VARS = ("PLUTO_HERMES_HANDLEDISPUTE_BASE_URL", "PLUTO_HERMES_PREDISPUTE_BASE_URL")
+INSECURE_VARS = ("PLUTO_HERMES_HANDLEDISPUTE_ALLOW_INSECURE_LOCAL",
+                 "PLUTO_HERMES_PREDISPUTE_ALLOW_INSECURE_LOCAL")
 TICK_LIMIT = 400
 AEST = timezone(timedelta(hours=10))
 
@@ -45,12 +51,33 @@ def ts_of(value: str | None) -> datetime | None:
     return d if d.tzinfo else d.replace(tzinfo=timezone.utc)
 
 
-def health(port: int) -> str:
+def health(origin: str) -> str:
+    """Probe <origin>/health. Accepts a full origin (the configured API base) or a
+    bare port number for the legacy localhost stack."""
+    origin = str(origin).strip().rstrip("/")
+    url = origin + "/health" if "://" in origin else f"http://localhost:{origin}/health"
     try:
-        with urllib.request.urlopen(f"http://localhost:{port}/health", timeout=4) as r:
+        req = urllib.request.Request(url, headers={"User-Agent": "HermesPreDisputeWorker/1.0"})
+        with urllib.request.urlopen(req, timeout=6) as r:
             return "ok" if r.status == 200 else f"http {r.status}"
     except Exception:
         return "DOWN"
+
+
+def env_settings() -> tuple[bool, str, bool]:
+    """(key_present, base_url, insecure_optin) from the Hermes .env, accepting both
+    the HANDLEDISPUTE and legacy PREDISPUTE spellings."""
+    vals: dict[str, str] = {}
+    if ENV_FILE.exists():
+        for line in ENV_FILE.read_text(errors="replace").splitlines():
+            s = line.strip()
+            if s and not s.startswith("#") and "=" in s:
+                k, v = s.split("=", 1)
+                vals[k.strip()] = v.strip().strip('"').strip("'")
+    key_present = any(vals.get(k) for k in KEY_VARS)
+    base_url = next((vals[k] for k in BASE_VARS if vals.get(k)), "")
+    insecure = any(str(vals.get(k, "")).lower() in ("1", "true", "yes", "on") for k in INSECURE_VARS)
+    return key_present, base_url, insecure
 
 
 def worker_states() -> dict[str, dict]:
@@ -129,17 +156,7 @@ def main() -> int:
     else:
         queue = f"idle (state={status})"
 
-    key_present = False
-    base_url = ""
-    insecure_optin = False
-    if ENV_FILE.exists():
-        for line in ENV_FILE.read_text(errors="replace").splitlines():
-            if line.strip().startswith("PLUTO_HERMES_PREDISPUTE_AGENT_API_KEY=") and line.split("=", 1)[1].strip():
-                key_present = True
-            if line.strip().startswith("PLUTO_HERMES_PREDISPUTE_BASE_URL="):
-                base_url = line.split("=", 1)[1].strip()
-            if line.strip().startswith("PLUTO_HERMES_PREDISPUTE_ALLOW_INSECURE_LOCAL=") and line.split("=", 1)[1].strip().lower() in ("1", "true", "yes", "on"):
-                insecure_optin = True
+    key_present, base_url, insecure_optin = env_settings()
 
     workers = worker_states()
     paused = bool(workers) and all(not w["enabled"] for w in workers.values())
@@ -161,20 +178,22 @@ def main() -> int:
     if errors.get(CLAIM_JOB):
         problems.append(f"{errors[CLAIM_JOB]} claim tick error(s)")
     if not key_present:
-        problems.append("PLUTO_HERMES_PREDISPUTE_AGENT_API_KEY missing")
+        problems.append("agent API key missing (PLUTO_HERMES_HANDLEDISPUTE_AGENT_API_KEY / HANDLEDISPUTE_AGENT_KEY)")
     if base_url and not base_url.lower().startswith("https://"):
         host = base_url.split("://", 1)[1].split("/", 1)[0].split(":")[0].lower() if "://" in base_url else ""
         if insecure_optin and host in ("127.0.0.1", "localhost", "::1"):
-            fyi.append(f"non-prod loopback override ACTIVE (http://{host}) - unset PLUTO_HERMES_PREDISPUTE_ALLOW_INSECURE_LOCAL for production")
+            fyi.append(f"non-prod loopback override ACTIVE (http://{host}) - unset PLUTO_HERMES_HANDLEDISPUTE_ALLOW_INSECURE_LOCAL for production")
         else:
-            problems.append(f"PLUTO_HERMES_PREDISPUTE_BASE_URL is not HTTPS ({base_url.split('://', 1)[0]}://) - the worker refuses to start")
+            problems.append(f"API base is not HTTPS ({base_url.split('://', 1)[0]}://) - the worker refuses to start")
     if refused:
         reasons = sorted({str(e.get("reason", "")).split(" (or set")[0].strip() for e in refused})
         problems.append(f"worker REFUSED TO START {len(refused)}x: " + " | ".join(reasons[:3]) + (" | …" if len(reasons) > 3 else ""))
-    b, a = health(8008), health(8009)
-    pipeline_down = b != "ok"  # backend is the pipeline's dependency
-    if (b != "ok" or a != "ok") and not paused:
-        problems.append(f"endpoint health backend={b} acma={a}")
+    b = health(base_url or "8008")
+    loopback = (not base_url) or any(h in base_url for h in ("localhost", "127.0.0.1", "::1"))
+    a = health("8009") if loopback else "n/a"
+    pipeline_down = b != "ok"  # the API is the pipeline's dependency
+    if b != "ok" and not paused:
+        problems.append(f"endpoint health {base_url or 'http://localhost:8008'} = {b}")
 
     lines = []
     if paused:
@@ -188,14 +207,14 @@ def main() -> int:
             "The counts below are UNMEASURED, not evidence of idleness."
         )
     lines += [
-        "☿ Pre-Dispute — 12h worker report",
+        "☿ HandleDispute — 12h worker report (production lane)",
         f"   window: {win_from} → {win_to} AEST",
         f"   workers: {paused_note or 'state unknown'}",
         f"   ticks: claim {ticks.get(CLAIM_JOB, '?')} · worker {ticks.get(WORKER_JOB, '?')}   (60s interval)",
         f"   jobs: claimed {len(claimed)} · completed {len(completed)} · failed {len(failed)}"
         + (f" · heartbeats {len(heartbeats)}" if heartbeats else ""),
         f"   queue: {queue}",
-        f"   endpoints: backend {b} · acma {a}",
+        f"   endpoints: {base_url or 'http://localhost:8008'} {b}" + (f" · acma {a}" if a != "n/a" else ""),
     ]
     if fyi:
         lines.append("🟡 " + "; ".join(fyi))

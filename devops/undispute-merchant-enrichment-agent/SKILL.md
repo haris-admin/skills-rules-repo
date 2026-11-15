@@ -92,10 +92,10 @@ Every pre-dispute worker component reads its config from **`/mnt/c/Users/habib/.
 
 | Variable | Purpose / current value |
 |---|---|
-| `PLUTO_HERMES_PREDISPUTE_BASE_URL` | API origin the worker polls. Must be HTTPS *or* a **private** `http://` with the opt-in below. Currently `http://127.0.0.1:8008` — the LAN IP `192.168.50.210` is a Windows-bound listener **WSL cannot reach**. |
-| `PLUTO_HERMES_PREDISPUTE_AGENT_API_KEY` | Scoped credential; the backend holds the same secret as `HERMES_AGENT_API_KEY` (73 chars at present). |
-| `PLUTO_HERMES_PREDISPUTE_INTERVAL` | Positive whole-number seconds (60). The crons express the same cadence as `* * * * *`. |
-| `PLUTO_HERMES_PREDISPUTE_ALLOW_INSECURE_LOCAL` | Non-prod opt-in (`1`/`true`, private-host-only — loopback/RFC1918/link-local/ULA/private TLD; a public host is always refused). Logged once per UTC day — see the log-hygiene rule below. Unset for production. |
+| `PLUTO_HERMES_HANDLEDISPUTE_BASE_URL` | API origin the worker polls. Must be HTTPS *or* a **private** `http://` with the opt-in below. **Renamed 2026-11-16 from `PLUTO_HERMES_PREDISPUTE_BASE_URL`** (the scripts alias the old name onto the new one, so both resolve). Now points at `https://api.handledispute.com.au` — the public production API. |
+| `PLUTO_HERMES_HANDLEDISPUTE_AGENT_API_KEY` | Scoped credential. **Staging-only: it returns 401 against the public prod API.** Prod requires `HANDLEDISPUTE_AGENT_KEY`. |
+| `PLUTO_HERMES_HANDLEDISPUTE_INTERVAL` | Positive whole-number seconds (60). The crons express the same cadence as `* * * * *`. |
+| `PLUTO_HERMES_HANDLEDISPUTE_ALLOW_INSECURE_LOCAL` | Non-prod opt-in (`1`/`true`, private-host-only). Moot while the base is public HTTPS — it does not activate for a public host. Unset for production. |
 | `PLUTO_HERMES_ACMA_BASE_URL` | The ACMA service. **Must be the loopback form `http://127.0.0.1:8009`** — the LAN form is unreachable from WSL. |
 | `PLUTO_HERMES_ACMA_API_KEY` | Declared ACMA project key (`pluto-hermes`). Verified: `/api/v1/check/phone` → 200 `ALLOWED`, `/api/v1/check/email` → 200 `BLOCKED_NO_CONSENT`, **no key → 401** (fails closed). |
 
@@ -109,8 +109,13 @@ The poll script serves two lanes from one file; they never share state.
 
 | Lane | Invocation | Origin | Credential | State / log |
 |---|---|---|---|---|
-| staging (default) | `predispute_enrich_poll.py` | `PLUTO_HERMES_PREDISPUTE_BASE_URL` (`http://127.0.0.1:8008`, private opt-in) | `PLUTO_HERMES_PREDISPUTE_AGENT_API_KEY` | `predispute_worker_state.json` / `predispute_worker_log.jsonl` |
-| production | `predispute_enrich_poll.py --prod` | `PLUTO_HERMES_PREDISPUTE_PROD_BASE_URL`, default `https://api.handledispute.com.au` | `HANDLEDISPUTE_AGENT_KEY` | `predispute_prod_worker_state.json` / `predispute_prod_worker_log.jsonl` |
+| staging (default) | `predispute_enrich_poll.py` | `PLUTO_HERMES_HANDLEDISPUTE_BASE_URL` (**now the public prod API**) | `PLUTO_HERMES_HANDLEDISPUTE_AGENT_API_KEY` — **401 on prod** | `predispute_worker_state.json` / `predispute_worker_log.jsonl` |
+| production | `predispute_enrich_poll.py --prod` | `PLUTO_HERMES_PREDISPUTE_PROD_BASE_URL`, default `https://api.handledispute.com.au` | `HANDLEDISPUTE_AGENT_KEY` (works) | `predispute_prod_worker_state.json` / `predispute_prod_worker_log.jsonl` |
+
+⚠️ **Both lanes now resolve to the same base** after the owner repointed the renamed
+variable at the public API. The staging pair still uses a key prod rejects, so it can only
+produce `CLAIM FAILED http 401`. Keep the staging crons paused or retire them; do not run
+two lanes against one queue. The 12h report tracks the **production** lane.
 
 Both lanes keep the same contract gate (HTTPS or private+opt-in, interval, key). The prod
 lane can never take the plaintext override: its variable name is

@@ -10,4 +10,9 @@
 python3 /home/habib/.hermes/scripts/predispute_enrich_poll.py --quiet
 code=$?
 if [ "$code" -eq 10 ]; then exit 0; fi
+# Exit code 3 = the poll REFUSED TO START because the configuration is not
+# contract-valid (e.g. PLUTO_HERMES_PREDISPUTE_BASE_URL is http://). That is a
+# configuration state, not a scheduler fault, so it is mapped to 0 — otherwise
+# the scheduler replaces the delivery with a scheduler error alert every tick.
+if [ "$code" -eq 3 ]; then exit 0; fi
 exit "$code"

@@ -67,10 +67,23 @@ LOG_FILE = STAGING_LOG_FILE
 
 CLAIM_PATH = "/api/v1/agent/merchant-enrichment/claim"
 BASE_VAR = "PLUTO_HERMES_PREDISPUTE_BASE_URL"
-KEY_NAMES = ("PLUTO_HERMES_PREDISPUTE_AGENT_API_KEY", "PREDISPUTE_AGENT_API_KEY", "HERMES_AGENT_API_KEY")
+KEY_NAMES = ("PLUTO_HERMES_HANDLEDISPUTE_AGENT_API_KEY",
+             "PLUTO_HERMES_PREDISPUTE_AGENT_API_KEY",
+             "PREDISPUTE_AGENT_API_KEY",
+             "HERMES_AGENT_API_KEY")
 PROD_BASE_DEFAULT = "https://api.handledispute.com.au"
 INTERVAL_VAR = "PLUTO_HERMES_PREDISPUTE_INTERVAL"
 ALLOW_INSECURE_VAR = "PLUTO_HERMES_PREDISPUTE_ALLOW_INSECURE_LOCAL"
+
+# The owner renamed the lane variables PREDISPUTE -> HANDLEDISPUTE. The code below
+# keeps the original names as canonical keys; each new name is aliased onto its
+# predecessor at env-load time so either spelling (or both) resolves identically.
+_ENV_ALIASES = (
+    ("PLUTO_HERMES_PREDISPUTE_BASE_URL", "PLUTO_HERMES_HANDLEDISPUTE_BASE_URL"),
+    ("PLUTO_HERMES_PREDISPUTE_AGENT_API_KEY", "PLUTO_HERMES_HANDLEDISPUTE_AGENT_API_KEY"),
+    ("PLUTO_HERMES_PREDISPUTE_INTERVAL", "PLUTO_HERMES_HANDLEDISPUTE_INTERVAL"),
+    ("PLUTO_HERMES_PREDISPUTE_ALLOW_INSECURE_LOCAL", "PLUTO_HERMES_HANDLEDISPUTE_ALLOW_INSECURE_LOCAL"),
+)
 LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1", "[::1]"}
 PRIVATE_HOST_SUFFIXES = (".local", ".internal", ".lan", ".home", ".test", ".localhost")
 
@@ -117,10 +130,15 @@ def load_env() -> dict[str, str]:
             if s and not s.startswith("#") and "=" in s:
                 k, v = s.split("=", 1)
                 out[k.strip()] = _clean(v)
-    for name in (*KEY_NAMES, BASE_VAR, INTERVAL_VAR, ALLOW_INSECURE_VAR, "PLUTO_HERMES_ACMA_BASE_URL"):
+    wanted = (*KEY_NAMES, BASE_VAR, INTERVAL_VAR, ALLOW_INSECURE_VAR,
+              "PLUTO_HERMES_ACMA_BASE_URL", *(new for _, new in _ENV_ALIASES))
+    for name in wanted:
         value = _clean(os.environ.get(name))
         if value:
             out[name] = value
+    for old, new in _ENV_ALIASES:          # PREDISPUTE <- HANDLEDISPUTE rename
+        if not out.get(old) and out.get(new):
+            out[old] = out[new]
     return out
 
 
