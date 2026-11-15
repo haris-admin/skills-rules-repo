@@ -70,8 +70,7 @@ competitor news (`competitor-news-monitor`).
 - AWS What's New — `aws.amazon.com/about-aws/whats-new/recent/feed/`, same filter (upgrades, 🆕)
 - AWS service health — `status.aws.amazon.com/rss/rds-ap-southeast-2.rss`, `…/lambda-ap-southeast-2.rss`,
   `…/elasticache-ap-southeast-2.rss`, `…/ses-ap-southeast-2.rss`
-- Statuspage.io pages (incidents, maintenance IDs, non-operational components) — Clover, **Cloudflare**,
-  **Cloudinary**, **Expo / EAS**
+- Statuspage.io pages (incidents, maintenance IDs, non-operational components) — Clover, **Expo / EAS**
 - Apple developer news RSS — filtered to policy / review / submission / deadline / privacy terms
 - Expo changelog RSS — filtered to SDK / EAS / breaking / deprecation terms
 
@@ -87,6 +86,12 @@ competitor news (`competitor-news-monitor`).
 
 ## Candidate targets that are deliberately NOT watched
 
+- **Cloudflare — NOT USED by TAPEase** (Haris, 15 Nov 2026). The repo only mentions it twice as
+  (a) planned WAF technical debt and (b) defensive `CF-Connecting-IP` parsing in `ip_utils.py`, in case some
+  proxy adds the header. No Terraform resource, no zone. Watching it produced a "Partially Degraded
+  Service" alert about Workers API and Albuquerque/Canberra PoPs that meant nothing to this stack. Removed.
+- **Cloudinary — NOT USED.** `CLOUDINARY_*` exists only in `env.example`, the package is not in
+  `requirements.txt`, and code references it solely in comments about **legacy** URLs (storage is S3). Removed.
 - **Monoova** — `MONOOVA_*` keys exist in `.env`, but the integration is **not live** (Haris, 12 Nov 2026).
   Do not add it to FEEDS/AVAILABILITY until the integration is switched on; a dead vendor watch is pure noise.
 - **m-Pay** — `api.m-pay.com.au` returns 404 and `m-pay.com.au` refuses connections from this host
@@ -154,6 +159,11 @@ competitor news (`competitor-news-monitor`).
 - **Apply the `focus` filter to scheduled maintenance too.** Cloudflare schedules windows across every PoP
   on earth; unfiltered, one report carried 26 maintenance lines for Albuquerque, Tokyo, Singapore, Taipei…
   Filter maintenance names with the same regex set, and cap the rendered list.
+- **Prove a vendor is actually used before watching it — a keyword hit is not identity.** Cloudflare and
+  Cloudinary were both added off a repo grep and both were noise: one from a planned-WAF note, one from
+  legacy-URL comments. The test is a dependency in `requirements.txt` / `package.json`, a live value in
+  `.env` (not `env.example`), or a Terraform resource. A vendor whose outage cannot affect the stack turns
+  every alert into training-to-ignore.
 - **Proof harness before trusting it:** `scripts/test_upstream_watch.sh` (failure → threshold → silence →
   recovery) and `scripts/test_change_paths.sh` (tampered state proves each detector fires and that a
   reported change is consumed exactly once). Both run against a temp `UW_STATE` copy, so they never touch
