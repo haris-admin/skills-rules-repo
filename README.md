@@ -282,6 +282,7 @@ Hermes/Pluto.
 | **[habib-cfo](./skills/habib-cfo/SKILL.md)** | Startup CFO and financial analyst for business cases, pre-revenue pricing and packaging, unit economics, pilot economics, runway planning, cost… | - |
 | **[habibi](./skills/habibi/SKILL.md)** | Cloud Solution Architect for AWS/Azure/GCP architecture design, scaling strategies, security patterns, infrastructure as code, and cost optimization… | - |
 | **[handledispute-edge-monitor](./devops/handledispute-edge-monitor/SKILL.md)** | Use when checking HandleDispute TLS, HTTPS, API health. | - |
+| **[handledispute-merchant-research](./devops/handledispute-merchant-research/SKILL.md)** | Use when doing HandleDispute merchant enrichment jobs. | [Instructions](./devops/handledispute-merchant-research/references/instructions.md) |
 | **[haris-serial-entrepreneur](./skills/haris-serial-entrepreneur/SKILL.md)** | Serial entrepreneur and strategic advisor for Australian fintech/payments. Expert in pitch refinement, business-model validation, founder-market fit… | - |
 | **[harishabib-blog-hero-images](./content/harishabib-blog-hero-images/SKILL.md)** | "Use when making a harishabib.au blog hero image." | - |
 | **[herdr-agent-runtime](./autonomous-ai-agents/herdr-agent-runtime/SKILL.md)** | "Use when driving coding agents headlessly via Herdr." | - |
