@@ -17,9 +17,12 @@ from __future__ import annotations
 
 import json
 import pathlib
+import sys
 from datetime import datetime, timedelta, timezone
 
-STATE_FILE = pathlib.Path("/home/habib/.hermes/cache/scratch/predispute_worker_state.json")
+STAGING_STATE_FILE = pathlib.Path("/home/habib/.hermes/cache/scratch/predispute_worker_state.json")
+PROD_STATE_FILE = pathlib.Path("/home/habib/.hermes/cache/scratch/predispute_prod_worker_state.json")
+STATE_FILE = PROD_STATE_FILE if "--prod" in sys.argv else STAGING_STATE_FILE
 STALE_AFTER = timedelta(minutes=12)
 
 

@@ -29,10 +29,27 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 
 ENV_FILE = pathlib.Path("/mnt/c/Users/habib/.hermes/.env")
-STATE_FILE = pathlib.Path("/home/habib/.hermes/cache/scratch/predispute_worker_state.json")
+STAGING_STATE_FILE = pathlib.Path("/home/habib/.hermes/cache/scratch/predispute_worker_state.json")
+PROD_STATE_FILE = pathlib.Path("/home/habib/.hermes/cache/scratch/predispute_prod_worker_state.json")
+STATE_FILE = STAGING_STATE_FILE
 BASE_PATH = "/api/v1/agent/merchant-enrichment"
-LOG_FILE = pathlib.Path("/home/habib/.hermes/state/predispute_worker_log.jsonl")  # append-only, feeds the 12h report
+STAGING_LOG_FILE = pathlib.Path("/home/habib/.hermes/state/predispute_worker_log.jsonl")  # append-only, feeds the 12h report
+PROD_LOG_FILE = pathlib.Path("/home/habib/.hermes/state/predispute_prod_worker_log.jsonl")
+LOG_FILE = STAGING_LOG_FILE
 KEY_NAMES = ("PLUTO_HERMES_PREDISPUTE_AGENT_API_KEY", "PREDISPUTE_AGENT_API_KEY", "HERMES_AGENT_API_KEY")
+PROD_KEY_NAMES = ("HANDLEDISPUTE_AGENT_KEY",)
+# Cloudflare in front of the production API rejects the default Python-urllib UA with a 403.
+USER_AGENT = "HermesPreDisputeWorker/1.0"
+
+
+def apply_lane(lane: str) -> None:
+    """`--prod` closes production jobs with the production credential and its own state."""
+    global STATE_FILE, LOG_FILE, KEY_NAMES
+    if lane != "prod":
+        return
+    STATE_FILE = PROD_STATE_FILE
+    LOG_FILE = PROD_LOG_FILE
+    KEY_NAMES = PROD_KEY_NAMES
 
 
 def log_event(event: str, **fields) -> None:
@@ -75,7 +92,7 @@ def call(rec: dict, path: str, payload: dict | None) -> tuple[int | str, str]:
         sys.exit(json.dumps({"status": "error", "reason": f"{KEY_NAMES[0]} missing from Hermes env"}))
     url = rec["backend_base"].rstrip("/") + path
     data = json.dumps(payload).encode() if payload is not None else b""
-    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json", "X-Hermes-Agent-Key": key}, method="POST")
+    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json", "User-Agent": USER_AGENT, "X-Hermes-Agent-Key": key}, method="POST")
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
             return r.status, r.read().decode(errors="replace")
@@ -90,11 +107,14 @@ def write_state(rec: dict) -> None:
 
 
 def main() -> int:
+    lane = "prod" if "--prod" in sys.argv else "staging"
+    apply_lane(lane)
+    argv = [a for a in sys.argv[1:] if a != "--prod"]
     ap = argparse.ArgumentParser()
     ap.add_argument("action", choices=["state", "heartbeat", "fail", "complete"])
     ap.add_argument("arg", nargs="?", help="error code for `fail`")
     ap.add_argument("--payload", help="JSON file for `complete`")
-    a = ap.parse_args()
+    a = ap.parse_args(argv)
 
     rec = load_state(require_open=(a.action != "state"))
     job = rec["job"]
