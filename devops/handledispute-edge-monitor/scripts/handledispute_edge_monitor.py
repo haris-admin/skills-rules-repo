@@ -165,21 +165,26 @@ def api_depth(api_root: dict, api_health: dict) -> dict:
         out["issues"].append(f"/health status={h.get('status')!r} (expected 'healthy')")
     if h.get("database") != "ok":
         out["issues"].append(f"database={h.get('database')!r} (expected 'ok')")
-    if h.get("environment") != "production":
+    # v0.260.0 hardened /health: environment / debug / database_target / dependencies
+    # are no longer disclosed. Absent is "not published", NOT a failure — only assert
+    # what the payload actually claims, otherwise the monitor invents outages.
+    if "environment" in h and h.get("environment") is not None and h.get("environment") != "production":
         out["issues"].append(f"environment={h.get('environment')!r} (expected 'production')")
-    if h.get("debug") is not False:
+    if "debug" in h and h.get("debug") is not None and h.get("debug") is not False:
         out["issues"].append(f"debug={h.get('debug')!r} (expected false in production)")
+    if not h.get("environment") and not h.get("dependencies"):
+        out["notes"].append("/health is minimal (status/version/database only) — environment and dependency detail are not disclosed")
     ver, hver = root.get("version"), h.get("version")
     if ver and hver and ver != hver:
         out["issues"].append(f"version mismatch: root {ver} vs /health {hver}")
 
     # Dependency state is a standing config note, not an outage.
-    deps = out["info"]["deps"]
-    if deps.get("email_provider") in ("mock", None):
+    deps = out["info"]["deps"] or {}
+    if deps.get("email_provider") in ("mock", None) and "email_provider" in deps:
         out["notes"].append("email_provider is MOCK — production notifications are not being sent")
-    if deps.get("sms_provider") in ("not_configured", None):
+    if deps.get("sms_provider") in ("not_configured", None) and "sms_provider" in deps:
         out["notes"].append("sms_provider is NOT CONFIGURED")
-    if deps.get("clamav") not in ("ok", "connected", "healthy"):
+    if "clamav" in deps and deps.get("clamav") not in ("ok", "connected", "healthy"):
         out["notes"].append(f"clamav is {deps.get('clamav')!r} (attachment scanning unavailable)")
     return out
 
@@ -343,7 +348,10 @@ def main() -> int:
     info = depth["info"]
     if info.get("version"):
         lines.append("")
-        lines.append(f"   API: {info.get('service')} v{version_line} · env {info.get('env')} · db {info.get('db')} ({info.get('db_target')})")
+        detail = [f"env {info['env']}"] if info.get("env") else []
+        if info.get("db"):
+            detail.append("db " + str(info["db"]) + (f" ({info['db_target']})" if info.get("db_target") else ""))
+        lines.append(f"   API: {info.get('service')} v{version_line}" + (" · " + " · ".join(detail) if detail else ""))
         deps = info.get("deps") or {}
         if deps:
             lines.append("      deps: " + " · ".join(f"{k}={v}" for k, v in deps.items()))
