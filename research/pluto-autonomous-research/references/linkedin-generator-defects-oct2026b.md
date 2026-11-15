@@ -558,3 +558,22 @@ That free slot went to `nhi-agent-identity` (genuine `agent identity` hit), whos
 be REWRITTEN (Rule 58) from the NIST NCCoE story to today's BluePhishing evidence, and the other
 two gaps in the slate were likewise restated onto today's sentences — a candidate that is fresh
 and grounded can still carry a gap describing a source the day never mentioned.
+
+**Practice note (Rule 45 recurrence #13 — the Cloud cycle, 16 Nov 2026).** The auto slate emitted
+ONE blog idea and it was a verbatim repeat: `datacentre-energy-grid` ("Power, Not Land"), delivered
+16 Oct, 31 days / six turns earlier on the same `date % 5` slot. It passed `_fresh()` because both
+the file-scan window and the ledger window end at 21 days — the 16 Oct row was IN the ledger and
+simply outside the gate. The 11 Nov note had already refused to widen that window for the same
+candidate at 26 days, so the standing fix applies again: **ADD subject-bound candidates, never
+widen a repeat gate.** Three were added, each with five corpus-exclusive terms:
+`grid-ibl-ride-through` (`ride-through`, `30mw`, `inverter-based load`, `combined-nameplate`,
+`phase-angle`), `saas-control-plane-split` (`automated health checks`, `exchange online`,
+`mo1550821`, `defender for office`, `azure status`) and `social-licence-levy`
+(`3,000 per megawatt`, `community benefit fund`, `statement of expectations`, `rockliff`,
+`megawatt of contracted energy`) — every term 0 hits across the seven prior retained research days
+(9–15 Nov), firing only on today's sentences. Hit counts were deliberately matched at 5 each so the
+existing sort puts all three ABOVE the 4-hit repeat: the repeat loses on ranking, which needs no
+gate change. The repeat's never-delivered ledger row for today (written by the first run) was pruned
+per Rule 72, backup kept. Curation split from the 05:45 AMLHive lane, which had taken the same
+Microsoft 365 outage from the CDD-record angle; the blog slate took the dependency-map angle, and
+the live-site gap check used `harishabib.au/blog/` hrefs (36 posts, no sitemap.xml).
