@@ -415,6 +415,7 @@ Hermes/Pluto.
 | **[sherpa-onnx-tts](./skills/sherpa-onnx-tts/SKILL.md)** | Local text-to-speech via sherpa-onnx (offline, no cloud). Use when asked to generate speech audio fully offline, without an internet connection or a… | - |
 | **[simplify-code](./software-development/simplify-code/SKILL.md)** | "Parallel 4-agent cleanup of recent code changes. Use when asked to 'simplify', 'simplify my changes', 'review my recent changes', or 'clean up my… | - |
 | **[skill-creator](./skills/skill-creator/SKILL.md)** | Create or update AgentSkills. Use when designing, structuring, or packaging skills with scripts, references, and assets. | - |
+| **[skills-rules-repo](./devops/skills-rules-repo/SKILL.md)** | "Use when syncing, auditing, or deduping skills-rules-repo." | - |
 | **[slack](./skills/slack/SKILL.md)** | Use when you need to control Slack from OpenClaw via the slack tool, including reacting to messages or pinning/unpinning items in Slack channels or… | - |
 | **[social-content](./content-growth-and-media/social-content/SKILL.md)** | Create and publish social media posts for Reddit, Twitter/X, LinkedIn, Instagram, Facebook, and TikTok. Platform-specific formats, character limits… | - |
 | **[social-media-engine](./content-growth-and-media/social-media-engine/SKILL.md)** | Transform single core insights into tailored, high-performing posts across LinkedIn, X, Reddit, and Facebook. Use when one idea/insight needs to… | - |
