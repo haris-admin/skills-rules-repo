@@ -134,6 +134,7 @@ Hermes/Pluto.
 | **[au-vc-funding-radar](./research/au-vc-funding-radar/SKILL.md)** | "Use when producing the weekly AU/ANZ VC funding radar." | [Sources And Benchmarks](./research/au-vc-funding-radar/references/sources-and-benchmarks.md) |
 | **[audio-transcription-wsl](./media/audio-transcription-wsl/SKILL.md)** | Transcribe .ogg notes on WSL via Whisper + Windows ffmpeg. Use when a voice message could not be auto-transcribed, the user regularly sends voice… | - |
 | **[aurora-content-engine](./research/aurora-content-engine/SKILL.md)** | Aurora's content & authority engine — blog/LinkedIn drafting from Mempalace signals, citation SOV, SEO discipline. Use for any content task. | - |
+| **[austrac-tranche2-digest](./compliance/austrac-tranche2-digest/SKILL.md)** | "Use when running the AUSTRAC Tranche 2 digest cron." | - |
 | **[aws-cloudwatch-agent](./devops/aws-cloudwatch-agent/SKILL.md)** | Monitor and diagnose AWS infrastructure (EC2, Docker, CloudWatch logs/alarms) via SSM remote commands — covers CloudWatch Agent RPM recovery… | [Amlhive Account](./devops/aws-cloudwatch-agent/references/amlhive-account.md) |
 | **[aws-ec2-fleet-monitoring](./aws/aws-ec2-fleet-monitoring/SKILL.md)** | "Class-level skill for EC2 fleet monitoring that survives instance recycling. Tag-based auto-discovery, SSM execution, and credential management… | [Alert Email Module](./aws/aws-ec2-fleet-monitoring/references/alert-email-module.md) |
 | **[aws-fleet-patching](./devops/aws-fleet-patching/SKILL.md)** | Use when patching the AWS EC2 fleet via SSM. | - |
@@ -477,6 +478,7 @@ Hermes/Pluto.
 | **[vulnerability-watcher](./devops/vulnerability-watcher/SKILL.md)** | "Use when scanning the stack for CVEs or adding watch items." | - |
 | **[wacli](./skills/wacli/SKILL.md)** | Send WhatsApp messages to a third party or search/sync WhatsApp history via the wacli CLI - not for the normal chat the agent is already having with… | - |
 | **[weather](./skills/weather/SKILL.md)** | Get current weather and forecasts (no API key required). Use when asked for the current weather, temperature, or forecast for a city or location. | - |
+| **[web-data-acquisition](./devops/web-data-acquisition/SKILL.md)** | Use when scraping, extracting or monitoring web data. | [Alexandria Catalogue](./devops/web-data-acquisition/references/alexandria-catalogue.md) |
 | **[webhook-subscriptions](./devops/webhook-subscriptions/SKILL.md)** | "Webhook subscriptions: event-driven agent runs. Use when setting up, managing, testing, or troubleshooting webhook-triggered Hermes agent runs from… | - |
 | **[website-uptime-monitor](./devops/website-uptime-monitor/SKILL.md)** | "HTTP health checks: status, SSL, response times. Use when setting up daily website uptime/health monitoring, adding SSL expiry checks, creating a… | [Amlhive Website Monitor](./devops/website-uptime-monitor/references/amlhive-website-monitor.md) |
 | **[weekly-ai-brief](./research/weekly-ai-brief/SKILL.md)** | Weekly AI brief - releases, security, policy. Use when compiling the Monday weekly AI digest (Mercury cron) covering agentic AI releases, AI security… | - |
