@@ -35,3 +35,11 @@ and let a person apply (hand over a one-line command with short symlinks). Gener
 * SES in the sandbox authorises the recipient identity and the default configuration set as well as the sender; scope to account and region, pin `ses:FromAddress`, and test with one real send.
 * The cutover order and the checks that must pass before DNS changes: `rules/an-account-cutover-freezes-first-and-compares-every-table.md`.
 
+## Lessons from closing the old account (15 Nov 2026)
+
+* Deleting with a saved targeted destroy plan worked; a versioned S3 bucket must be emptied of every version first, and an ECR repository with images needs a forced delete followed by `terraform state rm`.
+* A shared host and public address are not yours to delete until the other product has moved; list shared resources first (`rules/closing-an-old-cloud-account-needs-an-inventory-and-the-first-real-deploy.md`).
+* Copy secrets that exist only in the old account before the delete, and repoint the tools that read them.
+* Do not test a container with `docker ps | grep -q` under pipefail (`rules/a-pipe-into-grep-q-under-pipefail-is-a-race.md`).
+* Terraform state kept locally for a stack is gone in practice after the apply: record the removal in the repository docs.
+
