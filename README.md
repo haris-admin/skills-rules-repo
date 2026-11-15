@@ -504,6 +504,7 @@ Hermes/Pluto.
 | Rule File | Scope & Summary |
 | :--- | :--- |
 | **[`backend/alembic/` shadows the real installed `alembic` PyPI package (all agents)](./rules/alembic-package-name-shadowing.md)** | A local migrations directory named `alembic` can shadow the real installed `alembic` PyPI package on `sys.path`, turning `import alembic.config` into… |
+| **[A database major upgrade is rehearsed, counted, backed up, then cut over (all agents, all repos)](./rules/database-major-upgrade-rehearse-then-cutover.md)** | **Origin (Tap-Ease, 15 Nov 2026, postgres-17-everywhere).** The staging POS terminal database (a Docker container) was on Postgres 16 while… |
 | **[A generated document's layout is tested from its own output (receipts, reports, PDFs; all agents)](./rules/generated-document-layout-is-tested-from-the-output.md)** | When code draws a document itself (a hand-built PDF, a thermal receipt, a rendered report), test sizes, positions, wrapping and overflow by reading… |
 | **[A Lambda image must match the function architecture, and a deploy is proven by a run (all agents)](./rules/lambda-image-architecture-and-invocation-proof.md)** | Applies to anything that sets a container image on an AWS Lambda function, by hand, by Terraform or by CI, and to anyone reporting that such a deploy… |
 | **[A lock must expire by its own TTL (all agents, all repos)](./rules/locks-must-expire-by-their-own-ttl.md)** | Applies to any job lock stored in a database or key-value store (DynamoDB, Redis, a Postgres row) that guards a scheduled function, cron or worker. |

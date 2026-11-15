@@ -191,3 +191,9 @@ partner-side log line.
 
 - Oxygen Card ID = 8-char hex string (e.g. `005927C5`), **not** the 10-digit proxy number.
 - Account unlock: `UPDATE auth_users SET retry_count = 5, status = '1'` + Redis flush.
+
+## Lessons, 15 Nov 2026
+
+- **Production login can be stale.** `tapease/rds/credentials-production` was rejected by RDS for `tapease_admin` ("password authentication failed"). psql then retried without SSL and printed a second, misleading `no pg_hba.conf entry ... no encryption` error: read the first line. `aws secretsmanager list-secrets` was denied by the auto-mode classifier in the same session; do not work around it. Fall back to a read-only `~/<name>.sql` file the owner runs in DBeaver, and ask which secret holds the working login.
+- **Staging host (dev EC2) has `docker-compose` v5, not the `docker compose` plugin.** Scripts must detect which exists. Read-only SSM `send-command` checks (containers, volumes, versions) work when the user has asked.
+- **macOS `sed -i` needs an empty suffix** (`sed -i '' 's/a/b/' file`); `sed -i 's/a/b/' file` treats the script as the suffix and fails.
