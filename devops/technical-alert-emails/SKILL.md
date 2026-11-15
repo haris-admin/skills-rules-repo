@@ -47,3 +47,9 @@ Use this when the service is a single FastAPI app and a separate checker is not 
 - The timer install on the box was blocked by the auto mode classifier (persistence). Prepare `~/cr-box-events.sh` for the founder instead.
 - Check SES identity status (`VerifiedForSendingStatus`) before promising delivery.
 
+## Lessons from the ChargeRail account move (15 Nov 2026)
+- **SES sandbox authorises the sender identity and every recipient identity.** The Lambda role policy must list the domain and each address identity (the sender `hello@` too). A send from an admin profile can succeed while the Lambda role fails; prove it by invoking the deployed function and reading its log group (28 minutes of alerts were lost this way).
+- **One layout for every email.** The monitor, deploy events and the planned customer emails all render through one shared renderer with a registry and tests (ChargeRail OpenSpec 012, `backend/src/services/email_templates.py`). A new email is a registry entry, not a new template. Customer emails stay layout only until sending is approved.
+- A rate-limit state parameter appears only after the first successful send; read `/<service>/monitor/event-<type>` before a test event, and a failed send must not write state so the next run retries.
+- An account move recreates the monitor in the new account (decision "Recreate in the new account"): its SSM state, schedule and role come from Terraform, and the old Lambda is removed only after the new one sends.
+
