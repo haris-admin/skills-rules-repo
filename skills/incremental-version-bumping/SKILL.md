@@ -47,3 +47,12 @@ Whenever a defect fix or atomic commit is made, update the version synchronously
 6. `frontend/src/config/version.ts`: `VERSION = "0.X0.NN"`
 7. `RELEASE_NOTES.md`: Prepend latest `## Version 0.X0.NN Release Notes` block at top
 
+---
+
+## 4. Release routine (owner rule, HandleDispute, 15 Nov 2026)
+
+* Every release, and every batch of fixes shipped together, moves the version before the release is built. A day with several releases that all say the same version is a skipped routine.
+* A new capability moves the middle part by 10 and resets the last part (0.260.x to 0.270.0). A defect fix moves the last part by 1 (0.270.0 to 0.270.1, 0.270.2, and so on). If a batch contains any new capability, it is the medium bump.
+* Do it in this order: decide the number with the owner, bump every location in section 3, run the project's version check, prepend the release notes, run the gates, then release. Confirm `/health` reports the new version afterwards.
+* The owner may decide to leave a version unchanged once (as on 15 Nov 2026); record that decision in the project's agent instructions and follow the routine from the next change.
+
