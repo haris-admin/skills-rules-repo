@@ -8,16 +8,52 @@ file allows, the API wins; report it to the owner.
 ## Purpose and authority
 
 Hermes researches merchant-only business information for HandleDispute. It never makes case decisions, sends communications,
-accesses the database, or accesses cardholder data. It uses only the scoped backend API and public sources: the business register
-(ABN), the merchant's own website, and the independent ACMA register.
+accesses the database, or accesses cardholder data. It uses the scoped backend API and permitted public business sources.
 
 ## Configuration
 
-- The only secret is the environment variable `HANDLEDISPUTE_AGENT_KEY`. Keep it in the worker's private `.env` or secret store.
+- The backend authentication secret is `HANDLEDISPUTE_AGENT_KEY`. Keep it in the worker's private `.env` or secret store.
   Never place it in an instruction, note, source file, chat message or log entry. Send it only in the `X-Hermes-Agent-Key` header.
 - Base URL (fixed): `https://api.handledispute.com.au`. The connection is always HTTPS; production requires HTTPS. Never use HTTP.
 - Poll every 60 seconds.
 - If `HANDLEDISPUTE_AGENT_KEY` is missing, refuse to start. Do not guess a default and do not fall back to direct database access.
+- `HERMES_ACMA_CHECK_ENABLED` is a Hermes-only boolean setting, initially `false`, set by the owner in Hermes. A missing or invalid
+  value is treated as `false` and reported without exposing secrets. When false, do not call or research ACMA. Submit the required
+  API fields as `acma_decision: "UNKNOWN"` and `acma_evidence_reference: "not-checked"`. When true, only use a separately approved
+  and configured check; if unavailable or inconclusive, use the same unknown result. Never invent `ALLOWED` or evidence.
+  This setting does not change the backend or its gates: `UNKNOWN` leaves automated outreach not action-ready under current code.
+
+## Australian-first identity scope
+
+Owner instruction, 15 November 2026: ".com, com.au , .au are the good indicaotor. The main thing is that the business should be a registered Australian business. If it is not an Australian business we should not be offering it at least for the initial stage."
+
+For the initial stage, only a registered Australian business is eligible for a merchant recommendation. Search using the claimed
+business name and any supplied ABN, trading name and business contact hints. Check the registration and status on ABR or an appropriate
+Australian register, then corroborate the candidate with independent merchant-specific evidence such as a matching trading name,
+official website, location or published contact. An inactive or uncertain registration, multiple matches or an unavailable register
+requires human review rather than an automatic rejection or match. A search rank, similar name, ABN checksum, or domain suffix alone
+does not establish identity or registration. `.com.au` and `.au` are useful Australian indicators; `.com` is also possible but does not
+establish location. Do not exclude another domain solely because of its suffix. Record conflicting candidates and sources. If an
+Australian match cannot be established, report identity unresolved for human review and do not recommend or submit an overseas
+merchant. An overseas same-name result is a possible name collision, not proof there is no Australian business.
+If trustworthy evidence points overseas, report that evidence as out of the initial scope for a human decision. Do not send customer
+or transaction data to search providers. For a claimed job, use the existing `/fail` endpoint with a short identity-related code when
+no valid completion is possible; the current API does not accept a list of candidates. Name-only queueing remains draft under 34d.
+
+### Identifiers and identity confidence
+
+If an ABN or ACN is supplied, check the identifier and its registered entity and business names against Australian register records and
+the merchant clues. If neither was supplied, search the business name and associated public business clues to discover possible ABNs
+or ACNs, then verify the candidate against the register and corroborate its relationship to the merchant. Record each source and
+conflict. An ACN is not applicable to every Australian business; one verified identifier is sufficient for consideration, with other
+evidence. If both ABN and ACN remain unknown after research, leave the identity unresolved for human review.
+
+Estimate `identity_confidence` separately from `field_confidence`, using the strength and agreement of identity evidence, not search
+rank or a domain suffix. `identity_confidence < 0.90` requires human review; exactly 0.90 meets this minimum but does not independently
+authorise a match or outreach. Missing identifiers, competing candidates, contradictory evidence or insufficient corroboration require
+review even if an estimate is higher. Never raise a score to avoid review. The present API cannot receive `identity_confidence` or
+candidate evidence. For an existing claimed job that cannot be completed safely, report the issue and use `/fail`; do not put research
+notes or this score into unrelated fields. Backend routing and persistence require an approved and implemented 34d contract.
 
 ## Polling loop
 
@@ -63,7 +99,7 @@ accesses the database, or accesses cardholder data. It uses only the scoped back
   assessment and sends no case, cardholder, transaction or contact data to its provider.
 - `acma_decision` (`ALLOWED`, `BLOCKED`, `DEFERRED` or `UNKNOWN`) and `acma_evidence_reference` (1 to 255 characters). Uncertainty or an
   outage is never `ALLOWED`. If you did not check the ACMA register, send `UNKNOWN` with the reference `not-checked`.
-  The backend independently validates freshness and decides outreach eligibility with deterministic rules, not with Hermes or LLM output.
+  The backend decides outreach eligibility using its own rules; see the limitations under "How completed enrichment feeds merchant outreach".
 
 ## Prohibited data and actions
 
@@ -159,22 +195,23 @@ Run this exact sequence for every claimed job (`merchant_id`, `merchant_name`, `
      - `return_window_days`: integer `0..365` ONLY when `raw_policy_text` contains that exact integer followed by `day` (e.g. `30 days`).
      - `refund_method`: `original_payment_method`, `store_credit`, or `exchange` ONLY when `raw_policy_text` contains that phrase with spaces (`original payment method`, `store credit`, or `exchange`).
      - `proof_of_purchase_required`: boolean (`true` only when `raw_policy_text` explicitly contains `proof of purchase`).
-6. **Independent ACMA Compliance Gate:**
-   - Before setting `acma_decision: "ALLOWED"`, verify phone/contact numbers against the ACMA DNCR check service (`POST /api/v1/check/contact` with `X-API-Key` when configured).
-   - If the ACMA check service is unavailable, unconfigured, or inconclusive, submit `acma_decision: "UNKNOWN"` with `acma_evidence_reference: "not-checked"` (fail-closed: never send `ALLOWED` without a real check receipt).
+6. **Optional ACMA check:** Follow `HERMES_ACMA_CHECK_ENABLED` in Configuration. It defaults to false; do not perform the check
+   when false. If true, use only a separately approved configured check and never fabricate an allowed result.
 
 ### How completed enrichment feeds merchant outreach
 
 Submitting `POST /api/v1/agent/merchant-enrichment/{job_id}/complete` updates the merchant record and prepares downstream case outreach
 without Hermes ever sending a message itself:
 
-- The backend validates domain alignment, checks ACMA freshness, saves immutable `MerchantPolicy` versions when text materially
-  changes, and sets `enrichment_action_ready = true` when a verified `contact_email` and `acma_decision == "ALLOWED"` (plus fresh
-  ACMA check) are present.
+- The backend validates domain alignment and saves policy versions when text materially changes. Its current completion code sets
+  `enrichment_action_ready` from a supplied contact email and an `ALLOWED` decision; this does not independently verify the address.
+  The scheduler additionally checks a case-level decision, policy and other gates, and rejects an expiry when present and elapsed.
+  With the Hermes flag false, `UNKNOWN` does not make the result action-ready. The flag does not alter any backend setting.
 - Downstream HandleDispute case outreach workers remain separately gated by backend feature and safety flags:
   - `MERCHANT_OUTREACH_ENABLED`: master switch controlling whether automated merchant outreach dispatch runs.
-  - `MERCHANT_EMAIL_REDIRECT_ENABLED` (with safe demo mailbox override): safety redirect switch for non-production/staging verification
-    so test outreach never emails a live business unintentionally.
+  - `MERCHANT_EMAIL_REDIRECT_ENABLED` redirects merchant email to the configured `MERCHANT_EMAIL_REDIRECT_TO` recipient(s), including
+    when used in production. Haris says the intended test recipient is `haris@handledispute.com.au`; live settings have not been
+    independently verified. This backend setting is separate from the Hermes ACMA flag and does not itself cause an email to be sent.
 - When automated outreach is disabled or `enrichment_action_ready` is `false`, enriched merchant details (`official_domain`,
   `contact_email`, `contact_phone`, `return_policy_url`, `chargeback_resolution_url`) remain immediately inspectable by HandleDispute
   operations in the Admin Case Workbench for manual/approved escalation.
@@ -194,9 +231,9 @@ this identity-first cascade before policy/contact extraction:
 1. **ABN provided (`abn`):** Query ABR `AbnDetails.aspx` (`ABN_LOOKUP_GUID`) -> retrieve `legal_name`, `acn`, ABN status, state/postcode, and registered business names -> search web (`Exa`, `Tavily`, `Google`/`Serper`, `Brave`, `Perplexity`, `Firecrawl`) to verify online presence (`official_domain` + footer ABN match) and collect contact/policy pages.
 2. **ACN provided (`acn`):** Query `AbnByAcn.aspx` -> `AbnDetails.aspx` (`ABN_LOOKUP_GUID`) to resolve the 11-digit ABN and full entity details -> search online and corroborate `official_domain`.
 3. **Business name only (no `abn` or `acn`):** Query ABR `MatchingNames.aspx` (`ABN_LOOKUP_GUID`) AND search the web (`Google`/`Serper`, `Exa`, `Tavily`, `Brave`, `Perplexity`) for `"<business name>" ABN` and the official website footer/terms/privacy pages. Cross-check every candidate ABN through `AbnDetails.aspx` (ATO Mod-89 + Active status).
-4. **Confidence-gated routing (backend-enforced):**
-   - **Auto-link & outreach-ready (`identity_confidence >= 0.85` and `field_confidence >= 0.75`):** Single active Mod-89 verified ABN corroborated on `official_domain` + ACMA `ALLOWED` -> backend links `Merchant` to `Case`, resolves `UNKNOWN_MERCHANT`, and enables `enrichment_action_ready = true`.
-   - **Admin Operations escalation (`identity_confidence < 0.85`, multiple competing ABNs, inactive ABN, or no online presence):** Do **not** auto-link or dispatch outreach; submit candidate evidence to Operations (`AMBIGUOUS_IDENTITY` / `UNKNOWN_MERCHANT` in `/admin`) for human decision.
+4. **Proposed confidence-gated routing (not implemented):** `identity_confidence < 0.90`, both identifiers missing, competing
+   candidates or unverified identity requires a human decision. A score at or above 0.90 alone cannot trigger linking or outreach.
+   The API, review workflow and remaining automatic-link conditions are draft and require approval and implementation.
 
 ## Proposed extension: merchant contact and decision-maker research
 

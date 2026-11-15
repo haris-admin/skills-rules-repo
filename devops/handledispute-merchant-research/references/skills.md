@@ -5,6 +5,17 @@ Pair this file with the canonical worker prompt: [`docs/runbooks/hermes-agent-in
 
 > **Contract boundary:** Skills marked **Active** map directly to the live `/api/v1/agent/merchant-enrichment/*` contract (`backend/app/api/v1/hermes_enrichment.py`). Skills or fields marked **Planned (`OpenSpec 34d`)** or **Proposed (`OpenSpec 68`)** must not be added to `/complete` payloads until the corresponding backend schema and API changes are deployed.
 
+**Scope and setting:** Use Australian-first research. For the initial stage recommend only a registered Australian business, with
+registration checked against ABR or an appropriate Australian register and merchant-specific identity independently corroborated.
+An inactive or uncertain registration, unavailable register or multiple plausible matches goes to human review. A similar overseas
+business is a possible name collision, not proof of identity or that an Australian ABN does not exist. `.com.au` and `.au` are useful
+indicators, and `.com` can also belong to an Australian business; no domain suffix alone proves registration or identity. Respect the
+existing API and its permitted job fields; name-only queueing is still planned. `HERMES_ACMA_CHECK_ENABLED` is a Hermes-only boolean,
+initially `false`, configured by the owner. Missing or invalid means false. When false, do not call ACMA; send the required fields
+`acma_decision: "UNKNOWN"` and `acma_evidence_reference: "not-checked"`. When true, use only a separately approved, configured check;
+unavailable or inconclusive checks remain unknown. Never fabricate `ALLOWED`. This flag does not change the backend, where unknown
+does not make the merchant action-ready for automated outreach.
+
 ---
 
 ## Skill Index & Recommended Execution Order
@@ -38,6 +49,14 @@ Pair this file with the canonical worker prompt: [`docs/runbooks/hermes-agent-in
    - Query `MatchingNames.aspx` (`ABN_LOOKUP_GUID`) for active Australian entities matching `merchant_name`.
    - Cross-check top candidates via `AbnDetails.aspx` and corroborate against `official_domain` footer/terms/privacy pages (Skill 2 + Skill 3) before assigning identity confidence.
 4. **Disambiguation rule:** Distinguish legal entity, trading name, parent company, and brand. Never merge two unrelated businesses sharing a generic word.
+5. Corroborate the Australian match with merchant-specific evidence, such as ABR trading name and the business's published website,
+   address or contact details. Domain suffix, matching name or ABN checksum alone is insufficient. Retain conflicting evidence and
+   stop with identity unresolved if no candidate is adequately supported. Do not substitute a foreign same-name business.
+6. Verify supplied ABN or ACN against the business name; when absent, search the name to discover and verify candidate identifiers.
+   If both ABN and ACN remain missing, require human review. Not every business has an ACN.
+7. Estimate identity confidence independently from policy-field confidence. `identity_confidence < 0.90` goes to human review; 0.90
+   or above does not itself establish identity or permit outreach. Conflicts, missing identifiers or insufficient corroboration also
+   require review. The current API cannot receive identity confidence or candidate evidence: do not put them in other fields.
 
 **Output (internal working record):** `legal_name`, `trading_names[]`, `abn`, `acn`, `abn_status`, `entity_state`, `identity_confidence` (`0.0–1.0`), `identity_evidence[]`.
 
@@ -134,16 +153,16 @@ Pair this file with the canonical worker prompt: [`docs/runbooks/hermes-agent-in
 
 **When to use:** Before submitting `/complete`.
 
-**ACMA Compliance Check (Active — Fail-Closed):**
-- Verify discovered phone/contact details via `POST /api/v1/check/contact` (`X-API-Key`).
-- If the ACMA check succeeds and permits contact, set `acma_decision: "ALLOWED"` and `acma_evidence_reference` to the returned check reference (1–255 chars).
-- If the ACMA service is unavailable, unconfigured, or inconclusive, **fail closed**: send `acma_decision: "UNKNOWN"` and `acma_evidence_reference: "not-checked"`. Never send `ALLOWED` without a real check receipt.
+**ACMA check (conditional):**
+- Follow `HERMES_ACMA_CHECK_ENABLED` above. Initially false: skip ACMA and submit `acma_decision: "UNKNOWN"` and
+  `acma_evidence_reference: "not-checked"` to satisfy the current API. Do not mark the result allowed or bypass the backend.
+- If enabled later, use only the approved, configured check. If it is unavailable or inconclusive, report unknown. Record allowed only
+  when supported by an actual permitted check and evidence; this setting is not an authorisation to contact the merchant.
 
 **Confidence Scoring & Routing:**
 - Set `field_confidence` (`0.0–1.0`) honestly reflecting match quality across identity, domain, contact, and policy text.
-- **Planned (`OpenSpec 34d`) confidence-gated routing:**
-  - `identity_confidence >= 0.85` + `field_confidence >= 0.75` + single active Mod-89 ABN corroborated on `official_domain` + ACMA `ALLOWED` → backend auto-links `Merchant` to `Case` and enables `enrichment_action_ready = true`.
-  - Below threshold, multiple competing ABNs, inactive ABN, or no website → escalate to Admin Operations (`AMBIGUOUS_IDENTITY` / `UNKNOWN_MERCHANT`) rather than auto-linking or dispatching outreach.
+- **Planned (`OpenSpec 34d`):** `identity_confidence < 0.90` and the other identity gaps above require human review. The routing,
+  candidate storage and any automatic linking are not built and require an approved design. Do not treat the score as proof.
 
 ---
 
@@ -160,6 +179,10 @@ Pair this file with the canonical worker prompt: [`docs/runbooks/hermes-agent-in
    - **Success:** `POST /api/v1/agent/merchant-enrichment/{job_id}/complete` with validated JSON (`lease_token`, `merchant_name`, `official_domain`, `contact_email`, `contact_phone`, `return_policy_url`, `chargeback_resolution_url`, `source_url`, `observed_at`, `field_confidence`, `raw_policy_text`, `policy_fields`, `llm_assessment: {}`, `llm_commentary: {}`, `llm_rule_analysis: {}`, `acma_decision`, `acma_evidence_reference`).
    - **Failure:** `POST /api/v1/agent/merchant-enrichment/{job_id}/fail?lease_token=<token>&error_code=<short_code>`.
 
+`MERCHANT_EMAIL_REDIRECT_ENABLED` is a HandleDispute backend setting, not a Hermes setting. When enabled, it routes merchant email to
+configured `MERCHANT_EMAIL_REDIRECT_TO` recipients. Haris identifies `haris@handledispute.com.au` as the intended test recipient; the
+live setting and recipient have not been independently verified. Hermes never sends the email or changes the redirect.
+
 ---
 
 ## Recommendations for Organizing Hermes Skills
@@ -169,4 +192,5 @@ Pair this file with the canonical worker prompt: [`docs/runbooks/hermes-agent-in
    - **Skills:** [`docs/runbooks/hermes-agent-skills.md`](hermes-agent-skills.md)
 2. **Copy both into the Hermes agent's folder** when deploying or updating the worker. Any change goes through a PR/commit in this repo first so you always have an exact audit trail of what Hermes was given.
 3. **If your Hermes runtime requires one folder per skill (`<skill-name>/SKILL.md`):** Keep `docs/runbooks/hermes-agent-skills.md` as the master version-controlled spec and split Skills 1–7 into individual `SKILL.md` directories only at export/packaging time (so you don't maintain 7 diverging copies).
-4. **Prioritize OpenSpec `34d` before `68`:** Today's production worker (`OpenSpec 34`/`34c`) handles Skills 1–4, 6 (ACMA), and 7. Implementing `34d` next unlocks name-only cases (like `Oak and Ash Furniture` / `HD-2026-80BB4C66`) and confidence-gated Admin routing; `OpenSpec 68` then adds Skill 5 storage for business owners and decision makers.
+4. **OpenSpec status:** `34d` proposes name-only jobs and confidence routing but remains draft. `68` proposes Skill 5 storage for
+   business owners and decision makers. Neither is an active contract; do not assume either resolves the correct Oak and Ash identity.
