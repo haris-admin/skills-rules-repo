@@ -19,13 +19,18 @@ The POS backend is a separate service from the Portal backend. App and backend a
 | Checkout on the box | `/opt/tapease/terminal-backend` (origin is GitHub) | same path |
 | Container | `tapease-terminal-backend` | `tapease-terminal-backend` |
 
+**Production may run a release branch, not `main` (checked 16 Nov 2026).** Production `api-pos` ran `1.1.12.c40a` from `release/1.1.12-c40a` (later `release/1.1.12-c40a-c84`) while `main` was the 1.1.13 start. Read `/health` and the box first (`git rev-parse --abbrev-ref HEAD`, HEAD, dirty count, container, read-only over SSM) and deploy that branch's tip with `deploy_rds_docker.sh <branch>`. For a narrow release: branch from the live branch, cherry-pick only the approved commits, run the full suite on that tree, push as a fast-forward. Rule: `production-may-run-a-release-branch-read-the-box-before-you-push`.
+
+**Log groups (C84):** staging `/tapease/dev/pos-backend` (the staging instance role may write only `/tapease/dev/*`), production `/tapease/pos-backend/production` (Terraform in `infra/logs.tf`, applied by the owner; an empty plan means the resources already exist, confirm in AWS). The container uses the `awslogs` driver, so read CloudWatch, not `docker logs`. Backend Sentry is off: `/health` must show `sentry.enabled` false.
+
 The scripts read their own secrets from Secrets Manager and print none. A deploy with no migration is a container restart of about a minute.
 
 ## Procedure
 
 1. **Land the code.** Tests green (`pytest tests/unit -m "not integration"` with a dummy `DATABASE_URL`, `PDF_SIGNING_SECRET`; set no `PUBLIC_BASE_URL`), commit, fast-forward `dev` (and `main` for production) and `git push origin <branch>`. Check `git merge-base --is-ancestor origin/<branch> HEAD` first and list `git log origin/<branch>..HEAD`.
 2. **Staging first.** Write a small remote script (git fetch, checkout dev, `pull --ff-only`, echo `BOX_HEAD`, run the deploy script, echo `BOX_HEAD_AFTER`). Build the SSM parameters with `python3 -c 'import json,sys; print(json.dumps({"commands":[open(sys.argv[1]).read()]}))' script.sh > p.json` and send `aws ssm send-command --region ap-southeast-2 --instance-ids <id> --document-name AWS-RunShellScript --timeout-seconds 900 --comment "<what>" --parameters file://p.json`. Poll `get-command-invocation` until the status leaves InProgress.
-3. **Verify staging:** `/health` shows status ok, database reachable, the version, `environment: staging`, `sentry.enabled`; `BOX_HEAD` equals the pushed commit; for a code change, prove it inside the container (below).
+3. **Verify staging (and production the same way):** also `GET /` (production returns service, status, version, environment and a Sydney timestamp since C85; staging returns the full discovery body), an unauthenticated protected route still 401, and CloudWatch counts of `Traceback` and ` 500 ` (counts only).
+   Original checks: `/health` shows status ok, database reachable, the version, `environment: staging`, `sentry.enabled`; `BOX_HEAD` equals the pushed commit; for a code change, prove it inside the container (below).
 4. **Production only when the owner asks for it**, and say plainly that it restarts the live service. Take a read-only look first (remote, branch, HEAD, container status, health). Then run the same script with `main` and `deploy_rds_docker.sh`.
 5. **Verify production read-only, counts only:** `/health` (version, environment production, `sentry.enabled`, portal credentials configured), the container uptime, and COUNTS of `Traceback` and ` 500 ` in `docker logs --since 6m`. Never print production log lines; they hold customer data.
 

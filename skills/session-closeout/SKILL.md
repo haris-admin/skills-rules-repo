@@ -54,6 +54,8 @@ safely. Escalate the rest as open decisions.
    code unless the code is wrong, then raise the gap.
 6. **Ignored or untracked docs:** `git check-ignore -v` on every doc you edit. If a doc is
    gitignored, say so in the report, because the edit will not reach other machines.
+8. **A dirty shared checkout that duplicates delivered work.** Before cleaning it, compare every differing file with the delivered branch (`git diff origin/<branch> -- <file>`); in the Tap-Ease 16 Nov 2026 closeout the only real difference was comment and test-name labels in the unstaged half of `MM` files, which a staged-only patch had left behind. Preserve the tree on a local backup branch (commit it), then move the checkout to a clean tracking branch. Do not delete the backup without an OK.
+9. **A production host may run a branch other than the default.** Read `/health` and the box before saying production is up to date; two copies of one change on two branches go in the register as reconciliation debt.
 7. **Skill and rule copies:** if a skill or rule was edited, make sure the repo copy
    (`skills-rules-repo`) and the installed copy (`~/.claude/skills/...`) are identical
    (`diff -r`). Resolve in favour of the repo copy, then re-sync.

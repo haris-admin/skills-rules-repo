@@ -16,3 +16,5 @@ AMLHive C543 and C505, 8 Nov 2026. A setup script with relative paths migrated t
 4. **Rebuild the container fresh before each full run**, on a port nobody else uses, and remove only your own container afterwards. Other containers belong to other projects.
 5. **Zero skips is the bar.** Export every variable a skipped test needs before calling a lane green.
 6. **Scratch copies come from `git archive` with every `.env*` deleted** (assert a find count of 0).
+7. **A new worktree has no gitignored `.env`.** Without it settings validation fails and a full run shows hundreds of false failures. Copy the project's `backend/.env`, set `DATABASE_URL` and `TEST_DATABASE_URL` to the disposable database, blank `SENTRY_DSN`, never print the file, and delete the copy with the worktree (Tap-Ease POS, 15 Nov 2026: 204 false failures until the file was copied; 1,454 passed after).
+8. **Never stop at the first failure (`-x`).** Read every failure, then check each on the clean base commit.
