@@ -103,7 +103,42 @@ Every pre-dispute worker component reads its config from **`/mnt/c/Users/habib/.
 
 **Backend safety flag:** `HERMES_ENRICHMENT_ENABLED=false` in `backend/.env` keeps the 5-minute outreach scheduler from emailing merchants — leave it false unless merchant contact is deliberately being turned on.
 
+## Lanes: staging vs production
+
+The poll script serves two lanes from one file; they never share state.
+
+| Lane | Invocation | Origin | Credential | State / log |
+|---|---|---|---|---|
+| staging (default) | `predispute_enrich_poll.py` | `PLUTO_HERMES_PREDISPUTE_BASE_URL` (`http://127.0.0.1:8008`, private opt-in) | `PLUTO_HERMES_PREDISPUTE_AGENT_API_KEY` | `predispute_worker_state.json` / `predispute_worker_log.jsonl` |
+| production | `predispute_enrich_poll.py --prod` | `PLUTO_HERMES_PREDISPUTE_PROD_BASE_URL`, default `https://api.handledispute.com.au` | `HANDLEDISPUTE_AGENT_KEY` | `predispute_prod_worker_state.json` / `predispute_prod_worker_log.jsonl` |
+
+Both lanes keep the same contract gate (HTTPS or private+opt-in, interval, key). The prod
+lane can never take the plaintext override: its variable name is
+`PLUTO_HERMES_PREDISPUTE_PROD_ALLOW_INSECURE_LOCAL` and must stay unset.
+
+Verified 2026-11-15: the prod credential authenticates (bogus-job heartbeat → 422
+`lease_token` required, not 401) and a claim returns **204 (queue empty)**.
+
 ## Pitfalls (all hit in practice)
+
+- **Cloudflare answers 403 to the default `Python-urllib/x.y` User-Agent.** That is not an
+auth failure: the same key returns 401 when genuinely rejected and 422/204 when it is
+accepted. Every request to the prod origin must set an explicit User-Agent
+(`HermesPreDisputeWorker/1.0`); without it the claim looks broken while the key is fine
+(same trap as CF error 1010 in the browser lane).
+- **Production has no read endpoint.** The agent surface is `claim` / `{job}/complete` /
+`{job}/fail` / `{job}/heartbeat` only, and case reads are `/{case_id}/…` behind participant
+auth. A case number cannot be looked up by an agent: a claim returning 204 proves only that
+*no job is pending*, never that a case does not exist. Never claim on prod merely to inspect
+it — a claim takes a lease.
+- **The prod DB is not reachable from the fleet.** The stack is not in the AMLHIVE AWS
+account (`amlhive-prod-frontend`/`-backend` are the only instances there) nor in TAPEASE,
+despite `infra/terraform/undispute` declaring `profile = "amlhive"` and
+`Name=handledispute-backend`. Prod runs **v0.240.21** while the repo head is **v0.260.0**
+(`git describe → v0.240.21-423-gfda3bd71`), and the working tree now lives at
+`/mnt/c/Code/github/haris-admin/ideas-handledispute` (the old
+`undispute-scheme-neutral-resolution` path is gone). Case-level questions need a read-only
+connection string or the AWS account that actually hosts the stack.
 
 - **`complete` no longer breaks on a datetime expiry.** `canonical_enrichment_seal()` now stringifies `acma_expires_at` when it is set, so the old `TypeError: Object of type datetime is not JSON serializable` is fixed. `acma_expires_at: null` is still safe and remains the default; if the ACMA response carries an expiry it can now be relayed.
 - **Running dev servers do not see `.env` edits.** Both services run `uvicorn --reload`, which watches `.py` files only. A `touch app/main.py` (mtime only, no content change) forces a reload that re-reads `.env`. Do not kill the process if a reload will do.
