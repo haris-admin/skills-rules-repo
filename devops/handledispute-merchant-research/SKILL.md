@@ -24,6 +24,14 @@ page does not restate, summarise or extend them.
 
 - `references/instructions.md` — `docs/runbooks/hermes-agent-instructions.md` (580 lines)
 - `references/skills.md` — `docs/runbooks/hermes-agent-skills.md` (201 lines, skills 1–8)
+- `references/profile-variables.md` — `docs/runbooks/hermes-profile-variables.md` (12 lines)
+
+⚠️ **Known contradiction in the profile file:** it says
+`PLUTO_HERMES_HANDLEDISPUTE_AGENT_API_KEY` holds the same value as
+`HANDLEDISPUTE_AGENT_KEY`. Verified 2026-11-16 they are **different values**: the
+profile variable (73 chars) returns **401** on `POST /agent/merchant-enrichment/claim`,
+while `HANDLEDISPUTE_AGENT_KEY` (63 chars) returns **204**. Use `HANDLEDISPUTE_AGENT_KEY`
+for every prod call until the owner resolves which value the profile variable should carry.
 
 Read both before acting. If they and this page ever disagree, the files win. If the API
 rejects something they allow, the API wins — report it to the owner. When the owner says the
