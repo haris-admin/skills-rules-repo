@@ -41,14 +41,22 @@ Base `http://localhost:8008/api/v1/agent/merchant-enrichment`, header `X-Hermes-
 - `POST /{job_id}/complete` (JSON body) -> `{"state":"SUCCEEDED","policy_version":N,"policy_version_id":...}`.
 - `POST /{job_id}/fail?lease_token=...&error_code=...` -> `{"state":"FAILED"}`. Works on an expired lease too (only `complete`/`heartbeat` check the clock), which is how a stale claim is cleared.
 
-Credential and base URL (Hermes side):
+Credential and base URL: the **contract is owned by skill `handledispute-merchant-research`**
+(its own `references/instructions.md` + `references/skills.md`, verbatim copies of the owner's
+16 Nov 2026 files). Local facts only:
 
-- `PLUTO_HERMES_PREDISPUTE_AGENT_API_KEY` in `/mnt/c/Users/habib/.hermes/.env` - **the same secret the backend holds as `HERMES_AGENT_API_KEY`** (`backend/.env`). The old *Hermes-side* name `HERMES_AGENT_API_KEY` was removed 2026-09-22; the scripts still accept `PREDISPUTE_AGENT_API_KEY` as a fallback name. Empty key fails closed (401 for everyone).
-- **Configuration is a hard gate, not a convenience (runbook 2026-09-22).** `predispute_enrich_poll.py` validates all three `PLUTO_HERMES_PREDISPUTE_*` and **refuses to start (exit 3)** if any is missing, the base URL is not `https://`, has a trailing slash, or carries `/api/v1`, or the interval is not a positive whole number. Process env is authoritative; the `.env` file only fills in what the runtime did not export. **There is NO silent http:// fallback and NO localhost substitution** - the old `http://localhost:8008` probe-and-fallback was removed because it bypassed the rule without operator intent. Plaintext is reachable ONLY through the explicit, named non-production opt-in below, and only for a **private** origin. The shell wrapper maps exit 3 to 0 so a refusal cannot alert-storm, the refusal is written to the worker log as a `refused` event, and the 12h report surfaces it RED.
-- ⚠️ **`http://192.168.50.210:8008` is private (RFC1918), so with the opt-in it is now CONTRACT-LEGAL under the amended rule — the blocker is REACHABILITY, not the contract.** WSL cannot reach a Windows-bound listener on the LAN IP, so the worker would validate and then claim nothing. Loopback mirroring only works for `127.0.0.1`. Keep the origin set to `http://127.0.0.1:8008`; a private LAN or staging origin is permitted only when the worker can actually reach it (e.g. worker and backend co-located on the dev/staging box).
-- ⚠️ **`PLUTO_HERMES_PREDISPUTE_BASE_URL` is the one value that must be right.** As of 2026-09-22 it is `http://127.0.0.1:8008` (the loopback mirror WSL can actually reach) plus the explicit non-prod opt-in. If it is ever set back to the Windows LAN IP (`http://192.168.50.210:8008`), the config now VALIDATES (private origin + opt-in) but the worker still claims nothing: **WSL cannot reach a Windows-bound listener on that IP**, and only mirrored loopback works.
-- **Non-production exception (owner-directed 2026-09-22; widened to the amended contract 2026-09-28).** Plaintext is allowed ONLY for a **private** origin — loopback (`127.0.0.1` / `localhost` / `::1`), RFC1918 (`10/8`, `172.16/12`, `192.168/16`), link-local/ULA, or a private-only TLD (`.local` / `.internal` / `.lan`) — AND only when the operator sets `PLUTO_HERMES_PREDISPUTE_ALLOW_INSECURE_LOCAL=1` in `/mnt/c/Users/habib/.hermes/.env`. Any PUBLIC host on http:// is still refused, so the exception can never silently authorize plaintext over a public network. The rule has exactly one implementation — `is_private_host()` in `predispute_enrich_poll.py`; the contract test matrix lives beside it and covers prod-HTTPS, private-RFC1918, private name, and public-host refusal. Each use is logged as an `insecure_override` event and the 12h report shows it as a 🟡 FYI (never a RED, never silent). **Unset it for production** - that is the production checklist item.
-- **Nothing from the wire is logged or reported.** The response body of a failed call is drained and discarded; the log and the delivered Telegram banner carry only `http <status> · category <category>` plus an opaque run id, per the runbook's `claim failed; category=<c>; run_id=<r>` shape. Categories: `auth` (401), `conflict` (409), `validation` (422), `service_unavailable` (503), `server_error` (other 5xx), `transport_error`, `http_<code>`.
+- Scripts read `/mnt/c/Users/habib/.hermes/.env` and prefer `PLUTO_HERMES_HANDLEDISPUTE_*`,
+  aliasing the legacy `PLUTO_HERMES_PREDISPUTE_*` names onto them. The legacy names are no
+  longer set anywhere — do not reintroduce them.
+- Prod lane key: `HANDLEDISPUTE_AGENT_KEY` (the same value the backend verifies as
+  `HERMES_AGENT_API_KEY`). `PLUTO_HERMES_HANDLEDISPUTE_AGENT_API_KEY` is staging-scoped and
+  returns 401 on the public API.
+- Base URL `https://api.handledispute.com.au`; the config gate still refuses to start
+  (exit 3, mapped to 0 by the wrapper) on a missing key, a non-HTTPS public origin, a
+  trailing slash, `/api/v1` in the origin, or a non-positive interval.
+- Nothing from the wire is logged: only `http <status> · category <c>` plus an opaque run id.
+  Categories: `auth` (401), `conflict` (409), `validation` (422), `service_unavailable` (503),
+  `server_error` (other 5xx), `transport_error`, `http_<code>`.
 
 ## Hard rules
 
@@ -101,28 +109,18 @@ Every pre-dispute worker component reads its config from **`/mnt/c/Users/habib/.
 
 **ACMA routes** (from `/openapi.json`): `POST /api/v1/check/phone` · `/api/v1/check/email` · `/api/v1/check/contact` · `POST /api/v1/unsubscribe` · `GET|POST /api/v1/admin/keys` · `DELETE /api/v1/admin/keys/{project_name}` · `GET /api/v1/admin/cache/dncr` · `DELETE /api/v1/admin/cache/dncr/expired` · `GET /health`. There is **no bare `/api/v1/check`** — the three sub-routes are the entry points (a POST to the bare path returns 404).
 
-**Backend safety flag:** `HERMES_ENRICHMENT_ENABLED=false` in `backend/.env` keeps the 5-minute outreach scheduler from emailing merchants — leave it false unless merchant contact is deliberately being turned on.
+**Backend flags** (set by the owner 16 Nov 2026, on the prod host — not in this file):
+`HERMES_ENRICHMENT_ENABLED=true`, `MERCHANT_OUTREACH_ENABLED=true`,
+`MERCHANT_EMAIL_REDIRECT_ENABLED=true`, `MERCHANT_EMAIL_REDIRECT_TO=haris@handledispute.com.au`.
+Hermes never sets or changes them.
 
-## Lanes: staging vs production
+## Lanes
 
-The poll script serves two lanes from one file; they never share state.
-
-| Lane | Invocation | Origin | Credential | State / log |
-|---|---|---|---|---|
-| staging (default) | `predispute_enrich_poll.py` | `PLUTO_HERMES_HANDLEDISPUTE_BASE_URL` (**now the public prod API**) | `PLUTO_HERMES_HANDLEDISPUTE_AGENT_API_KEY` — **401 on prod** | `predispute_worker_state.json` / `predispute_worker_log.jsonl` |
-| production | `predispute_enrich_poll.py --prod` | `PLUTO_HERMES_PREDISPUTE_PROD_BASE_URL`, default `https://api.handledispute.com.au` | `HANDLEDISPUTE_AGENT_KEY` (works) | `predispute_prod_worker_state.json` / `predispute_prod_worker_log.jsonl` |
-
-⚠️ **Both lanes now resolve to the same base** after the owner repointed the renamed
-variable at the public API. The staging pair still uses a key prod rejects, so it can only
-produce `CLAIM FAILED http 401`. Keep the staging crons paused or retire them; do not run
-two lanes against one queue. The 12h report tracks the **production** lane.
-
-Both lanes keep the same contract gate (HTTPS or private+opt-in, interval, key). The prod
-lane can never take the plaintext override: its variable name is
-`PLUTO_HERMES_PREDISPUTE_PROD_ALLOW_INSECURE_LOCAL` and must stay unset.
-
-Verified 2026-11-15: the prod credential authenticates (bogus-job heartbeat → 422
-`lease_token` required, not 401) and a claim returns **204 (queue empty)**.
+One live lane: **production** (`--prod`, `HANDLEDISPUTE_AGENT_KEY`, state/log
+`predispute_prod_worker_*`), crons `57805756dcc3` + `0128a604a0f5`.
+The staging pair `e3cc72366dd7` / `ff18d93e2d10` is **paused and unusable as configured**:
+its base now resolves to the public API while its key is staging-scoped (401). Do not resume
+it; use `--prod` for everything. The 12h report tracks the production lane.
 
 ## Pitfalls (all hit in practice)
 
