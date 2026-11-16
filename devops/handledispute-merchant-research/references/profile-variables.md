@@ -1,11 +1,11 @@
 # Hermes profile variables
 
-Set in the Hermes profile by the owner on 16 Nov 2026 (the earlier names, which began with the earlier product name, were renamed in OpenSpec 54 and are not read). The instructions file `hermes-agent-instructions.md` deliberately does not name them: it uses `HANDLEDISPUTE_AGENT_KEY` and the fixed base URL.
+Hermes profile configuration. On 16 Nov 2026, the owner chose `HANDLEDISPUTE_AGENT_KEY` as the shared name for the Hermes credential and its AWS Secrets Manager field. The owner will update the Hermes agent to read that name; this document does not establish that the running agent has been changed.
 
 | Variable | Value | Notes |
 |---|---|---|
 | `PLUTO_HERMES_HANDLEDISPUTE_BASE_URL` | `https://api.handledispute.com.au` | Full URL with `https://`, no trailing slash, no path. Production requires HTTPS. |
-| `PLUTO_HERMES_HANDLEDISPUTE_AGENT_API_KEY` | the agent key | Secret. Same value as `HANDLEDISPUTE_AGENT_KEY`. Never write it in a file, note or log. |
+| `HANDLEDISPUTE_AGENT_KEY` | the agent key | Secret. Use the value of `HANDLEDISPUTE_AGENT_KEY` in AWS Secrets Manager `handledispute/secrets/prod`. Keep it in the worker's private `.env` or secret store, never in an instruction, note, source file or log. |
 | `PLUTO_HERMES_HANDLEDISPUTE_INTERVAL` | poll seconds (60) | Positive whole number. |
 | `PLUTO_HERMES_HANDLEDISPUTE_ALLOW_INSECURE_LOCAL` | `false` | For a local test against `http://localhost` only. Must be `false` or unset in production. |
 
