@@ -151,3 +151,5 @@ Safe to close:  yes / no, because <reason>
 "Safe to close" is "no" while any of these is true: unresolved conflicts, failing checks, uncommitted work
 Haris has not chosen to leave, undocumented contract change, unrecorded decision,
 a handoff command not yet confirmed run, or the remaining-work register not updated.
+
+Also check before closing a build session (HandleDispute, 17 Nov 2026): scratch worktrees and build branches are removed only after `git merge-base --is-ancestor <branch> <integration-branch>` says merged; a release branch that holds a version bump stays until the owner releases; the shared test database was recreated and the stale one is named to the owner; the shared checkout is back on the branch the owner asked for; and nothing was pushed that the owner did not ask for (`git rev-list --count origin/<branch>..<branch>` is reported).

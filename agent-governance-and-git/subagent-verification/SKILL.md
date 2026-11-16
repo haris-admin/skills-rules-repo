@@ -34,3 +34,5 @@ description: Verification protocol for an orchestrator agent to check a dispatch
 8. **Linked lanes and review loops**: commit each lane and state its SHA in every dispatch that reads it; re-check any
    claimed cross-change contradiction at current HEAD; stop new review rounds once a round returns only narrow, local
    findings, then fix and verify those directly. Full detail: `rules/subagent-verification-protocol.md` rule 7.
+
+9. **Waves of parallel implementers (spec 85, 17 Nov 2026)**: verify each report with `git status`, `git log base..HEAD`, a forbidden-path diff and `git branch -r --contains HEAD`, re-run its tests, merge one branch at a time, regenerate shared registries (router list, audit catalogue, snapshot, label review) instead of hand merging, and run the whole suite on a fresh test database after the last merge. A repeated "waiting on background work" notice is checked against the process table. Full detail: `rules/parallel-implementer-waves-verify-merge-and-regenerate-shared-registries.md` and `rules/a-shared-test-database-is-recreated-per-full-run-and-tests-never-assume-empty-tables.md`.
