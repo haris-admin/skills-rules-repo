@@ -36,8 +36,8 @@ BASE_PATH = "/api/v1/agent/merchant-enrichment"
 STAGING_LOG_FILE = pathlib.Path("/home/habib/.hermes/state/predispute_worker_log.jsonl")  # append-only, feeds the 12h report
 PROD_LOG_FILE = pathlib.Path("/home/habib/.hermes/state/predispute_prod_worker_log.jsonl")
 LOG_FILE = STAGING_LOG_FILE
-KEY_NAMES = ("PLUTO_HERMES_HANDLEDISPUTE_AGENT_API_KEY",)
-PROD_KEY_NAMES = ("PLUTO_HERMES_HANDLEDISPUTE_AGENT_API_KEY",)
+KEY_NAMES = ("HANDLEDISPUTE_AGENT_KEY",)
+PROD_KEY_NAMES = ("HANDLEDISPUTE_AGENT_KEY",)
 # Cloudflare in front of the production API rejects the default Python-urllib UA with a 403.
 USER_AGENT = "HermesPreDisputeWorker/1.0"
 

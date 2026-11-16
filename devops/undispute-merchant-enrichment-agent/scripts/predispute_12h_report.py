@@ -32,7 +32,7 @@ ENV_FILE = pathlib.Path("/mnt/c/Users/habib/.hermes/.env")
 CLAIM_JOB = "57805756dcc3"      # PROD claim tick (the live lane)
 WORKER_JOB = "0128a604a0f5"     # PROD enrichment worker
 # The owner renamed PLUTO_HERMES_PREDISPUTE_* -> PLUTO_HERMES_HANDLEDISPUTE_*; accept both.
-KEY_VARS = ("PLUTO_HERMES_HANDLEDISPUTE_AGENT_API_KEY",)
+KEY_VARS = ("HANDLEDISPUTE_AGENT_KEY",)
 BASE_VARS = ("PLUTO_HERMES_HANDLEDISPUTE_BASE_URL", "PLUTO_HERMES_PREDISPUTE_BASE_URL")
 INSECURE_VARS = ("PLUTO_HERMES_HANDLEDISPUTE_ALLOW_INSECURE_LOCAL",
                  "PLUTO_HERMES_PREDISPUTE_ALLOW_INSECURE_LOCAL")
@@ -177,7 +177,7 @@ def main() -> int:
     if errors.get(CLAIM_JOB):
         problems.append(f"{errors[CLAIM_JOB]} claim tick error(s)")
     if not key_present:
-        problems.append("agent API key missing (PLUTO_HERMES_HANDLEDISPUTE_AGENT_API_KEY / HANDLEDISPUTE_AGENT_KEY)")
+        problems.append("agent API key missing (HANDLEDISPUTE_AGENT_KEY)")
     if base_url and not base_url.lower().startswith("https://"):
         host = base_url.split("://", 1)[1].split("/", 1)[0].split(":")[0].lower() if "://" in base_url else ""
         if insecure_optin and host in ("127.0.0.1", "localhost", "::1"):

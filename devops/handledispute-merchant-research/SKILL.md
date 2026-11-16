@@ -26,11 +26,13 @@ page does not restate, summarise or extend them.
 - `references/skills.md` — `docs/runbooks/hermes-agent-skills.md` (201 lines, skills 1–8)
 - `references/profile-variables.md` — `docs/runbooks/hermes-profile-variables.md` (12 lines)
 
-⚠️ **Credential naming (2026-11-16):** the single worker credential is
-`PLUTO_HERMES_HANDLEDISPUTE_AGENT_API_KEY` (owner: "use only this"). It authenticates both
-`/agent/merchant-enrichment/claim` and `/agent/identity-research/claim` (204).
-`HANDLEDISPUTE_AGENT_KEY` is **no longer set** — although `instructions.md` still names it,
-the profile variable is the live credential, so scripts read that name only.
+⚠️ **Credential (owner decision, 2026-11-16):** the single worker credential is
+**`HANDLEDISPUTE_AGENT_KEY`** — the *same value* as AWS Secrets Manager
+`handledispute/secrets/prod`. Both `/agent/merchant-enrichment/claim` and
+`/agent/identity-research/claim` return **204** with it. The short-lived
+`PLUTO_HERMES_HANDLEDISPUTE_AGENT_API_KEY` was removed from the env (and the value deleted)
+— do not reintroduce it, and `references/profile-variables.md` still lists it, so treat that
+row as stale.
 
 Read both before acting. If they and this page ever disagree, the files win. If the API
 rejects something they allow, the API wins — report it to the owner. When the owner says the
