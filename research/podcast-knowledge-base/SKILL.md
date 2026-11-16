@@ -18,6 +18,8 @@ allowed-tools: [terminal, file, read_file, write_file, execute_code, memory]
 
 2,382 episodes · 23,552 chunks · **63.5% unreachable by learning** (YouTube IP-block) · **119 false-green ingests** (runs that reported success while storing no usable transcript). This replaces every earlier "~63%" estimate: the coverage figure is now **measured**, and the improvement target is judged against these numbers. Never claim full coverage, and never present the unreachable share as a retrieval or model failure — it is an upstream access block.
 
+**Re-measured 2026-11-07 (supersedes the cause, not the magnitude):** 2,577 rows · **1,053 full transcripts (41%) with `length(transcript_text) > 5000`** · **1,524 stubs (59%) in the 201–5,000-char band** · 0 rows contain a "YouTube is blocking" marker · 0 rows contain a "no transcript"/"not available" marker. So the ~59% gap is **not** currently an upstream IP block being recorded — it is short/partial transcript records stored **with no error marker at all** (silent partial ingest). Consequences: (a) `length(transcript_text) > 200` is **not** a usable test for "has a transcript" — a 573-char episode is a description, not a transcript; use `> 5000`; (b) per-window coverage is typically ~45–50% (2026-11-07 window: 54 of 115), so any insight report must state full-transcript counts, not row counts; (c) the "119 false-green ingests" class is still live in this form — validate on length, not on exit code.
+
 ## Architecture
 
 ```
@@ -165,6 +167,17 @@ yt-dlp without `--flat-playlist` crawls full metadata per video, timing out at 6
 1. **Phase 1 — Fast listing:** `--flat-playlist --playlist-end 30 --print '%(title)s||%(id)s'` (~3-5s per channel)
 2. **Phase 2 — Per-video dates:** `--print '%(upload_date)s' <video_id>` (~2s per video)
 3. Filter to Jan 2026+ before downloading transcripts
+
+**Per-channel isolation is mandatory (patched 2026-11-16).** `list_channel_videos()` ran its Phase-1
+`subprocess.run(yt-dlp …, timeout=30)` unguarded, so ONE slow channel raised `TimeoutExpired` all the way
+to `__main__` → `CRITICAL: Podcast ingestor failed`, exit 1, and every show after it went unscanned for
+that day (seen on `@a16zcrypto`; the 09:00 chain assertion `7e4a2379157d` then reported the ingest leg
+FAILED while all seven downstream legs were ✅). It now catches `TimeoutExpired`/`Exception`, warns, and
+returns `[]` so the 3-day lookback re-attempts that channel next run. Give any new per-channel yt-dlp
+call the same guard — a listing failure is never a reason to abort the run.
+**`yt-dlp` exiting 0 with EMPTY stdout means "unreadable right now"** (IP block or stale cookies at
+`~/.hermes/youtube_cookies.txt`), never "channel has no videos" — the YouTube API returned `0 videos`
+for the same channel on the same run. Never record an empty listing as zero episodes published.
 
 ### Batch Date Fetching for Large Channels (>100 episodes)
 
@@ -980,3 +993,37 @@ locked=4 / needs_human=7 / error=1, the error being ep 1791 `RuntimeError: unpar
 (malformed maker/checker JSON). The 09:00 chain assertor then reported the leg red correctly, and the row
 re-queues by itself because `fetch_episodes` excludes only `locked` and `needs_human`. A malformed-JSON
 error is transient — do not widen the model pool or the timeout on account of one.
+
+## Daily insight digest (05:02 cron) — run the extractor, then CURATE it
+
+`python3 ~/.hermes/scripts/podcast_insights_daily.py` (unset `PYTHONPATH` first) does the whole leg:
+3-day window → keyword-dense transcript sampling (~30k chars/ep) → DeepSeek extraction in 5 threads →
+per-episode quote verification → `podcast_insights.md` + `.json`. Measured 2026-11-12: 18 episodes,
+~135k tokens, ~90s, 18/18 quotes verified. It auto-applies `/tmp/podcast_insights_overrides.json` and
+shelves stale `/tmp` artefacts into `/tmp/podcast_insights_run_<YYYYMMDD>/` on a new day.
+
+**The raw run is a draft, not the deliverable.** Three defects recur and must be fixed by hand each run:
+
+1. **Quote of the Day is chosen badly.** The picker takes the first verified quote and can surface filler
+   ("if it's the same price, if it's within 10 minutes, I'll probably just take it" — nonsense as a headline).
+   Pick the quote that carries a portfolio thesis, and check WHOSE mouth it came from: the Daily Brief host
+   reads other reviewers' words, so a quote attributed to "Dan Shipper" there is reported speech.
+2. **Frameworks duplicate and bloat** (36 emitted, ~15 real: "bundling/unbundling/rebundling" appeared twice,
+   and yesterday's frameworks get re-served as new). Dedupe, cut to the load-bearing ones, and list
+   carried-over frameworks separately instead of re-explaining them.
+3. **No continuity, coverage caveat, or adversarial layer.** All three are editorial and must be written:
+   how many of the read episodes are repeats (compress those to one line), whether any AU-domestic regulator
+   appeared at all, and what the strongest claim's interest alignment is.
+
+**Verifying quotes: normalise BOTH sides, never trust the model's cleanup.** Auto-captions have no
+punctuation, are full of fillers ("uh", "like", "you know") and duplicated words ("we we"), and psql renders
+embedded apostrophes as `''`. A raw substring test therefore MISSES every quote containing an apostrophe or a
+removed filler — which reads as four fabricated quotes. Normalise: casefold → drop apostrophes → non-alnum to
+space → drop filler tokens → collapse repeats → substring match on the first N words. Also watch caption
+numerals: "Opus 5.5" is transcribed "Opus 55", so never let a model name sit inside the verified span.
+
+**AU claims need a grep, not a summary.** The extractor will happily assert "Revolut recently secured an
+Australian licence" or "Stripe Capital expanded into Australia" — both true here, but each was confirmed by
+grepping the transcript for the country name. Naive `ILIKE '%ASIC%'` returns dozens of false positives from
+"basic"/"classic"; when reporting "no AU regulator item", say the substring hits were noise, or the caveat
+looks like a missed search.

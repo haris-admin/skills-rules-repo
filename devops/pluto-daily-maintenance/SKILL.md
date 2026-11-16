@@ -580,6 +580,21 @@ When you see `last_status: error` on a cron, classify before escalating:
   `⚪ 'poetry' not found — fallback to venv pytest` line is the PERMANENT path on this host, not a fault.
   `7 failed` on E2E is still inside the observed 4-7 band — escalate only on a NAMED non-whitelisted test
   or a sustained rise past 7.
+  **2026-11-16 (day 41) — 🚨 REAL ESCALATION: the BACKEND leg hit its 5400 s timeout and reported
+  ZERO results; the OVERALL line became a fake total.** Output shows only
+  `❌ Error: … pytest … timed out after 5400 seconds` then `OVERALL: ❌ 328 passed, 8 failed` — 328 is
+  vitest+E2E alone, so backend is UNKNOWN, NOT "backend passed nothing". The ramp that preceded it:
+  11-12 3285 s → 11-13 3344 s → 11-14 3757 s → 11-15 5225 s (all ~9549 passed/44-45 failed) → timeout.
+  **A RUNNING LEG TIME IS A TREND METRIC — read the per-leg seconds on every run, not just the pass
+  count.** Escalate when the leg's duration reaches ~70 % of its ceiling, because the next 1-2 runs are
+  then already lost. Trigger here is time-to-ceiling, not a failure count. Probe before patching:
+  `cd ~/code/amlhive1/backend && .venv/bin/pytest tests/ --durations=25 -q --tb=no` on the clean tree to
+  find the slowest/hanging test (the 11-16 run also merged `origin/dev` at `6a6aba99e`, so size that
+  merge too) — Saturday scope, do not cut the timeout from a daily tick.
+  Same day, `0959371eec17` (Pluto Chamber Refresh 05:10) failed for the first time in 8 runs:
+  `pluto_mempalace_feeder.py --chamber startup-vc` exceeded the 60 s `run_python` budget while the
+  MemPalace watcher was draining. Single occurrence → WATCH, escalate only on 3+ days or a repeat on
+  the same chamber; the feeder is slow under watcher load, not broken.
 - **`SSM: Error response from daemon: No such container: amlhive-app-1` on `3ebed4e59ee3` (AML Hive Daily
   Business Report, 21:15) — a CONTAINER RENAME, and production is uniformly HEALTHY. Class this as a
   script fault, NOT a prod outage.** Seen 2026-10-26 21:15, the first report after the 0.50.185 deploy:
