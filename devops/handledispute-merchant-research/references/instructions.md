@@ -16,6 +16,7 @@ accesses the database, or accesses cardholder data. It uses the scoped backend A
   Never place it in an instruction, note, source file, chat message or log entry. Send it only in the `X-Hermes-Agent-Key` header.
 - Base URL (fixed): `https://api.handledispute.com.au`. The connection is always HTTPS; production requires HTTPS. Never use HTTP.
 - Poll every 60 seconds.
+- The Hermes profile variables (base URL, agent key variable, poll interval, local-test flag) are listed in `docs/runbooks/hermes-profile-variables.md`. This file uses only `HANDLEDISPUTE_AGENT_KEY` and the fixed base URL above.
 - If `HANDLEDISPUTE_AGENT_KEY` is missing, refuse to start. Do not guess a default and do not fall back to direct database access.
 - `HERMES_ACMA_CHECK_ENABLED` is a Hermes-only boolean setting, initially `false`, set by the owner in Hermes. A missing or invalid
   value is treated as `false` and reported without exposing secrets. When false, do not call or research ACMA. Submit the required
@@ -37,8 +38,9 @@ establish location. Do not exclude another domain solely because of its suffix. 
 Australian match cannot be established, report identity unresolved for human review and do not recommend or submit an overseas
 merchant. An overseas same-name result is a possible name collision, not proof there is no Australian business.
 If trustworthy evidence points overseas, report that evidence as out of the initial scope for a human decision. Do not send customer
-or transaction data to search providers. For a claimed job, use the existing `/fail` endpoint with a short identity-related code when
-no valid completion is possible; the current API does not accept a list of candidates. Name-only queueing remains draft under 34d.
+or transaction data to search providers. A business the backend could not identify arrives as an identity research job
+(section "Identity research jobs"), which accepts candidates and a confidence score. For an ordinary enrichment job that cannot be
+completed safely, use the existing `/fail` endpoint with a short identity-related code.
 
 ### Identifiers and identity confidence
 
@@ -51,9 +53,9 @@ evidence. If both ABN and ACN remain unknown after research, leave the identity 
 Estimate `identity_confidence` separately from `field_confidence`, using the strength and agreement of identity evidence, not search
 rank or a domain suffix. `identity_confidence < 0.90` requires human review; exactly 0.90 meets this minimum but does not independently
 authorise a match or outreach. Missing identifiers, competing candidates, contradictory evidence or insufficient corroboration require
-review even if an estimate is higher. Never raise a score to avoid review. The present API cannot receive `identity_confidence` or
-candidate evidence. For an existing claimed job that cannot be completed safely, report the issue and use `/fail`; do not put research
-notes or this score into unrelated fields. Backend routing and persistence require an approved and implemented 34d contract.
+review even if an estimate is higher. Never raise a score to avoid review. Send `identity_confidence` and the candidate evidence only through the identity research
+endpoints. The ordinary enrichment endpoints cannot receive them: for an enrichment job that cannot be completed safely, report the
+issue and use `/fail`, and do not put research notes or this score into unrelated fields.
 
 ## Polling loop
 
@@ -74,9 +76,242 @@ notes or this score into unrelated fields. Backend routing and persistence requi
 5. On a timeout, network error, `401`, `409`, `422` or `5xx`, log only the status category and the opaque job or run id (never the
    key, lease token, payload or personal data), then sleep until the next poll. On `401`, stop and tell the owner; do not retry in a loop.
 
+### Locating an Australian business from its name (works today, read only)
+
+Owner, 16 Nov 2026: most businesses will not give us an ABN. Hermes must work the business out from the name alone, in every form a customer might write it: legal name, trading name, registered business name, brand, and combinations of these. Looking up by name does not need OpenSpec 34d. What 34d adds is only queueing a case that has no merchant row and saving a newly found ABN. Run this procedure whenever a claimed job has no verified `abn`, whenever the `abn` does not match the merchant name, and whenever the owner asks for an identity lookup for a case that has no job.
+
+**Step 1. Build the name variants.** From the submitted name (and any trading name, legal name, domain or business hint supplied) make a list of search terms. Keep every variant you tried in the report.
+- The exact text as submitted, then the text with punctuation, case and double spaces normalised.
+- With and without company suffixes and words: `Pty Ltd`, `Pty Limited`, `Limited`, `Ltd`, `Proprietary`, `Australia`, `Australian`, `Group`, `Holdings`, `(Aust)`, `Trust`.
+- `&` and `and` swapped, `+` removed, apostrophes dropped (`The Athlete's Foot` and `Athletes Foot`), a leading `The` removed, plural and singular.
+- Trading names expressed as `T/A`, `trading as`, `ATF` (as trustee for) and `formerly`: search both sides of the phrase.
+- The first two or three distinctive words only (for example `Oak and Ash` from `Oak and Ash Furniture`), and the name with the product or location word removed (`Furniture`, `Shoes`, `Hawthorn`).
+- Spacing and joining (`Oak Ash`, `OakAsh`, `Oak & Ash`), common misspellings, and the domain name read as words if a website is known.
+Prefer the most specific variant first; use the broad ones only to widen the candidate list, never to pick the winner.
+
+**Step 2. Search the Australian registers** with each variant, most specific first, until you have the candidates or have exhausted the list:
+1. ABR name search through `MatchingNames` (or the ABR JSON name search) with `ABN_LOOKUP_GUID`, using the **entity names, business names and trading names** search types where the API offers them. A business may appear under a registered business name only, not under its legal entity name.
+2. The public `abr.business.gov.au` name search for the same variants (it also lists deregistered and cancelled names; keep these as evidence of history, not as candidates).
+3. The ASIC business names and company registers, when reachable, for a company (ACN) or registered business name that points to the same ABN.
+Keep entities with status **Active** and an Australian state. Cancelled, deregistered, historic and non-Australian entries are recorded as excluded with the reason.
+
+**Step 3. Verify every candidate** with `AbnDetails` (and `AbnByAcn` when only an ACN is known): ABN checksum and status, legal name, ACN, entity type, state and postcode, GST status and date registered, **and all registered business and trading names**. Distinguish the legal entity, the registered business name, the brand and the parent company (for example `Bunnings Warehouse` trades under `BUNNINGS GROUP LIMITED`; a trust or `ATF` entity trades under a different name).
+
+**Step 4. Corroborate with independent evidence.** For each surviving candidate find at least two of: the official website footer, terms or privacy page showing the ABN or the legal name; an Australian street address or phone matching the ABR state and postcode; a social, marketplace or directory listing that names the same ABN; a published contact. Search the web with the name variant plus `ABN`, `Australia`, `returns` or `refund policy`, and `.com.au`. When the case supplies a suburb, state, postcode, address or phone for the shop, also search the name plus that location on Google (Serper or Brave), including the Google Maps or business listing: a listing whose name, address and phone agree with ABR's state and postcode and with the website is strong evidence, and the listed website or phone is a lead to verify, never an identity by itself. Send only the business name and the shop's location to a search provider, never customer or transaction data. The domain suffix, a similar name, a checksum, or a search rank alone is not evidence.
+
+**Step 5. Score each candidate for `identity_confidence` (0 to 1).** Start at 0 and add only what you can cite, capped at 1.
+- +0.35 the ABR entity, business or trading name equals a submitted variant after normalisation (+0.20 if it only contains it).
+- +0.20 the ABN status is Active and the entity is Australian.
+- +0.25 the official website shows the same ABN or legal name.
+- +0.10 an Australian address, state or phone matches ABR (+0.05 more when a Google Maps or business listing agrees on name, address and phone).
+- +0.10 a second independent source names the same ABN.
+- Subtract 0.30 for a competing candidate within 0.15 of this score, 0.30 for contradicting evidence, and 0.20 when a name collision with an overseas or unrelated Australian business remains unresolved.
+A score below 0.90, two plausible candidates, or any unresolved conflict is `AMBIGUOUS` and goes to a human. A score of 0.90 or more does not authorise linking or outreach by itself.
+
+**Step 6. Decide the outcome.**
+| Result | Meaning | What you do |
+|---|---|---|
+| `AUSTRALIAN_MATCH` | One Active candidate scoring 0.90 or more with no conflict | Report it; for a claimed job continue the research |
+| `AMBIGUOUS` | Several candidates, a score below 0.90, or a conflict | Report all candidates for a human; for a claimed job `/fail` with `IDENTITY_AMBIGUOUS` |
+| `NO_AUSTRALIAN_MATCH` | Every variant tried, no Active Australian candidate | Report the variants tried; `/fail` with `IDENTITY_NOT_FOUND` |
+| `OVERSEAS_ONLY` | Trustworthy evidence points to a non-Australian business | Report it as outside the initial scope; `/fail` with `IDENTITY_OVERSEAS`; never submit it as an Australian merchant |
+| `REGISTER_UNAVAILABLE` | ABR or ASIC could not be reached or the key failed | Retry up to three times 30 seconds apart; if it still fails report which source failed; `/fail` with `IDENTITY_SOURCE_DOWN` |
+
+An overseas same-name business is a collision to record, not proof that no Australian business exists, and never a substitute for one.
+
+**Step 7. Report, do not write.** For a claimed job that cannot be completed safely use `/fail` with the code above. For a case with no job, send the owner an *identity lookup report* and stop: no API call that changes data, no contact with the merchant, no customer or transaction data to any search provider. The current API cannot receive candidates or `identity_confidence`.
+
+Identity lookup report (plain text, one per case):
+- `case_number`, the name as submitted, date and time of the search, and the outcome from the table.
+- Variants tried (every one) and the register or search used for each.
+- Each candidate: legal name, registered business and trading names, ABN, ACN, ABN status, entity type, state and postcode, website, evidence for (source URLs) and against, the points that made up `identity_confidence`.
+- Candidates excluded and why (cancelled, overseas, unrelated Australian business with a similar name).
+- Which sources were available and which failed (for example "ABN_LOOKUP_GUID not in the worker store").
+- Your recommendation, and the single question the owner has to answer if it is `AMBIGUOUS`.
+
+If `ABN_LOOKUP_GUID` is not in your own secret store, say so in the report and use the public ABR name search. The key lives in AWS Secrets Manager `handledispute/secrets/prod` (key `ABN_LOOKUP_GUID`); the owner places a copy in the Hermes worker's private store.
+
+Worked examples (illustrative; always re-search, never reuse an earlier answer):
+- *`Platypus Shoes`, no ABN:* variants `Platypus Shoes`, `Platypus`; the registered business name sits under `ACCENT GROUP LIMITED`, so the ABR business-name search finds the parent. The website footer shows the same ABN: `AUSTRALIAN_MATCH` with the brand/parent relationship stated.
+- *`The Athlete's Foot`:* variants with and without `The` and the apostrophe; two Active entities can carry the name (franchisor and group), so unless the footer ABN settles it, the result is `AMBIGUOUS` with both listed.
+- *`Oak and Ash Furniture`:* variants `Oak and Ash`, `Oak & Ash`, `Oak Ash Furniture`; ABR returns unrelated Australian names (`Oak and Ash Designs`, `Ash and Oak`, `Oak & Ash Hampers`) that are not furniture retailers, and the only furniture business found is a UK company. The result is `OVERSEAS_ONLY` or `NO_AUSTRALIAN_MATCH` with the collisions listed, not an automatic match.
+
+## Identity research jobs (OpenSpec 84, available from release 0.270.0)
+
+Owner decisions E1 and E2 (16 Nov 2026): a business the backend could not identify at intake (no merchant yet) is queued as an
+**identity research job**. It is separate from the enrichment jobs above and uses its own routes. The four enrichment routes are
+unchanged. Hermes only reports what it found; **the backend never links a merchant from a Hermes result at first** (a person reviews
+the candidates and confidence). Do not call these routes until the owner confirms release 0.270.0 is live.
+
+Same authentication (`X-Hermes-Agent-Key`), base URL and 60 second poll as enrichment. Poll identity jobs after enrichment jobs.
+
+Lease: an identity job's lease lasts 30 minutes and there is no heartbeat route for identity jobs (the 10 minute lease and the heartbeat above are for enrichment jobs only). Finish within the lease or call `/fail` with a short code such as `time_budget`; an expired lease is retried once and then marked failed.
+
+1. `POST /api/v1/agent/identity-research/claim` with `{"worker_run_id":"<opaque-run-id>"}`. `204` means no work. `200` returns
+   `job_id`, `lease_token`, `origin_case_id`, `business_name`, `hints` (or `null`) and `lease_expires_at`. `hints` may hold `suburb`,
+   `state`, `postcode`, `website`, `phone` and `abn`, all supplied by the customer, all unverified. The `receipt_clues` are read from the receipt and may include personal contact details (for example a phone number or email) that the owner has asked to be captured; use them only as business leads, never as facts about a person.
+2. Research with "Locating an Australian business from its name": name variants, ABR name search, `AbnDetails`, independent
+   corroboration, then score each candidate with the published points. Treat `hints` as clues to check, never as facts. Do not send the
+   hints or any transaction data to a search provider beyond the business name and public clues.
+3. `POST /api/v1/agent/identity-research/{job_id}/complete`:
+
+Shape (placeholders, not a real example):
+
+```text
+{
+  "lease_token": "<from claim>",
+  "outcome": "MATCHED | AMBIGUOUS | NOT_FOUND | OVERSEAS_ONLY",
+  "identity_confidence": 0.0,
+  "recommended_abn": "<11 digits, valid checksum>" ,
+  "candidates": [
+    {
+      "abn": "<11 digits or null>", "acn": "<9 digits or null>", "legal_name": "...", "trading_names": ["..."],
+      "entity_status": "Active | Cancelled | ...", "state": "NSW", "postcode": "2000", "website": "https://...",
+      "candidate_confidence": 0.0,
+      "evidence": [{"kind": "abr | website | listing | other", "source_url": "https://...", "observed_at": "<UTC timestamp>", "note": "..."}]
+    }
+  ],
+  "notes": "short reasoning, no secrets, no personal data"
+}
+```
+
+   Limits: at most 5 candidates, 10 trading names and 10 evidence items per candidate, `notes` up to 2000 characters. An ABN that
+   fails the checksum is rejected with `422`. `recommended_abn` is `null` unless exactly one candidate is clearly the best. Use
+   `NOT_FOUND` when nothing credible exists, `AMBIGUOUS` when candidates compete, and `OVERSEAS_ONLY` when the only credible match is
+   outside Australia (the owner decides what happens next). Success returns `200` with `job_id`, `state`, `outcome` and
+   `link_status: "RECORDED_FOR_REVIEW"`. Never raise a score to avoid review.
+4. `POST /api/v1/agent/identity-research/{job_id}/fail` with `{"lease_token":"<from claim>","error_code":"<short a-z0-9_ code>"}` when
+   no valid result is possible (source down, lease lost). The job is retried a limited number of times, then marked failed.
+
+Do not invent an ABN, do not copy a score from a search ranking, and never put secrets or customer data in `notes`.
+
+### Reading the hints and the receipt clues
+
+`hints` come from the customer and the receipt. They are leads, never proof. Possible keys (all optional): `suburb`, `state`, `postcode`,
+`website`, `phone`, `abn`, `abn_check`, `phone_check`, `receipt_clues`.
+
+- `abn_check` and `phone_check` are `PASSED` or `FAILED`. `FAILED` means the number the customer gave does not pass the checksum or has the wrong
+  length. It is kept because people make mistakes. Do not treat a failed ABN as evidence for or against any candidate. Search by name and report
+  in `notes` if the register shows a different business ("the ABN given belongs to X; the name search found Y").
+- `receipt_clues` (when present) lists what was read from the receipt. Every item is kept; privacy filtering is a later step. Fields:
+  `emails`, `phones`, `websites` (each `{value, context, valid_shape}`; websites also have `kind` WEBSITE or SOCIAL), `trading_names`,
+  `former_names`, `legal_names`, `acn`, `relationships` (`{kind, name, phrase}` with kind FRANCHISEE, LICENSEE, OPERATED_BY, DIVISION_OF,
+  MEMBER_OF, AUTHORISED_DEALER or MANAGED_BY), `store_reference`, `truncated`, `clue_count`.
+- `context` is BUSINESS_LINE (on a contact line), NEAR_CUSTOMER_WORDING (next to words such as customer or bill to) or OTHER. Treat
+  NEAR_CUSTOMER_WORDING items as unreliable: they may belong to the cardholder. Use them only if independent evidence ties them to the business.
+- How to use them: a `website` or business-line domain is a quick way to find the official site and the footer ABN. A business-line `phone` can be
+  compared with the register or the site. A `trading_names` or `legal_names` entry is another name to search. A `relationships` entry means two
+  entities may be involved: search both names, decide which entity runs the shop and which owns the brand, and say so in `notes`. A `SOCIAL` link
+  can corroborate a name but is weak evidence.
+- Never email, call or message anyone. Never search an email address or phone number that looks personal (webmail, or NEAR_CUSTOMER_WORDING).
+  Send a search provider only the business name, trading names and public business clues such as a website domain.
+
+### Worked examples (invented businesses, fixed JSON)
+
+All names, numbers and links below are invented samples. ABNs `51 824 753 556`, `53 010 000 350` and `53 010 000 382` pass the checksum;
+`12 345 678 901` does not.
+
+**Example 1: a claimed job with clues.**
+
+```json
+{
+  "job_id": "7f0c2a52-0000-4000-8000-000000000001",
+  "lease_token": "<opaque, keep only while the job is active>",
+  "origin_case_id": "00000000-0000-4000-8000-0000000000c1",
+  "business_name": "Harbour Bakehouse",
+  "hints": {
+    "suburb": "Newtown", "state": "NSW", "postcode": "2042",
+    "abn": "12345678901", "abn_check": "FAILED",
+    "receipt_clues": {
+      "websites": [{"value": "https://harbourbakehouse.example.com.au", "kind": "WEBSITE", "context": "BUSINESS_LINE", "valid_shape": true}],
+      "phones": [{"value": "0290001111", "raw": "02 9000 1111", "context": "BUSINESS_LINE", "valid_shape": true}],
+      "trading_names": ["Harbour Bakehouse"],
+      "legal_names": ["HB Foods Pty Ltd"],
+      "clue_count": 4
+    }
+  },
+  "lease_expires_at": "2026-11-18T01:00:00Z"
+}
+```
+
+How to read it: the ABN failed the check, so ignore it as evidence. Search the register for "Harbour Bakehouse" and "HB Foods", filter to NSW 2042,
+and check the site footer. If `HB Foods Pty Ltd` (ABN 51 824 753 556) is Active, its postcode is 2042 and the footer shows the same ABN, that is the
+match.
+
+**Example 2: MATCHED.**
+
+```json
+{
+  "lease_token": "<from claim>",
+  "outcome": "MATCHED",
+  "identity_confidence": 0.95,
+  "recommended_abn": "51824753556",
+  "candidates": [{
+    "abn": "51824753556", "acn": null, "legal_name": "HB FOODS PTY LTD", "trading_names": ["Harbour Bakehouse"],
+    "entity_status": "Active", "state": "NSW", "postcode": "2042", "website": "https://harbourbakehouse.example.com.au",
+    "candidate_confidence": 0.95,
+    "evidence": [
+      {"kind": "abr", "source_url": "https://abr.business.gov.au/", "observed_at": "2026-11-18T00:10:00Z", "note": "Active entity; trading name Harbour Bakehouse; NSW 2042"},
+      {"kind": "website", "source_url": "https://harbourbakehouse.example.com.au/terms", "observed_at": "2026-11-18T00:12:00Z", "note": "Footer shows ABN 51 824 753 556 and the same phone"}
+    ]
+  }],
+  "notes": "ABN given by the customer failed its checksum; the name search and footer agree on 51 824 753 556."
+}
+```
+
+**Example 3: AMBIGUOUS (two candidates within 0.15).**
+
+```json
+{
+  "lease_token": "<from claim>",
+  "outcome": "AMBIGUOUS",
+  "identity_confidence": 0.55,
+  "recommended_abn": null,
+  "candidates": [
+    {"abn": "53010000350", "acn": null, "legal_name": "CORNER CAFE PTY LTD", "trading_names": [], "entity_status": "Active", "state": "VIC", "postcode": "3000", "website": null, "candidate_confidence": 0.55, "evidence": [{"kind": "abr", "source_url": "https://abr.business.gov.au/", "observed_at": "2026-11-18T00:10:00Z", "note": "Name match only; Melbourne"}]},
+    {"abn": "53010000382", "acn": null, "legal_name": "THE CORNER CAFE (NSW) PTY LTD", "trading_names": [], "entity_status": "Active", "state": "NSW", "postcode": "2000", "website": null, "candidate_confidence": 0.5, "evidence": [{"kind": "abr", "source_url": "https://abr.business.gov.au/", "observed_at": "2026-11-18T00:10:00Z", "note": "Name match only; Sydney"}]}
+  ],
+  "notes": "No suburb, website or ABN was supplied, so nothing separates the two. A person should ask the customer for the suburb."
+}
+```
+
+**Example 4: a franchise or licence arrangement.** Hints include `relationships: [{"kind": "OPERATED_BY", "name": "Smith Retail Pty Ltd", "phrase": "independently owned and operated by"}, {"kind": "LICENSEE", "name": "Big Brand Australia Pty Ltd", "phrase": "under licence from"}]` and `business_name` "Big Brand Bondi". Search both entities. The customer dealt with the operating entity, so recommend that ABN and name the brand owner as a candidate with a note.
+
+```json
+{
+  "lease_token": "<from claim>",
+  "outcome": "MATCHED",
+  "identity_confidence": 0.9,
+  "recommended_abn": "53010000350",
+  "candidates": [
+    {"abn": "53010000350", "acn": null, "legal_name": "SMITH RETAIL PTY LTD", "trading_names": ["Big Brand Bondi"], "entity_status": "Active", "state": "NSW", "postcode": "2026", "website": null, "candidate_confidence": 0.9, "evidence": [{"kind": "other", "source_url": "https://bigbrand.example.com.au/stores/bondi", "observed_at": "2026-11-18T00:20:00Z", "note": "Store page says independently owned and operated by Smith Retail Pty Ltd"}]},
+    {"abn": "53010000382", "acn": null, "legal_name": "BIG BRAND AUSTRALIA PTY LTD", "trading_names": ["Big Brand"], "entity_status": "Active", "state": "NSW", "postcode": "2000", "website": "https://bigbrand.example.com.au", "candidate_confidence": 0.4, "evidence": [{"kind": "website", "source_url": "https://bigbrand.example.com.au/terms", "observed_at": "2026-11-18T00:22:00Z", "note": "Brand owner; licenses stores"}]}
+  ],
+  "notes": "Receipt wording says the Bondi store is independently owned and operated by Smith Retail Pty Ltd under licence from Big Brand Australia Pty Ltd. The operating entity is recommended; the brand owner is listed for the reviewer."
+}
+```
+
+**Example 5: NOT_FOUND.**
+
+```json
+{"lease_token": "<from claim>", "outcome": "NOT_FOUND", "identity_confidence": 0.0, "recommended_abn": null, "candidates": [], "notes": "No Active Australian entity or trading name matches any variant; no website found."}
+```
+
+**Example 6: OVERSEAS_ONLY.**
+
+```json
+{"lease_token": "<from claim>", "outcome": "OVERSEAS_ONLY", "identity_confidence": 0.3, "recommended_abn": null, "candidates": [], "notes": "The only credible match is a company registered outside Australia (https://example.com/about). No Australian register entry. Report to the owner for a decision."}
+```
+
+**Example 7: a source is down.** Use `/fail`, do not guess.
+
+```json
+{"lease_token": "<from claim>", "error_code": "abr_unavailable"}
+```
+
 ## Research steps
 
-1. Start from `merchant_name` and `abn`. The backend already looked up the ABN; use it to match the right business.
+1. Start from `merchant_name` and `abn`. If `abn` is present, check it against the merchant name. If `abn` is absent or does not match, run "Locating an Australian business from its name" above before anything else.
 2. Find the official website with a browser on public pages or a search API. Do not sign in to LinkedIn or any other account.
 3. Read the site's own return and refund policy page, its contact page, and any complaints, disputes or chargeback page.
 4. Record the official domain, a published business contact email and phone, the return policy URL and the dispute or chargeback URL.
@@ -160,8 +395,8 @@ designated AWS store in account `handledispute` (`9508-0227-7468`, region `ap-so
 |---|---|---|---|
 | `HANDLEDISPUTE_AGENT_KEY` | Worker authentication (`X-Hermes-Agent-Key` header against `https://api.handledispute.com.au`) | AWS Secrets Manager `handledispute/secrets/prod` (key `HANDLEDISPUTE_AGENT_KEY`); mirrored to SSM `/handledispute/prod/hermes_agent_api_key` | Hermes worker |
 | `HERMES_AGENT_API_KEY` | Constant-time backend verification token matching `HANDLEDISPUTE_AGENT_KEY` | SSM Parameter Store `/handledispute/prod/hermes_agent_api_key` | HandleDispute backend (`api` container) |
-| `ABN_LOOKUP_GUID` | Australian Business Register (ABR) SOAP/JSON GUID for live entity and ABN verification | SSM Parameter Store `/handledispute/prod/abn_lookup_guid` (and ABR public lookup) | Backend ABR service + Hermes identity verification |
-| Web Search Provider Keys (`EXA_API_KEY`, `TAVILY_API_KEY`, `BRAVE_API_KEY`, `SERPER_API_KEY`, `PERPLEXITY_API_KEY`) | Public merchant domain discovery, official site verification, and policy/contact page discovery | Hermes worker private `.env` / secret store | Hermes worker (search cascade) |
+| `ABN_LOOKUP_GUID` | Australian Business Register (ABR) SOAP/JSON GUID for live entity and ABN verification | AWS Secrets Manager `handledispute/secrets/prod`, key `ABN_LOOKUP_GUID` (the SSM copy was removed on 16 Nov 2026); a copy in the Hermes worker's private store; ABR public lookup as fallback | Backend ABR service + Hermes identity verification |
+| Web Search Provider Keys (`EXA_API_KEY`, `TAVILY_API_KEY`, `BRAVE_API_KEY`, `SERPER_API_KEY`) | Public merchant domain discovery, official site verification, and policy/contact page discovery | Hermes worker private `.env` / secret store | Hermes worker (search cascade) |
 | Deep Content Extraction (`FIRECRAWL_API_KEY`) | Clean Markdown/text extraction from JS-rendered retail return/refund/complaints pages | Hermes worker private `.env` / secret store | Hermes worker (page reader) |
 | ACMA DNCR Checker Key (`X-API-Key` for `POST /api/v1/check/contact`) | Independent Australian Do Not Call Register compliance check prior to phone outreach readiness | Hermes worker / backend ACMA integration configuration | Hermes worker & backend ACMA gate |
 
@@ -171,13 +406,12 @@ Run this exact sequence for every claimed job (`merchant_id`, `merchant_name`, `
 
 1. **Identity & ABN Anchor (ASIC + ABR):**
    - Treat `abn` from the claim payload as the primary identity anchor (verified via backend ASIC reference DB and `ABN_LOOKUP_GUID` against ABR).
-   - If `abn` is absent or ambiguous, stop and inspect official ABR search (`abr.business.gov.au`) before selecting any domain. Do not merge unrelated entities sharing only a generic word.
+   - If `abn` is absent or ambiguous, run "Locating an Australian business from its name" (ABR `MatchingNames`, `AbnDetails`, corroboration) before selecting any domain. Do not merge unrelated entities sharing only a generic word. Stop with `/fail` and an identity code only when no candidate is adequately supported.
 2. **Official Domain Discovery Cascade (Public Web):**
    - Query `merchant_name` + `abn` (and `Australia` / `ABN <11-digit>` / `returns` / `disputes`) across configured search providers in priority order of availability:
      1. **Exa** (`Exa` semantic/company search) — official corporate domain, Australian store root, and legal entity pages.
      2. **Tavily** (`Tavily` web search) — targeted queries for `refunds`, `returns policy`, `chargebacks`, `complaints`, and `contact us`.
      3. **Brave** / **Serper** (`Brave` Search API / `Serper` Google SERP API) — fallback verification that the candidate domain ranks as the official Australian trading presence, plus footer/ABN text snippets (`ABN XX XXX XXX XXX` on the target site).
-     4. **Perplexity** (`Perplexity` sonar search with citations) — cross-check holding company -> trading brand mapping (for example `Bunnings Warehouse` -> `BUNNINGS GROUP LIMITED` ABN `26008672179`) strictly as a citation finder, never as an unverified fact source; every submitted field must be read directly from the merchant's own HTTPS page.
    - Verify the selected `official_domain` serves HTTPS directly on the business's own site (reject directories, aggregators, Facebook/Instagram profiles, coupon sites, review sites, and URL shorteners).
 3. **Full-Text Policy & Contact Extraction:**
    - Fetch the merchant's own HTTPS pages (privacy/terms/footer/returns/refunds/contact/complaints) using **Firecrawl** (`Firecrawl`) or a clean headless browser/HTTP fetch on public pages only.
@@ -219,18 +453,19 @@ without Hermes ever sending a message itself:
 ## Not available yet
 
 Finding named dispute-desk and sign-up decision makers (two separate activities, each contact with a role, source and confidence) is
-specified in OpenSpec 68 and 34b and is not built. Queueing name-only cases without an existing `Merchant` row and confidence-gated
-auto-linking of newly discovered `abn`/`acn`/`legal_name` on `/complete` are specified in **OpenSpec 34d (draft)** and are not yet
-deployed. Until the owner says they are built, do only the job above.
+specified in OpenSpec 68 and 34b and is not built. Name-only cases without a `Merchant` row are handled by the identity research jobs
+(OpenSpec 84, from release 0.270.0), which record results for human review. Confidence-gated automatic linking of newly discovered
+`abn`/`acn`/`legal_name` is **not** built and stays off until the owner approves it after calibration; until then no result you send
+creates or links a merchant. The name lookup itself is available now as a read-only report to the owner (see "Locating an Australian business from its name"). Until the owner says 34d is built, do only the job above and that report.
 
 ### Planned extension (OpenSpec 34d draft): ABR / ACN / business-name lookup & confidence routing
 
 When OpenSpec 34d is implemented, every queued case (whether starting with an **ABN**, an **ACN**, or a **business name only**) runs
 this identity-first cascade before policy/contact extraction:
 
-1. **ABN provided (`abn`):** Query ABR `AbnDetails.aspx` (`ABN_LOOKUP_GUID`) -> retrieve `legal_name`, `acn`, ABN status, state/postcode, and registered business names -> search web (`Exa`, `Tavily`, `Google`/`Serper`, `Brave`, `Perplexity`, `Firecrawl`) to verify online presence (`official_domain` + footer ABN match) and collect contact/policy pages.
+1. **ABN provided (`abn`):** Query ABR `AbnDetails.aspx` (`ABN_LOOKUP_GUID`) -> retrieve `legal_name`, `acn`, ABN status, state/postcode, and registered business names -> search web (`Exa`, `Tavily`, `Google`/`Serper`, `Brave`, `Firecrawl`) to verify online presence (`official_domain` + footer ABN match) and collect contact/policy pages.
 2. **ACN provided (`acn`):** Query `AbnByAcn.aspx` -> `AbnDetails.aspx` (`ABN_LOOKUP_GUID`) to resolve the 11-digit ABN and full entity details -> search online and corroborate `official_domain`.
-3. **Business name only (no `abn` or `acn`):** Query ABR `MatchingNames.aspx` (`ABN_LOOKUP_GUID`) AND search the web (`Google`/`Serper`, `Exa`, `Tavily`, `Brave`, `Perplexity`) for `"<business name>" ABN` and the official website footer/terms/privacy pages. Cross-check every candidate ABN through `AbnDetails.aspx` (ATO Mod-89 + Active status).
+3. **Business name only (no `abn` or `acn`), research available now as a read-only report; queueing and saving need 34d:** Query ABR `MatchingNames.aspx` (`ABN_LOOKUP_GUID`) AND search the web (`Google`/`Serper`, `Exa`, `Tavily`, `Brave`) for `"<business name>" ABN` and the official website footer/terms/privacy pages. Cross-check every candidate ABN through `AbnDetails.aspx` (ATO Mod-89 + Active status).
 4. **Proposed confidence-gated routing (not implemented):** `identity_confidence < 0.90`, both identifiers missing, competing
    candidates or unverified identity requires a human decision. A score at or above 0.90 alone cannot trigger linking or outreach.
    The API, review workflow and remaining automatic-link conditions are draft and require approval and implementation.
