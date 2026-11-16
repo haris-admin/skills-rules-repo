@@ -33,9 +33,23 @@ Pitfall: the cron instruction points at `/home/habib/code/amlhive1/workspace/rel
 
 Pitfall: `HEARTBEAT_OK` does NOT suppress delivery — the cron wrapper still sends it to the owner as a message (verified: `HEARTBEAT_OK` runs have a row in `~/.hermes/cron/deliveries.db`; `[SILENT]` runs do not). When nothing is date-due, the response must be exactly `[SILENT]` and nothing else. The instruction's "return HEARTBEAT_OK" line describes the all-clear condition, not the output token.
 
-Pitfall: both live files can sit with zero dated entries for weeks (Tapease's only Active entry is an undated standing contact; the chief-of-staff scaffold has no real contacts). Resist "fixing" this by adding entries for project tasks that mention external parties (Fiserv, Oxygen Global, A2 Square) — no named person and no logged outreach means nothing is due, and a fake contact date is worse than an empty section. A run that finds nothing date-due must leave the relationship files byte-identical (no date-stamp churn) so shared checkouts stay clean.
+Pitfall: both live files can sit with zero dated entries for weeks (Tapease's only Active entry is an undated standing contact; the chief-of-staff scaffold has no real contacts). Resist "fixing" this by adding entries for project tasks that mention external parties (Fiserv, Oxygen Global, A2 Square) — no named person and no logged outreach means nothing is due, and a fake contact date is worse than an empty section. A run that finds nothing date-due must leave the relationship files byte-identical (no date-stamp churn) so shared checkouts stay clean — the only sanctioned write is a repair (restoring a missing file verbatim, or marking undated fields `not recorded` / `none scheduled`).
 
-Pitfall: the Tapease relationship file is **CRLF** while the rest of the checkout is CRLF-normalised, and `git diff --ignore-cr-at-eol` on it shows ZERO real changes even though `git diff --stat` reports "26 insertions/26 deletions". That stat is line-ending churn, not a real edit. Writing the file with `write_file`/`patch` rewrites it as LF and turns that phantom into a genuine whole-file diff, so when nothing is date-due do not "normalise" it — leave it untouched. Confirm before and after with `git diff --ignore-cr-at-eol --stat -- workspace/relationships/current.md` (must stay empty).
+**Tapease file can be MISSING from the live checkout.** `workspace/` is now gitignored (`.gitignore:113`, owner rule 6 Nov 2026) and the relationship file was physically deleted on 2026-11-15 by the untrack commit (`80575d8b`, "untrack owner workspace folder"); only `workspace/tasks/current.md` survived. That is not "nothing to track": restore it verbatim from history, then evaluate:
+
+```
+cd /mnt/c/code/github/a2_square/tapease_portal_fastapi_a2square
+mkdir -p workspace/relationships
+git show 80575d8b^:workspace/relationships/current.md > workspace/relationships/current.md
+```
+
+Safe to write because the path is gitignored — `git status` stays clean. Check the blob for CRLF first (`git show … | file -`); if it reports CRLF terminators, keep CRLF rather than normalising.
+
+Pitfall: the file's only Active entry is an undated standing "A2 Square infra team" (no named person, no Last contact/Next follow-up) and Nurture is an undated standing `hhsiddiqui@gmail.com` — nothing in it is ever date-due. Recorded as `not recorded` / `none scheduled`; do not add dates.
+
+Pitfall: the historic CRLF warning below applied to the pre-deletion working copy only; the committed blob and the restored file are LF, so `git diff --ignore-cr-at-eol` is no longer the guard — the guard is that the path is gitignored (`git check-ignore -v workspace/relationships/current.md`).
+
+Legacy CRLF note (pre-2026-11-15 copy, historical only): that copy was CRLF-normalised, so `git diff --ignore-cr-at-eol` on it showed ZERO real changes even though `git diff --stat` reported "26 insertions/26 deletions" — line-ending churn, not a real edit.
 
 Pitfall: the Tapease checkout routinely shows `M workspace/relationships/current.md` + `M workspace/tasks/current.md` in `git status` — that dirt is left by agent tracking edits and is not this job's error to fix. Never `git checkout`/`reset --hard` that repo to "clean" it; leave the files as written and only append when something is genuinely date-due.
 
