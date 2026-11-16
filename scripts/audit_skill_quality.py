@@ -203,6 +203,18 @@ def check_orphans(skill_dir_abs, skill_md_body):
     return orphans
 
 
+def check_discipline_sections(body):
+    """Informational: a Common Rationalizations table and a Red Flags list make a
+    skill resist being skipped (pattern from addyosmani/agent-skills, MIT).
+    Returns the names of the missing sections. Not a CI gate."""
+    missing = []
+    if not re.search(r"^#{2,4}\s+.*rationali[sz]ation", body, re.I | re.M):
+        missing.append("Common Rationalizations")
+    if not re.search(r"^#{2,4}\s+.*red flags?", body, re.I | re.M):
+        missing.append("Red Flags")
+    return missing
+
+
 def main():
     summary_only = "--summary" in sys.argv
     skill_dirs = discover_skill_dirs()
@@ -247,6 +259,13 @@ def main():
             all_issues[str(relpath)].append(
                 f"{len(orphans)} orphaned file(s) SKILL.md never mentions: {orphans[:5]}")
             stats["orphans"] += 1
+
+        missing_sections = check_discipline_sections(body)
+        if missing_sections:
+            stats["no_discipline_sections"] += 1
+            if "--discipline" in sys.argv:  # per-skill lines only on request
+                all_issues[str(relpath)].append(
+                    f"no {' or '.join(missing_sections)} section (informational)")
 
         nested = check_nesting(skill_dir_abs, body)
         if nested:
