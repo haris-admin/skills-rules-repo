@@ -17,6 +17,11 @@ PRIORITY: <urgent|high|medium|low>      ASSIGNEE: <agent or person>      ESTIMAT
    AC2. <Negative case: what must NOT happen>
    AC3. <...>
 
+2a. TEST, OBSERVE, AUDIT (all three mandatory; write "Not applicable because <reason>" if one truly does not apply)
+   Tests: <test file and names; a bug fix names its regression test at the layer where the bug lives>
+   Observability: <log events and fields, metric and bounded labels, alert and how it is proved to fire, outside-in probe; no secrets in telemetry>
+   Audit: <catalogued activity code, or the written exemption; also for schedulers, jobs, workers, imports and scripts that change data>
+
 3. TRACE
    Origin spec: <openspec/changes/NN-slug>        Amendment id: <NNx>        Requirement ids: <R1, R2>        Task ids: <TNNx.01 ...>
 

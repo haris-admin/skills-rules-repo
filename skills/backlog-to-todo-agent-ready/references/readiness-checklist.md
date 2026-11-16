@@ -4,6 +4,7 @@ Content
 - [ ] The problem still exists today. I re-verified it in the code or by a read-only command, and the evidence is in the ticket.
 - [ ] The owner's words are quoted verbatim. Decisions are recorded as question, selected option, description. My own readings are labelled.
 - [ ] Every acceptance criterion is observable and testable, with numbers where numbers matter. No "works", "fast", "secure" without a measure.
+- [ ] Section 2a answers test, observability and audit (or gives a written reason it does not apply). A change with no audit write for a mutating route, scheduler or job is not ready.
 - [ ] Origin spec and amendment id are named. Requirement and task ids are cited. A fix is its own amendment.
 - [ ] No open design question remains. If one does, the ticket stays in Backlog marked "Blocked on decision".
 
