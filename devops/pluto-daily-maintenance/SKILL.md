@@ -593,8 +593,16 @@ When you see `last_status: error` on a cron, classify before escalating:
   merge too) — Saturday scope, do not cut the timeout from a daily tick.
   Same day, `0959371eec17` (Pluto Chamber Refresh 05:10) failed for the first time in 8 runs:
   `pluto_mempalace_feeder.py --chamber startup-vc` exceeded the 60 s `run_python` budget while the
-  MemPalace watcher was draining. Single occurrence → WATCH, escalate only on 3+ days or a repeat on
-  the same chamber; the feeder is slow under watcher load, not broken.
+  MemPalace watcher was draining. **2026-11-17 (day 42) — the backend timeout repeated AND the feeder
+  failed a second time on a DIFFERENT chamber** (`cloud-infra` after 10 transcripts, same 60 s
+  `TimeoutExpired`, `run_python` at line 161). Two days / two chambers confirms it is systemic load from
+  the draining watcher, not one bad chamber — but the escalation rule needs 3+ days, so still WATCH one
+  more run; the fix when it trips is a larger `run_python` budget or smaller per-call batch, not a
+  per-chamber exclusion. 11-17 backend again `timed out after 5400 seconds` and `OVERALL: ❌ 328 passed,
+  10 failed` is again vitest+E2E only (backend UNKNOWN). E2E also moved to `41 passed / 9 failed`, past
+  the documented 4-7 band; the diagnosis is still the inline-`marginTop`-vs-`margin-top` hydration
+  mismatch, so read the 2 extra failures as that same unresolved bug growing — not as a new fault. With
+  two consecutive timeouts the Saturday probe is now the mandatory next step, not optional.
 - **`SSM: Error response from daemon: No such container: amlhive-app-1` on `3ebed4e59ee3` (AML Hive Daily
   Business Report, 21:15) — a CONTAINER RENAME, and production is uniformly HEALTHY. Class this as a
   script fault, NOT a prod outage.** Seen 2026-10-26 21:15, the first report after the 0.50.185 deploy:
