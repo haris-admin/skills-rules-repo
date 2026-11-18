@@ -433,6 +433,7 @@ model family for the verify pass than for the extract pass, and keep the raw leg
 
 ### Pitfalls
 
+- **A time-window query plus an end-of-run state save is a silent-loss pair — fix both halves.** The chamber refresh (`pluto_chamber_refresh.py`) selected episodes with `created_at > now()-24h` and persisted `podcast_ids` only after the whole loop. So a mid-batch timeout (60 s, later 180 s) discarded the record of everything already fed AND left the remainder to age out of the window unfed: measured 2026-11-18, 10 episodes returned, **1 fed into regulatory-ai, 9 lost permanently**, and the very next run honestly reported "Podcast: No new transcripts to process" — a green line over lost work. Rules: persist the seen-id set after EVERY successful feed (not once at the end), and widen the lookback (7 days) because the id set dedupes — a wide window only re-queries, it never re-feeds. Diagnostic: "0 new" immediately after a run that failed mid-batch is a LOSS signal, not an idle queue; query the source directly for rows created in the last week and diff against the recorded ids.
 - **`status = 'success'` with zero output is a false green.** An ingest run that reports success while
   writing 0 chunks hides a dead producer for months: assert the stage's own output count and fail
   non-zero on zero. Any "N processed" line must carry the count of what it actually created.
