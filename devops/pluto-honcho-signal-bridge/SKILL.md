@@ -18,6 +18,34 @@ allowed-tools: [terminal, read_file, write_file, execute_code]
 - Debugging why signals weren't pushed
 - Checking pending signal files
 - Understanding the dual-channel (Honcho + file) handoff to Gumby
+- Asking "what has Honcho learned / inferred about me?" → read the Dream Histories below
+
+## Dream Histories — what Honcho derives between conversations
+
+Honcho Cloud (this workspace runs at `https://api.honcho.dev`, workspace `my-hermes-workspace`) serves
+the **v3 API at server 3.6.1**, so Dream Histories (the 3.6.0 feature) is live with no upgrade step.
+Dreaming runs automatically on `document_threshold`; each run is recorded and inspectable.
+
+```bash
+~/.hermes/scripts/honcho_dreams.sh list 10            # timeline: who observed whom, +/- counts
+~/.hermes/scripts/honcho_dreams.sh inspect <run-id>   # each conclusion + the conclusions it came from
+~/.hermes/scripts/honcho_dreams.sh raw <run-id>       # raw JSON from the API
+```
+
+The wrapper injects `HONCHO_API_KEY` from `~/.hermes/.env` at run time (never echoed) and defaults the
+workspace. `honcho-cli` is installed with `uv tool install honcho-cli` — **dream commands need >= 0.6.0**
+(`uv tool upgrade honcho-cli`), and the CLI resolves auth purely from `HONCHO_API_KEY` in the environment
+plus `-w <workspace>`; there is no separate login step. Equivalent API calls, if the CLI is unavailable:
+`POST /v3/workspaces/{w}/dreams/list` and `GET /v3/workspaces/{w}/dreams/{run_id}` with a Bearer key.
+
+**Read `removed_count` and `peer_card_updated`, not just `created_count`.** A healthy dreaming loop both
+merges duplicate conclusions (removed) and refreshes the peer card. Measured first week on this workspace
+(12-18 Nov 2026): 40 runs, 299 conclusions created, **0 removed, 0 peer cards updated** — purely additive,
+so supersessions exist only as prose inside a conclusion's content ("X supersedes the earlier Y") rather
+than as a retraction. Treat a long-run 0/0 as a signal to check for accumulating near-duplicates instead
+of assuming the loop is healthy.
+
+Dashboard equivalent: `app.honcho.dev` → Explore → workspace → Dreams tab (Trigger Dream runs one now).
 
 ## Architecture
 
