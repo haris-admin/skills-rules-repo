@@ -38,6 +38,21 @@ Read both before acting. If they and this page ever disagree, the files win. If 
 rejects something they allow, the API wins — report it to the owner. When the owner says the
 documents changed, re-copy them; never run on a superseded copy.
 
+## API quirks observed on production (v0.280.04)
+
+- **`MatchingNames.IsCurrent` is not ABN status.** It flags the *name record* as current; the
+  ABN behind it is often `Cancelled`. Always confirm every candidate with `AbnDetails.AbnStatus`
+  before listing it — otherwise live franchisees and dead entities get reported as active.
+- **`/identity-research/{job_id}/complete` validation:** `legal_name` must be a string (null → 422);
+  `acn` must be exactly nine digits **or null** (empty string → 422); a bad ABN checksum → 422.
+  Success returns `200` with `state=COMPLETED`, `outcome`, `link_status=RECORDED_FOR_REVIEW`.
+- **Franchise brands** (e.g. The Athlete's Foot): a name search returns the franchisor plus many
+  franchisees sharing the trading name. The supplied `hints.abn` corroborated against the brand's
+  own terms/promotions page settles which entity is meant; list the franchisees at low confidence
+  and say so in `notes` rather than dropping them.
+- **Read the whole claim body.** It carries `hints` (including `postcode` and `receipt_clues`);
+  truncating the response loses evidence you cannot re-fetch — there is no GET for a claimed job.
+
 ## Local lane mechanics (not part of the owner contract)
 
 Only the plumbing that runs the contract:
