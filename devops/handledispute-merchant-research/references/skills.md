@@ -29,7 +29,9 @@ does not make the merchant action-ready for automated outreach.
 | 5 | `owner-decision-maker-enrichment` | Research business profile, owners, and sign-up decision makers for human review | **Proposed (`OpenSpec 68`)** |
 | 6 | `acma-compliance-and-confidence-gate` | Run fail-closed ACMA DNCR check (`POST /api/v1/check/contact`) and score confidence | **Active** (`acma_decision`) / **Planned (`34d`)** (`identity_confidence` auto-link) |
 | 7 | `handledispute-queue-push` | Claim jobs, maintain lease heartbeat, validate JSON, and push `/complete` or `/fail` | **Active** |
-| 8 | `identity-research-job` | Claim an identity research job (business name plus unverified customer hints), research it with skill 1 to 3, and push candidates with `identity_confidence` to `/agent/identity-research/{job_id}/complete` or `/fail`. Results are recorded for human review and never link a merchant | **Available from release 0.270.0** (do not call before the owner confirms it is live; its lease is 30 minutes with no heartbeat route, unlike the 10 minute enrichment lease). Few-shot examples and fixed JSON for every outcome, including a franchise case and a failed ABN check, are in `hermes-agent-instructions.md`, section "Worked examples" |
+| 8 | `identity-research-job` | Claim an identity research job (business name plus unverified customer hints), research it with skill 1 to 3, and push candidates with `identity_confidence` to `/agent/identity-research/{job_id}/complete` or `/fail`. Results are recorded for human review and never link a merchant | **Live since release 0.270.0 (16 Nov 2026)** (live since release 0.270.0, 16 Nov 2026; its lease is 120 minutes by default (setting `IDENTITY_RESEARCH_LEASE_MINUTES`, spec 85 D73; it was 30 until that change reaches production) with no heartbeat route, unlike the 10 minute enrichment lease). Few-shot examples and fixed JSON for every outcome, including a franchise case and a failed ABN check, are in `hermes-agent-instructions.md`, section "Worked examples" |
+| 9 | `research-report-submission` | Read the claim whole, validate payload rules, submit the full structured report (`/reports`) before `/complete` or `/fail`, with contacts, franchise entities and every candidate | **Active** (OpenSpec 85, 84c) |
+| 10 | `research-completeness-check` | Check every candidate across identity, registration, leadership, dispute contact and sign-up contact before finishing; go back for anything missing | **Active** (OpenSpec 84c) |
 
 ---
 
@@ -48,10 +50,10 @@ does not make the merchant action-ready for automated outreach.
 2. **If `acn` is present (and `abn` missing):** Query `AbnByAcn.aspx` → `AbnDetails.aspx` to resolve the 11-digit ABN and entity details.
 3. **If only `merchant_name` (or a trading or business name) is present (works today as a read-only lookup; queueing and saving the result need `OpenSpec 34d`):** follow `hermes-agent-instructions.md`, section "Locating an Australian business from its name", exactly. In short:
    - Build the name variants (as submitted, normalised, with and without company suffixes, `&`/`and`, `The`, apostrophes, `T/A` both sides, first two or three words, product or location word removed, joined or spaced forms, domain read as words).
-   - Search ABR `MatchingNames` with `ABN_LOOKUP_GUID` (entity, business and trading name types) and the public `abr.business.gov.au` name search for each variant, most specific first; use ASIC registers for a company or business name that points to the same ABN. Keep Active Australian entities; record cancelled, overseas and unrelated entries as excluded.
+   - Search ABR `MatchingNames` with `ABN_LOOKUP_GUID` (entity, business and trading name types) and the public `abr.business.gov.au` name search for each variant, most specific first; use ASIC registers for a company or business name that points to the same ABN. Keep every Australian entity as a candidate whatever its status (OpenSpec 84a); record the exact status, and record an overseas or unrelated entry as a candidate that is ruled out with its reason.
    - Verify each candidate through `AbnDetails` (and `AbnByAcn` for an ACN): checksum, status, legal name, ACN, state and postcode, every registered business and trading name.
    - Corroborate with at least two independent pieces of evidence (website footer ABN or legal name, Australian address or phone matching ABR, a second source naming the same ABN) via Skills 2 and 3.
-   - Score `identity_confidence` with the published points and penalties, then choose the outcome. In an identity research job report one of `MATCHED`, `AMBIGUOUS`, `NOT_FOUND` or `OVERSEAS_ONLY` (a register outage is a `/fail`, not an outcome). In a read-only report the owner also sees `AUSTRALIAN_MATCH`, `NO_AUSTRALIAN_MATCH` and `REGISTER_UNAVAILABLE`.
+   - Score `identity_confidence` with the published points and penalties, then choose the outcome. In an identity research job report one of `MATCHED`, `AMBIGUOUS`, `NOT_FOUND` or `OVERSEAS_ONLY` (a register outage is reported through the fail route, not as an outcome). In a read-only report the owner also sees `AUSTRALIAN_MATCH`, `NO_AUSTRALIAN_MATCH` and `REGISTER_UNAVAILABLE`.
 4. **Disambiguation rule:** Distinguish legal entity, trading name, parent company, and brand. Never merge two unrelated businesses sharing a generic word.
 5. Corroborate the Australian match with merchant-specific evidence, such as ABR trading name and the business's published website,
    address or contact details. Domain suffix, matching name or ABN checksum alone is insufficient. Retain conflicting evidence and
@@ -133,6 +135,7 @@ does not make the merchant action-ready for automated outreach.
 - Preserve channel type: a web form URL or phone number is not an email address; submit `contact_email: null` if only a form/phone exists.
 - Normalize Australian phone numbers into `contact_phone` (`null` if unpublished).
 - Retain discovered alternatives and note which tiers were checked vs absent in your internal run summary.
+- **Identity research jobs (version 2):** the identity `/complete` body has no contact field, so the dispute contact you find goes into the report (skill 9.5) as a `contacts` entry with purpose `DISPUTE`, the candidate it belongs to, the tier in `limitations`, and the sources. The research is not finished until a dispute contact is recorded or the area is marked `NO_EVIDENCE_FOUND` with the tiers you searched.
 
 ---
 
@@ -187,6 +190,127 @@ does not make the merchant action-ready for automated outreach.
 `MERCHANT_EMAIL_REDIRECT_ENABLED` is a HandleDispute backend setting, not a Hermes setting. When enabled, it routes merchant email to
 configured `MERCHANT_EMAIL_REDIRECT_TO` recipients. Haris identifies `haris@handledispute.com.au` as the intended test recipient; the
 live setting and recipient have not been independently verified. Hermes never sends the email or changes the redirect.
+
+---
+
+## Skill 9: `research-report-submission` (Full report, payload rules, claim handling)
+
+**Status:** Active for the report routes of OpenSpec 85 (`/reports`). Version 2 of the prompt (OpenSpec 84c).
+
+**When to use:** On every identity research job and every enrichment job, after the research and before `/complete` or `/fail`. The `/complete` body is a short summary for the existing flow. **The report is where the full findings go**: every candidate (not only five), every source and search, the dispute and sign-up contacts, the franchise and lookalike entities, the limitations and the whole narrative. Do not squeeze these into the 2000 character `notes`.
+
+### 9.1 Read the claim whole
+
+1. Save the claim response to a file (for example `claim.json`) and read that file by parsing it. Never rely on what the terminal printed: a capture can be cut off, and an earlier run missed `postcode` and `receipt_clues` that way.
+2. Check every key of `hints`: `suburb`, `state`, `postcode`, `website`, `phone`, `abn`, `abn_check`, `phone_check`, `receipt_clues`. In `receipt_clues` read `truncated` and `clue_count`. `truncated: true` means the server stopped at its cap of 20 contacts in a group; say so under limitations.
+3. Treat every hint as a lead. A `FAILED` check is not evidence for or against a candidate.
+
+### 9.2 Payload rules (check locally, before sending)
+
+The API rejects with `422` a body that breaks any of these. Check all of them before you send, so a rejected call is never how you learn a rule.
+
+| Field | Rule |
+|---|---|
+| `candidates[].legal_name` | Never null: a string of 1 to 255 characters. If the legal name is unknown, use the registered name you have and say so in the evidence note. |
+| `candidates[].abn` | Null or 11 digits that pass the ABN checksum (ATO modulus 89). |
+| `candidates[].acn` | Exactly 9 digits, or null. Never an empty string, never spaces or letters. |
+| `candidates[].candidate_confidence`, `identity_confidence` | A number from 0 to 1. |
+| `candidates` | At most 5 candidates in `/complete` (five candidates). The full list goes in the report. |
+| `candidates[].trading_names` | At most 10, each 1 to 255 characters. |
+| `candidates[].evidence` | At most 10 items; each `source_url` is `http` or `https`; `observed_at` is a UTC timestamp. |
+| `notes` | At most 2000 characters. No secrets, no personal data. |
+| `recommended_abn` | Null unless exactly one candidate is clearly best; same checksum rule. |
+| `/fail` `error_code` | Lower case letters, digits and underscore, 1 to 64 characters, for example `source_unavailable` or `time_budget`. |
+
+### 9.3 The ABR status trap
+
+`IsCurrent` in an ABR name search describes the name record, not the ABN. A franchise can have many entities with the same trading name and different statuses. Read each ABN's status from `AbnDetails`. Record cancelled, deregistered and expired candidates in the report with the exact status text and keep them as candidates.
+
+### 9.4 Franchise and related entities
+
+When the same trading name is carried by several entities (franchisees, a licensee, a brand owner, a parent), put each one in the report as its own candidate, say which entity most likely ran the transaction and why, and name the others as alternatives. If the receipt ABN or a hint settles it, say that is what settled it. A store-level entity is a real possibility when a receipt ABN could have been misread.
+
+### 9.5 Contacts
+
+For an identity job the `/complete` body has no contact field. Put every dispute contact and sign-up contact you find in the report under `contacts`, with the `candidate_id` it belongs to, `purpose` `DISPUTE` or `SIGNUP`, the `channel` (`EMAIL`, `PHONE`, `WEB_FORM`, `POSTAL` or `OTHER`), the `value` exactly as published, `source_ids`, `observed_at` and `limitations`. Use the tier order of skill 4. Never guess an address that is not published. Contacts are proposed for human review; do not contact anyone.
+
+### 9.6 Submit
+
+1. `POST /api/v1/agent/identity-research/{job_id}/reports` (enrichment: `/api/v1/agent/merchant-enrichment/{job_id}/reports`) with `{"lease_token": "<from claim>", "idempotency_key": "<16 to 128 characters, new for this run, reused only to repeat the same body>", "report": <the report>}` and the `X-Hermes-Agent-Key` header. The report has `schema_version` `"1"` and `research_mode` `"claimed_job"`. `201` or `200` means stored. Read `readiness`: `STORED_AWAITING_ATTACHMENTS` means upload the files you declared first.
+2. Upload each declared attachment (multipart, route in the contract), only public pages or documents you fetched, never customer files.
+3. Then `/complete` (or `/fail` for a source outage or a lost lease). Order: report, attachments, completion.
+4. Errors: `422 REPORT_INVALID` carries `findings` with the rule and field (never your text): fix and resubmit with a new `idempotency_key`. `409 LEASE_INVALID`: stop, do not retry, tell the owner. `503 STORAGE_UNAVAILABLE`: retry up to three times 30 seconds apart and then still call `/complete` before the lease ends so the job is not lost, with `notes` saying "report not stored: storage unavailable". The backend raises a missing-report item for a person. Never claim the report was stored unless you got `201` or `200`.
+
+### 9.7 Worked example (invented business, validated by a test against the backend validator)
+
+```json report
+{
+  "schema_version": "1",
+  "run_id": "run-0001-example",
+  "research_mode": "claimed_job",
+  "submitted_name": "Sample Footwear",
+  "available_clues": ["business name", "receipt ABN hint", "postcode"],
+  "missing_clues": ["store address"],
+  "started_at": "2026-11-18T01:00:00Z",
+  "completed_at": "2026-11-18T01:40:00Z",
+  "outcome": "AUSTRALIAN_CANDIDATE",
+  "summary": "Sample Footwear Pty Ltd matches the receipt ABN. Franchisee entities share the trading name, so a store-level entity is possible.",
+  "recommended_candidate": {"candidate_id": "cand-head", "source_ids": ["src-abr"]},
+  "coverage_assessments": [
+    {"candidate_id": "cand-head", "area": "identity_and_case_link", "state": "WELL_SUPPORTED", "source_ids": ["src-abr", "src-site"], "missing": []},
+    {"candidate_id": "cand-head", "area": "registration", "state": "WELL_SUPPORTED", "source_ids": ["src-abr"], "missing": []},
+    {"candidate_id": "cand-head", "area": "leadership", "state": "NOT_CHECKED", "source_ids": [], "missing": ["director source not searched"]},
+    {"candidate_id": "cand-head", "area": "dispute_contact", "state": "PARTIAL", "source_ids": ["src-site"], "missing": ["no dedicated disputes address published"]},
+    {"candidate_id": "cand-head", "area": "signup_contact", "state": "NO_EVIDENCE_FOUND", "source_ids": ["src-site"], "missing": ["decision maker"]},
+    {"candidate_id": "cand-fran", "area": "identity_and_case_link", "state": "PARTIAL", "source_ids": ["src-abr"], "missing": ["store location"]},
+    {"candidate_id": "cand-fran", "area": "registration", "state": "WELL_SUPPORTED", "source_ids": ["src-abr"], "missing": []},
+    {"candidate_id": "cand-fran", "area": "leadership", "state": "NOT_CHECKED", "source_ids": [], "missing": ["director source not searched"]},
+    {"candidate_id": "cand-fran", "area": "dispute_contact", "state": "NOT_CHECKED", "source_ids": [], "missing": ["contact research"]},
+    {"candidate_id": "cand-fran", "area": "signup_contact", "state": "NOT_CHECKED", "source_ids": [], "missing": ["contact research"]}
+  ],
+  "sources": [
+    {"source_id": "src-abr", "name": "ABR AbnDetails", "source_type": "registry", "url": "https://abr.business.gov.au/", "observed_at": "2026-11-18T01:10:00Z", "status": "SUCCESS"},
+    {"source_id": "src-site", "name": "Business website terms page", "source_type": "website", "url": "https://example.com.au/terms", "observed_at": "2026-11-18T01:20:00Z", "status": "SUCCESS"}
+  ],
+  "searches": [
+    {"search_id": "srch-1", "query": "Sample Footwear", "source_id": "src-abr", "observed_at": "2026-11-18T01:05:00Z", "status": "SUCCESS", "coverage_note": "Name search found the head entity and franchisee entities."}
+  ],
+  "candidates": [
+    {"candidate_id": "cand-head", "legal_name": "Sample Footwear Pty Ltd", "trading_names": ["Sample Footwear"], "identifiers": [{"type": "ABN", "value": "51824753556", "jurisdiction": "AU", "source_id": "src-abr"}], "geography": "AUSTRALIA", "registrations": [{"kind": "ABN", "identifier_value": "51824753556", "status": "ACTIVE", "status_text": "Active per AbnDetails", "source_id": "src-abr"}], "case_identity_assessment": "SUPPORTED", "disposition": "INVESTIGATE", "reasons_for": ["Receipt ABN hint matches this ABN."], "reasons_against": [], "source_ids": ["src-abr", "src-site"]},
+    {"candidate_id": "cand-fran", "legal_name": "Franchisee Example Pty Ltd", "trading_names": ["Sample Footwear"], "identifiers": [{"type": "ABN", "value": "53010000350", "jurisdiction": "AU", "source_id": "src-abr"}], "geography": "AUSTRALIA", "registrations": [{"kind": "ABN", "identifier_value": "53010000350", "status": "CANCELLED", "status_text": "Cancelled per AbnDetails", "source_id": "src-abr"}], "case_identity_assessment": "UNDETERMINED", "disposition": "UNRESOLVED", "reasons_for": ["Shares the trading name as a franchisee."], "reasons_against": ["Receipt ABN does not match this ABN."], "source_ids": ["src-abr"]}
+  ],
+  "leadership": [],
+  "contacts": [
+    {"contact_id": "con-1", "candidate_id": "cand-head", "purpose": "DISPUTE", "role": "customer support", "channel": "EMAIL", "value": "support@example.com.au", "source_ids": ["src-site"], "observed_at": "2026-11-18T01:20:00Z", "limitations": ["Tier 3 support address. No dedicated disputes address is published."]}
+  ],
+  "other_findings": [],
+  "limitations": ["Directors were not searched in this run.", "The store address was not available."],
+  "open_questions": ["Which store issued the receipt?"],
+  "recommended_next_actions": ["A person should confirm the receipt ABN against the head entity."],
+  "full_narrative": "Searched the ABR name register and AbnDetails for the submitted name. The receipt ABN hint matched the head entity. Franchisee entities share the trading name and one is cancelled; both are kept as candidates. The business website lists a customer support address only.",
+  "declared_attachments": []
+}
+```
+
+---
+
+## Skill 10: `research-completeness-check` (Check everything before you finish)
+
+**When to use:** After the research and before the report is submitted. A run is not finished until this check is done. This skill exists because earlier runs stopped after identity and left leadership, dispute contact and sign-up contact empty without saying so.
+
+**Procedure:**
+
+1. List every candidate you investigated. Keep them all: a cancelled, deregistered, expired, overseas or ruled-out candidate is kept in the list with the exact status and the reason (never dropped for status alone).
+2. For each candidate set a state for each of the five areas: identity and case link, registration, leadership, dispute contact, sign-up contact. The states are `WELL_SUPPORTED`, `PARTIAL`, `CONFLICTING`, `NO_EVIDENCE_FOUND` (you searched and found nothing), `NOT_CHECKED` (you did not search) and `SOURCE_UNAVAILABLE` (a source failed). `NOT_CHECKED` and `SOURCE_UNAVAILABLE` are not negative findings.
+3. **Missing work rule.** Any area that is empty, or `NOT_CHECKED` without a reason, is work you have not done. Go back and do it now with skills 1 to 6. Only when you cannot (no source, no time, a source down) set the honest state, name what is missing, and put it under limitations and open questions.
+4. Check the franchise and related entities: lookalikes, licensees, brand owner, parent. Each is a candidate or a stated alternative.
+5. Check the policy pages and the dispute contact in tier order (skill 4): disputes or chargebacks, then complaints or compliance, then support, then the general front door. Record which tiers you checked.
+6. Check the claim was read whole (skill 9.1) and that every hint was used or marked unused with a reason.
+7. Check the payload rules (skill 9.2) on `/complete` and the report.
+8. Check no secret, token or customer data is in any note, query or report.
+9. Check the summary does not claim more than the evidence: a strong identity does not verify a contact, and an agent opinion is not a system flag or a human decision.
+
+**Output:** the completed coverage list in the report, with limitations and open questions naming everything not done. If you could not finish a required area and had time left, you were not finished.
 
 ---
 
