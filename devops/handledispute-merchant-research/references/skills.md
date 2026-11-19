@@ -193,6 +193,20 @@ live setting and recipient have not been independently verified. Hermes never se
 
 ---
 
+## Skill 8: `identity-research-job` (Claim, research and complete an identity job)
+
+**When to use:** For a business the backend could not identify at intake (no merchant yet). It is a separate queue from the enrichment jobs and has its own routes; the enrichment routes are unchanged.
+
+**Procedure:**
+1. Poll `POST /api/v1/agent/identity-research/claim` with `{"worker_run_id": "<8 to 64 characters>"}` after the enrichment claim. `204` means no work. `200` returns `job_id`, `lease_token`, `origin_case_id`, `business_name`, `hints` and `lease_expires_at` (skill 9.1 says how to read it).
+2. Research with skills 1 to 4 and 10. Treat `hints` as leads, never facts.
+3. Submit the full report (skill 9), then finish with `/complete`. The outcome is one of `MATCHED`, `AMBIGUOUS`, `NOT_FOUND` or `OVERSEAS_ONLY`, sent through `/complete` with up to five candidates; the backend never links a merchant from it.
+4. The lease is 120 minutes by default and there is no heartbeat route for identity jobs. Read `lease_expires_at`.
+5. `/fail` is only for a source outage, a report store outage or an exhausted time budget while you still hold the lease. Its first attempt is retried once; any later attempt ends FAILED for an administrator to re-run. After a lost lease stop and tell the owner.
+6. An administrator can put a completed job back in the queue (spec 85e, when released); the attempt number then shows as `01`, `02`, `03` and so on. A job re-run is the same job, never a new one.
+
+---
+
 ## Skill 9: `research-report-submission` (Full report, payload rules, claim handling)
 
 **Status:** Active for the report routes of OpenSpec 85 (`/reports`). Version 2 of the prompt (OpenSpec 84c).
@@ -201,7 +215,7 @@ live setting and recipient have not been independently verified. Hermes never se
 
 ### 9.1 Read the claim whole
 
-1. Save the claim response to a file (for example `claim.json`) and read that file by parsing it. Never rely on what the terminal printed: a capture can be cut off, and an earlier run missed `postcode` and `receipt_clues` that way.
+1. Save the claim response to a file (for example `claim.json`) with the `lease_token` removed, or parse it in memory, and read it by parsing it. Keep the lease token in memory only; never write it to a file, a log or a note. Never rely on what the terminal printed: a capture can be cut off, and an earlier run missed `postcode` and `receipt_clues` that way.
 2. Check every key of `hints`: `suburb`, `state`, `postcode`, `website`, `phone`, `abn`, `abn_check`, `phone_check`, `receipt_clues`. In `receipt_clues` read `truncated` and `clue_count`. `truncated: true` means the server stopped at its cap of 20 contacts in a group; say so under limitations.
 3. Treat every hint as a lead. A `FAILED` check is not evidence for or against a candidate.
 
@@ -222,6 +236,19 @@ The API rejects with `422` a body that breaks any of these. Check all of them be
 | `recommended_abn` | Null unless exactly one candidate is clearly best; same checksum rule. |
 | `/fail` `error_code` | Lower case letters, digits and underscore, 1 to 64 characters, for example `source_unavailable` or `time_budget`. |
 
+### 9.2b Report rules (the backend validates the report, not only `/complete`)
+
+The report is checked against its own schema and by a deterministic validator. A body can be valid JSON and still be refused.
+
+| Rule | What to do |
+|---|---|
+| Required fields | Send every required field of the report (see the worked example in 9.7); an unknown field is refused; system fields such as flags and review status are never sent. |
+| Coverage for every candidate | Send one coverage entry for each of the five areas (identity and case link, registration, leadership, dispute contact, sign-up contact) for each candidate you list, even when the state is `NOT_CHECKED`. A candidate with missing coverage rows is refused. |
+| `recommended_candidate` | Null, or one candidate that is not `RULED_OUT` and cites sources. It must cite at least as many successful sources (status `SUCCESS`) as the current policy requires (the default is 1; an administrator can raise it). Cite every successful source you used. |
+| Ids | Candidates, sources, contacts and searches have unique ids that match `^[A-Za-z0-9._:-]{1,64}$`, and every reference (a source id in a candidate or contact) must exist. |
+| Enumerations | Use only the values in the schema (for example `geography`, `case_identity_assessment`, `disposition`, contact `channel` and `purpose`). |
+| Sources | Record a source's `url` as text without credentials; a failed source is `UNAVAILABLE`, not absent. |
+
 ### 9.3 The ABR status trap
 
 `IsCurrent` in an ABR name search describes the name record, not the ABN. A franchise can have many entities with the same trading name and different statuses. Read each ABN's status from `AbnDetails`. Record cancelled, deregistered and expired candidates in the report with the exact status text and keep them as candidates.
@@ -238,8 +265,8 @@ For an identity job the `/complete` body has no contact field. Put every dispute
 
 1. `POST /api/v1/agent/identity-research/{job_id}/reports` (enrichment: `/api/v1/agent/merchant-enrichment/{job_id}/reports`) with `{"lease_token": "<from claim>", "idempotency_key": "<16 to 128 characters, new for this run, reused only to repeat the same body>", "report": <the report>}` and the `X-Hermes-Agent-Key` header. The report has `schema_version` `"1"` and `research_mode` `"claimed_job"`. `201` or `200` means stored. Read `readiness`: `STORED_AWAITING_ATTACHMENTS` means upload the files you declared first.
 2. Upload each declared attachment (multipart, route in the contract), only public pages or documents you fetched, never customer files.
-3. Then `/complete` (or `/fail` for a source outage or a lost lease). Order: report, attachments, completion.
-4. Errors: `422 REPORT_INVALID` carries `findings` with the rule and field (never your text): fix and resubmit with a new `idempotency_key`. `409 LEASE_INVALID`: stop, do not retry, tell the owner. `503 STORAGE_UNAVAILABLE`: retry up to three times 30 seconds apart and then still call `/complete` before the lease ends so the job is not lost, with `notes` saying "report not stored: storage unavailable". The backend raises a missing-report item for a person. Never claim the report was stored unless you got `201` or `200`.
+3. Then `/complete` (or `/fail` for a source outage while you still hold the lease). Order: report, attachments, completion. If you lost the lease, stop and tell the owner: `/fail` and `/reports` both need a live lease.
+4. Errors: `422 REPORT_INVALID` carries `findings` with the rule and field (never your text): fix and resubmit with a new `idempotency_key`. `409 LEASE_INVALID`: stop, do not retry, tell the owner. `503 STORAGE_UNAVAILABLE`: retry up to three times 30 seconds apart and then call `/fail` with the code `storage_unavailable` while you still hold the lease (owner decision D6 of 84c). What `/fail` does: an identity job's first attempt is retried once (it returns to the queue); any other job (an enrichment job, or an identity job on its second attempt, which includes every administrator re-run) ends FAILED and an administrator re-runs it with the Re-run research button. Either way a person sees it and no job is completed without a report. Never call `/complete` after a failed report submission, and never claim the report was stored unless you got `201` or `200`.
 
 ### 9.7 Worked example (invented business, validated by a test against the backend validator)
 
@@ -255,7 +282,7 @@ For an identity job the `/complete` body has no contact field. Put every dispute
   "completed_at": "2026-11-18T01:40:00Z",
   "outcome": "AUSTRALIAN_CANDIDATE",
   "summary": "Sample Footwear Pty Ltd matches the receipt ABN. Franchisee entities share the trading name, so a store-level entity is possible.",
-  "recommended_candidate": {"candidate_id": "cand-head", "source_ids": ["src-abr"]},
+  "recommended_candidate": {"candidate_id": "cand-head", "source_ids": ["src-abr", "src-site"]},
   "coverage_assessments": [
     {"candidate_id": "cand-head", "area": "identity_and_case_link", "state": "WELL_SUPPORTED", "source_ids": ["src-abr", "src-site"], "missing": []},
     {"candidate_id": "cand-head", "area": "registration", "state": "WELL_SUPPORTED", "source_ids": ["src-abr"], "missing": []},

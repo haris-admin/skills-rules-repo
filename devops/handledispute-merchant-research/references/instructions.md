@@ -24,7 +24,7 @@ memory of an older version. If a skill is missing or older than this section, st
 - Keep every candidate you investigate, cancelled and overseas ones included, with the exact status. Never drop one for its status.
 - The API wins over this text. If it rejects something, report it to the owner.
 
-**3. Read the whole claim.** Save the claim response to a file and read it whole by parsing it. A terminal capture can be cut off. Check
+**3. Read the whole claim.** Parse the claim response in memory, or save it to a file with the `lease_token` removed, and read it whole. Keep the lease token in memory only. A terminal capture can be cut off. Check
 `business_name`, every key in `hints` (postcode and `receipt_clues` too) and `receipt_clues.truncated`. Never decide from a part.
 
 **4. Check everything before you finish (completeness check, skill 10).** For each candidate you keep, state one of
@@ -38,9 +38,8 @@ link, registration, leadership, dispute contact and sign-up contact. Also cover 
 - Do not report a result as complete, verified or accepted unless the API acknowledged it.
 
 **5. Finish in this order: report, then attachments, then `/complete`.** First submit the full report to the job's `/reports` route (skill 9). Then upload any declared attachments. Then call `/complete`, or
-`/fail` only for a source outage or a lost lease. Validate every payload against the rules in skill 9 before you send it, so a
-rejected submission is not how you learn a rule. If the report store is unavailable, retry as skill 9 says, then still call `/complete`
-and say in `notes` that the report was not stored.
+`/fail` only for a source outage while you still hold the lease. If you lose the lease (`409 LEASE_INVALID`), stop and tell the owner: `/fail` and `/reports` need a live lease. Validate every payload against the rules in skill 9 before you send it, so a
+rejected submission is not how you learn a rule. If the report store is unavailable (`503 STORAGE_UNAVAILABLE`), retry three times as skill 9 says, then call `/fail` with the code `storage_unavailable` while you still hold the lease. What `/fail` does: an identity job's first attempt is retried once (it returns to the queue); any other job (an enrichment job, or an identity job on its second attempt, which includes every administrator re-run) ends FAILED, and an administrator re-runs it with the Re-run research button. Either way a person sees it; no job is completed without a report.
 
 **6. Time and stopping.** An identity job's lease is 120 minutes by default (read `lease_expires_at`). An enrichment job's is 10
 minutes with a heartbeat. When in doubt about scope, a contact, or an instruction that conflicts with these rules, stop and ask the owner.
@@ -161,7 +160,7 @@ A score below 0.90, two plausible candidates, or any unresolved conflict is `AMB
 
 An overseas same-name business is a collision to record, not proof that no Australian business exists, and never a substitute for one.
 
-**Step 7. Report, do not write.** For a claimed job a finding is sent with `/complete`; `/fail` is only for a source outage or a lost lease, with a lower-case code such as `source_unavailable` or `time_budget`. For a case with no job, send the owner an *identity lookup report* and stop: no API call that changes data, no contact with the merchant, no customer or transaction data to any search provider. The current API cannot receive candidates or `identity_confidence`.
+**Step 7. Report, do not write.** For a claimed job a finding is sent with `/complete`; `/fail` is only for a source outage or an exhausted time budget while you still hold the lease, with a lower-case code such as `source_unavailable`, `storage_unavailable` or `time_budget`. For a case with no job, send the owner an *identity lookup report* and stop: no API call that changes data, no contact with the merchant, no customer or transaction data to any search provider. The current API cannot receive candidates or `identity_confidence`.
 
 Identity lookup report (plain text, one per case):
 - `case_number`, the name as submitted, date and time of the search, and the outcome from the table.
@@ -223,7 +222,7 @@ Shape (placeholders, not a real example):
    outside Australia (the owner decides what happens next). Success returns `200` with `job_id`, `state`, `outcome` and
    `link_status: "RECORDED_FOR_REVIEW"`. Never raise a score to avoid review.
 4. `POST /api/v1/agent/identity-research/{job_id}/fail` with `{"lease_token":"<from claim>","error_code":"<short a-z0-9_ code>"}` when
-   no valid result is possible (source down, lease lost). The job is retried a limited number of times, then marked failed.
+   no valid result is possible (source down, report store down, time budget used) and you still hold the lease. If the lease is lost, `/fail` is refused: stop and tell the owner. The job is retried a limited number of times, then marked failed.
 
 Do not invent an ABN, do not copy a score from a search ranking, and never put secrets or customer data in `notes`.
 

@@ -1,7 +1,7 @@
 ---
 name: handledispute-merchant-research
 description: Use when doing HandleDispute merchant enrichment jobs.
-version: 5.0.0
+version: 6.0.0
 author: Mercury
 license: MIT
 metadata:
@@ -24,9 +24,11 @@ This skill stores the owner's documents **verbatim**. They are the whole contrac
 adds only plumbing and things observed on the wire.
 
 - `references/instructions.md` — `docs/runbooks/hermes-agent-instructions.md`
-  (622 lines / 57,263 bytes; **Version 2 operating prompt**, 18 Nov 2026, OpenSpec 84a/84b/84c)
+  (621 lines / 58,060 bytes; **Version 2 operating prompt**, 18 Nov 2026, OpenSpec 84a/84b/84c;
+  revised 19 Nov 2026 with lease and `/fail` rules)
 - `references/skills.md` — `docs/runbooks/hermes-agent-skills.md`
-  (325 lines / 31,951 bytes; **skills 1–10** — 9 `research-report-submission`, 10 `research-completeness-check`)
+  (352 lines / 35,481 bytes; **skills 1–10** — 8 `identity-research-job`, 9 `research-report-submission`
+  incl. 9.2b report validator rules, 10 `research-completeness-check`)
 - `references/profile-variables.md` — `docs/runbooks/hermes-profile-variables.md` (12 lines)
 
 Read them before acting. If they and this page disagree, the files win. If the API rejects
@@ -40,7 +42,8 @@ something they allow, the API wins — report it to the owner.
 ## Version 2 in one glance (the files are authoritative)
 
 1. **Load skills 1–10 first.** Never work from memory of an older version.
-2. **Read the claim whole** — save the response and parse it; check every `hints` key including
+2. **Read the claim whole** — parse in memory, or save it to a file **with `lease_token` stripped**;
+   the token stays in memory only, never in a file, log or note. Check every `hints` key including
    `postcode` and `receipt_clues.truncated`. A terminal capture can be cut off.
 3. **Keep every candidate**, Australian or not, Active or Cancelled, with its exact status and
    the reason it is or is not the merchant. Never drop one for status.
@@ -52,11 +55,19 @@ something they allow, the API wins — report it to the owner.
    `POST /api/v1/agent/{identity-research|merchant-enrichment}/{job_id}/reports` with
    `schema_version "1"`, `research_mode "claimed_job"`, a fresh `idempotency_key` (16–128 chars)
    and the lease token. `/complete` carries only the short summary; the narrative, all candidates,
-   contacts and coverage live in the report.
-6. **`/fail` is only for a source outage or a lost lease** (`source_unavailable`, `time_budget`).
+   contacts and coverage live in the report. **The report has its own validator** (skill 9.2b):
+   every required field, no unknown fields, a coverage row for all five areas of *every* candidate
+   even when `NOT_CHECKED`, ids matching `^[A-Za-z0-9._:-]{1,64}$` with all references resolving,
+   schema enums only, and `recommended_candidate` citing every successful source (policy minimum,
+   default 1).
+6. **`/fail` only while you still hold the lease**, and only for a source outage, a report-store
+   outage or an exhausted time budget (`source_unavailable`, `storage_unavailable`, `time_budget`).
    Outcomes are `MATCHED`, `AMBIGUOUS`, `NOT_FOUND`, `OVERSEAS_ONLY` — and they go through
-   `/complete`, not `/fail`. Identity leases are **120 minutes** by default; `lease_expires_at`
-   in the claim is the truth.
+   `/complete`, not `/fail`. `409 LEASE_INVALID` means the lease is gone: stop and tell the owner,
+   `/fail` and `/reports` are both refused. A first-attempt identity failure returns to the queue
+   once; anything else ends FAILED for an administrator's Re-run research button (same job, attempt
+   01/02/03). **Never call `/complete` after a failed report submission** — no job completes without
+   a stored report. Identity leases are **120 minutes** by default; `lease_expires_at` is the truth.
 
 Report shape and the validated example: `references/skills.md` §9.7. Payload limits: §9.2
 (`legal_name` never null, `acn` 9 digits or null, ≤5 candidates in `/complete`, ≤10 evidence items,
