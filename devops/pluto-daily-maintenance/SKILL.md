@@ -360,7 +360,7 @@ When you see `last_status: error` on a cron, classify before escalating:
   check + `hermes dashboard --status` instead.
 
 ### Real (needs action)
-- **Alexandria VAULT push blocked by GitHub's 100 MB per-file cap (GH001) — a SIZE fault, not a git/auth fault.** 2026-11-18: `fc726783497f` printed `push rc: 1` four times (WSL git, rebase+retry ×2, Windows git) with `remote: error: GH001: Large files detected` / `pre-receive hook declined`, then `‼️ PUSH DID NOT LAND`. Cause: append-only monthly podcast lenses — `vault/podcasts/lenses/general/2026-10.md` = **106,718,732 B** (origin copy 103,401,066) and `2026-09.md` = **100,000,497 B** (497 B over). Origin already holding a >100 MB blob is NOT protection: any commit rewriting the file uploads a NEW oversized blob. Detect with `find . -type f -size +100M` in the clone + `git rev-list --objects origin/main..HEAD | git cat-file --batch-check='%(objecttype) %(objectsize) %(rest)' | awk '$1=="blob"&&$2>50000000'`. Unpushed commits pile up every 6 h and the chain `7e4a2379157d` goes red on `🔴 alexandria sync — last run FAILED` while all 7 podcast legs are ✅ — that single line IS this blocker, not a podcast regression. Remediation is structural/owner-scoped (split lenses by day, `git rm --cached` + ignore, or LFS): report blob sizes and options, never force-push, never rewrite history, never delete lens files to unblock a push.
+- **✅ RESOLVED 2026-11-19 — GitHub's 100 MB per-file cap (GH001) blocked the VAULT push for ~1 day; do NOT re-escalate.** 2026-11-18: `fc726783497f` printed `push rc: 1` four times with `remote: error: GH001: Large files detected` / `pre-receive hook declined`, because the append-only monthly podcast lenses `vault/podcasts/lenses/general/2026-10.md` = 106,718,732 B and `2026-09.md` = 100,000,497 B (497 B over). Fix taken: per-lens DAILY views plus `vault/podcasts/lenses/` gitignored+untracked. Verified 11-19 12:56 AEDT — `push rc: 0`, `origin/main...HEAD` = `0 0`, 5,245 files, chain `7e4a2379157d` green. **Re-detect a recurrence with `git rev-list --objects origin/main..HEAD | git cat-file --batch-check='%(objecttype) %(objectsize) %(rest)' | awk '$1=="blob"&&$2>50000000'` — never `find . -size +100M` in a `/mnt/c` clone (the 9p walk alone blew a 180 s tool timeout).** Always a SIZE fault, never git/auth: report blob sizes and options, never force-push, never rewrite history, never delete lens files to unblock a push.
 - **A skip `reason` the script does not recognise is a FAKE PASS — fixed 2026-10-22 in `amlhive_asic_sync.py`.**
   The dataset loop classified `NO_CHANGE` / `FILE_NOT_YET_PUBLISHED` (pass) and `DATASET_SOURCE_UNAVAILABLE`
   (alert, with the documented asic-registered-schemes exception), but every other reason fell through to
@@ -599,10 +599,14 @@ When you see `last_status: error` on a cron, classify before escalating:
   failed a second time on a DIFFERENT chamber** (`cloud-infra` after 10 transcripts, same 60 s
   `TimeoutExpired`, `run_python` at line 161). Two days / two chambers confirms it is systemic load from
   the draining watcher, not a bad chamber. **3-day rule tripped 2026-11-18 (3rd chamber `agent-architecture`) → FIXED: `run_python` now takes `timeout=180` and catches `TimeoutExpired`, so one slow call no longer aborts the remaining chambers** (backup `~/.hermes/backups/scripts_20261118_140846/`; verified by py_compile + a stubbed-exception test of the extracted function + a full `--dry-run` ending RC 0). A timeout line now means raise the budget, never a per-chamber exclusion. 11-17 backend again `timed out after 5400 seconds` and `OVERALL: ❌ 328 passed,
-  10 failed` is again vitest+E2E only (backend UNKNOWN). **2026-11-18 (day 43) — third consecutive backend timeout**, `OVERALL: ❌ 327 passed, 8 failed` (vitest 284p/1f, E2E 43p/7f). Three timeouts make the `--durations` probe MANDATORY Saturday work; the backend leg has produced no usable data since 11-15, so quote NO backend number until it runs green. E2E also moved to `41 passed / 9 failed`, past
-  the documented 4-7 band; the diagnosis is still the inline-`marginTop`-vs-`margin-top` hydration
-  mismatch, so read the 2 extra failures as that same unresolved bug growing — not as a new fault. With
-  two consecutive timeouts the Saturday probe is now the mandatory next step, not optional.
+  10 failed` is again vitest+E2E only (backend UNKNOWN). **2026-11-18/19 (days 43-44) — backend timeout now FOUR consecutive days; only the E2E count moved.**
+  11-18: `OVERALL: ❌ 327 passed, 8 failed` (vitest 284p/1f, E2E 43p/7f). 11-19 05:13: `OVERALL: ❌ 326
+  passed, 9 failed` (vitest 284p/1f, E2E **42p/8f**, 387.0 s) — no backend number at all, so the OVERALL
+  total is vitest+E2E only. The backend leg has produced NO usable data since 11-15: the `--durations`
+  probe is mandatory Saturday work, not optional, and no daily tick may cut the 5400 s ceiling.
+  E2E is now drifting above the documented 4-7 failure band (9 then 8) under the SAME inline-`marginTop`
+  vs `margin-top` hydration diagnosis — read it as that one unresolved bug, not a new fault, but the
+  drift is now 2 consecutive runs so it stops being noise on the 3rd.
 - **`SSM: Error response from daemon: No such container: amlhive-app-1` on `3ebed4e59ee3` (AML Hive Daily
   Business Report, 21:15) — a CONTAINER RENAME, and production is uniformly HEALTHY. Class this as a
   script fault, NOT a prod outage.** Seen 2026-10-26 21:15, the first report after the 0.50.185 deploy:
