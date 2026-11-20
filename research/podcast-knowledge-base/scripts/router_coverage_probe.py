@@ -52,7 +52,9 @@ def _load(name, filename):
 tf = _load("tf", "podcast_three_filters.py")
 pv = _load("pv", "podcast_capture_verify.py")
 
-DONE = HOME / ".hermes/cache/scratch/free_router_done.json"
+import podcast_state as ps  # noqa: E402  — ledgers live in state/, never the 24h-pruned scratch
+
+DONE = ps.path("free_router_done.json")
 
 try:
     done = set(int(i) for i in json.loads(DONE.read_text())["done"])

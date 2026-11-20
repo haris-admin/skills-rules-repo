@@ -117,6 +117,10 @@ Combines vector similarity + full-text search + optional AU relevance filter.
 
 **Script:** `~/.hermes/scripts/podcast_ingestor.py`
 **Python venv:** `/tmp/podcast_venv/` (yt-dlp, youtube-transcript-api, psycopg2-binary)
+  - **`/tmp/podcast_venv` also disappears through systemd-tmpfiles, not only reboots** (found gone 19 Nov 2026 with no reboot). The durable pair now lives on the Hermes venv: `~/.hermes/venv/bin/yt-dlp` (2026.10.26) and `youtube_transcript_api` on the same interpreter. Use those for one-off work instead of rebuilding /tmp every time.
+  - **One-off video that is not in the KB:** `python3 ~/.hermes/scripts/fetch_one_transcript.py --video <ID> --out <path>` — tries English, then any track, then translates an available track to English, and exits 3 on a block so "no transcript" is never confused with thin data.
+  - **UNLISTED videos cannot be enumerated.** Channel uploads, all channel playlists and `ytsearch` miss them completely; a session-5-style video reports `availability: unlisted` from yt-dlp metadata. Do not burn turns searching for siblings — the link has to be handed over (usually from program/cohort emails). Report "unlisted, needs the link" rather than "not found".
+  - For a series, the batch path is `~/.hermes/scripts/baa_masterclass_add.py --video <ID> --session <N> --title "<title>"`, which transcribes and creates the Notion page in one command.
   - Rebuild if missing: `python3 -m venv /tmp/podcast_venv && /tmp/podcast_venv/bin/pip install yt-dlp youtube-transcript-api psycopg2-binary`
   - Note: `/tmp` is cleared on reboot — the venv will need rebuilding after restarts
 
@@ -433,10 +437,16 @@ model family for the verify pass than for the extract pass, and keep the raw leg
 
 ### Pitfalls
 
-- **A time-window query plus an end-of-run state save is a silent-loss pair — fix both halves.** The chamber refresh (`pluto_chamber_refresh.py`) selected episodes with `created_at > now()-24h` and persisted `podcast_ids` only after the whole loop. So a mid-batch timeout (60 s, later 180 s) discarded the record of everything already fed AND left the remainder to age out of the window unfed: measured 2026-11-18, 10 episodes returned, **1 fed into regulatory-ai, 9 lost permanently**, and the very next run honestly reported "Podcast: No new transcripts to process" — a green line over lost work. Rules: persist the seen-id set after EVERY successful feed (not once at the end), and widen the lookback (7 days) because the id set dedupes — a wide window only re-queries, it never re-feeds. Diagnostic: "0 new" immediately after a run that failed mid-batch is a LOSS signal, not an idle queue; query the source directly for rows created in the last week and diff against the recorded ids.
+- **A time-window query plus an end-of-run state save is a silent-loss pair — fix both halves.** The chamber refresh (`pluto_chamber_refresh.py`) selected episodes with `created_at > now()-24h` and persisted `podcast_ids` only after the whole loop. So a mid-batch timeout (60 s, later 180 s) discarded the record of everything already fed AND left the remainder to age out of the window unfed: measured 2026-11-18, 10 episodes returned, **1 fed into regulatory-ai, 9 lost permanently**, and the very next run honestly reported "Podcast: No new transcripts to process" — a green line over lost work. Rules: persist the seen-id set after EVERY successful feed (not once at the end), and widen the lookback (7 days) because the id set dedupes — a wide window only re-queries, it never re-feeds. Diagnostic: "0 new" immediately after a run that failed mid-batch is a LOSS signal, not an idle queue; query the source directly for rows created in the last week and diff against the recorded ids. **Recovery:** after the fix, run the refresh once by hand (the widened lookback re-selects exactly the dropped rows), then prove each item landed in the STORE — `scripts/probe_palace_landed.py --chamber <name> --probe "<title fragment>"`. Never accept the refresh's own `✅ Fed N new item(s)` line as evidence: it is a SUBMISSION count. The feeder dedupes on `quote_hash` or exact document text and skips items already present, so a re-run over the same day's research file re-counts those items every time while storing nothing new.
 - **`status = 'success'` with zero output is a false green.** An ingest run that reports success while
   writing 0 chunks hides a dead producer for months: assert the stage's own output count and fail
   non-zero on zero. Any "N processed" line must carry the count of what it actually created.
+- **An append-only ledger that can go idle belongs in `state/`, never `cache/scratch`.** Scratch has a 24h
+  IDLE retention, so a queue that drains deletes its own ledger (2026-11-21: `three_filters.jsonl` pruned
+  at 07:40, report returned 1, tick reported a script failure). The router's ledgers now resolve through
+  `scripts/podcast_state.py` to `~/.hermes/state/`; a missing ledger is a red condition, a drained queue is
+  not. Recovery: `scripts/rebuild_three_filters_ledger.py --date YYYY-MM-DD` (see
+  `references/chamber-router.md`).
 - **A rolling-window output is not storage.** A JSON/markdown that keeps only the last N days of
   extracted key points discards everything older on every run. If the user expects to ask about an
   episode weeks later, persist one durable record per episode keyed by episode id.
@@ -582,6 +592,25 @@ at invalidates every episode already attached to it.
 publishes **only `status='locked'` rows** into `~/.hermes/mempalace-inputs/`, which the 06:15 vault sync
 carries into `alexandria/vault/inputs`. It always states the unverified count, so a gap reads as
 *unverified: N*, never as "nothing important in that episode". Silent when it curated nothing.
+
+### The vault podcast tree and its lens views (`podcast_alexandria_export.py`)
+
+`alexandria_sync.py` runs this export before its commit. It writes `vault/podcasts/` in the vault: one
+canonical note per episode, `index/` (by-show, by-lens, coverage) and `lenses/<lens>/<YYYY-MM-DD>.md`
+views built from the router sidecars. Nothing else reads the lens files — they are a derived, regenerable
+projection, which is what makes them safe to exclude from git.
+
+- **Lens views are partitioned DAILY, never monthly.** A monthly rollup grows without bound: one month of
+the `general` lens reached 102 MiB and exceeded GitHub's 100 MiB per-file push limit, so EVERY vault sync
+was rejected (`GH001: Large files detected`) while the commits piled up local-only. The lens dir is now
+gitignored and untracked (`/vault/podcasts/lenses/`) and each file is bounded by one day of episodes.
+- **The export is slow by nature** — it walks thousands of episode notes over the 9p mount, so a 260 s
+foreground run does not finish. Run it via `alexandria_sync.py` (which allows 900 s) or in the background
+with `notify`; do not conclude it is broken because a short run prints nothing.
+- **Changing a derived artefact's partition requires a reconciliation proof.** After switching a rollup
+from month to day, sum the new files' item counts and compare against the old file's own stated total —
+they must match EXACTLY — and only then delete the old artefact. A migration that silently drops items
+produces the same clean-looking directory as a correct one, and the old file is the only witness.
 
 ### Verifying the corpus without wasting money
 
@@ -836,6 +865,7 @@ positional args treats an unrecognised flag (`--help`, `--limit`) as a source na
 work** — you get a live ingest instead of usage text.
 
 ## Reference Files
+- `scripts/probe_palace_landed.py` — prove an item actually landed in a MemPalace chamber (the refresher's "Fed N" line is a submission count; the feeder dedupes and skips silently). Run on `~/.hermes/venv/bin/python3`.
 - `scripts/survey_channels.sh` — live vetting of candidate channels before adding a row (prints each handle's channel_id + 3 newest titles, or NOT FOUND)
 - `references/supabase-schema.md` — Complete DDL for the podcast_kb schema (all 6 tables, indexes, hybrid_search function)
 - `references/podcast-directory-full.md` — All 31 tracked podcasts with YouTube handles, channel IDs, tiers, and RSS feed status

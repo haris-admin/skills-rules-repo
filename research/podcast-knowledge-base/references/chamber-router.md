@@ -6,7 +6,7 @@
 |---|---|---|
 | Router | `~/.hermes/scripts/podcast_three_filters.py` | one episode → three filters, verbatim quotes |
 | Aggregator | `~/.hermes/scripts/podcast_filters_report.py` | run JSONL → one markdown file per lens |
-| Raw per-episode log | `~/.hermes/cache/scratch/three_filters.jsonl` | append-as-you-go evidence |
+| Raw per-episode log | `~/.hermes/state/three_filters.jsonl` | append-as-you-go evidence — durable state, NOT scratch (see below) |
 | Chamber output | `~/.hermes/mempalace-inputs/podcast-filter<N>-<lens>-<date>.md` | carried to alexandria by the vault sync |
 
 ```bash
@@ -16,6 +16,31 @@ python3 scripts/podcast_filters_report.py                            # renders t
 
 **Input is `locked` episodes only** (the P5 curation gate is the router's input filter, never its job).
 It routes from the STORED transcript, so a YouTube block does not stop it.
+
+## Ledger storage — never in `cache/scratch`
+
+The ledger and the dedup state (`three_filters.jsonl`, `three_filters_state.json`,
+`free_router_done.json`) live in **`~/.hermes/state/`**, resolved through `scripts/podcast_state.py`
+(`ps.path("<name>", for_write=True)`), which also adopts a legacy scratch copy on first use.
+
+**Why:** `cache/scratch` is TMP space with a 24h IDLE retention (`hermes_constants.SCRATCH_MAX_IDLE_HOURS`).
+The router appends to the ledger ONLY when it routes something, so once the backlog drained the file sat
+untouched for 24h and the hourly prune deleted it (2026-11-21 07:40). Two consequences, in the order they
+bite: (1) `podcast_filters_report.py` found no ledger and returned 1, so the 08:00 routing tick reported a
+script failure while routing was fine; (2) far worse, the NEXT successful route would have rebuilt all
+seven dated artefacts from a one-episode ledger — a full-corpus knowledge snapshot silently replaced by
+nothing. Any append-only artefact that can idle is durable state: put it in `state/`.
+
+`scripts/rebuild_three_filters_ledger.py --date YYYY-MM-DD` rebuilds a pruned ledger from the landed
+`mempalace-inputs/podcast-filter*-<date>.md` snapshots (the report's own output, so point/quote/why/source
+are recoverable losslessly). Verified: item counts matched the pre-loss artefacts exactly (21499 general /
+3792 australia / 270/69/170/2132/175 per lens). Two limits: episodes whose items were ALL deduped away
+carry no items and cannot be recovered (1369 of 1379 records), and episodes the ledger held twice (paid +
+free lane) merge into one record, which shifts item order without changing content.
+
+**Empty ledger ≠ failure, missing ledger = failure.** `podcast_filters_report.py` now returns 0 with
+"queue drained — nothing to write" when the ledger exists but has no routed rows, and 1 with
+"LEDGER MISSING" when it is gone. A drained queue is the design; a missing corpus record is the alarm.
 
 ## Prompt contract
 
