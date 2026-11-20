@@ -61,6 +61,17 @@ AEST week (Sat–Fri), so anchor on the current date rather than on the supplied
   event of a quiet week.
 - **A quiet week is a real finding.** Micro-rounds (A$0.5–3M) are often the only new deals; say so
   rather than padding with last week's larger raises (label those clearly as prior week).
+- **The Startup Daily funding RSS caps at 10 items and lags the homepage by hours.** On a Friday cron it can
+  show only one in-window deal; when the feed looks empty, cross-check the site homepage (`/`) and
+  `dynamicbusiness.com`/`finsmes` hits, which surface rounds the funding tag has not picked up yet.
+- **Non-VC "raises" arrive as launch announcements, not funding stories.** ANFF-C Gate 1 pre-seed awards
+  (anff.org.au/news), Innovation Victoria pre-seeds inside university spinout launches (e.g. Microcomb),
+  and ARENA grants are dated, in-window and real, but appear only via `web_search` on the topic — they
+  never enter the Startup Daily funding feed. Classify them separately from equity VC.
+- **Capital Brief and fintechnews.au topic pages can sit a week stale** even when articles exist; their
+  listing order is not a reliable in-window test. Date each article from its own byline before citing.
+- **Sector aggregators resurface year-old raises with fresh-looking URLs.** Plexus's "$6M raise"
+  (legaltech-talk) is May 2025 and reads as current in an undated listing — its own byline is the test.
 - **Search hits can be a year stale.** A generic query for an in-window deal can return the *same-named
   round-up from the prior year* as a top hit (e.g. a "Cheque-in … to end October" article dated 31 Oct 2025
   surfacing during an Oct 2026 window, full of 2025 deals). Always read the article's own dateline before
@@ -68,6 +79,20 @@ AEST week (Sat–Fri), so anchor on the current date rather than on the supplied
 - **Regtech/AML supply signal ≠ equity round.** Demand is driven by Tranche 2 AML/CTF (live 1 Jul 2026,
   ~100k entities: real estate, legal, accounting, precious metals, gaming) and shows up as vendor
   partnerships, club/enterprise signings, M&A and follow-on seed — not necessarily a fresh round.
+
+- **Verified-round trackers beat the feeds for micro-rounds.** `trymatchbox.com/news` lists dated AU rounds with
+  investors and `leadprysm.com/news` carries global sub-$5M rounds including AU — between them they surface deals
+  Startup Daily never tags (COUNT NZ, Mulga, RespirAq). Both mis-record currency though (Matchbox logged Remedy
+  Robotics as "A$62M" when it was US$62M/A$92M), so take the amount from the press release.
+- **Publication date ≠ announcement date, by up to five days.** Provectus Algae's extension appeared in SmartCompany's
+  13 Nov round-up, QIC released 15 Nov, Business Wire 17 Nov, Startup Daily 15 Nov. For borderline cases use the
+  company/QIC/Business Wire release date, not the aggregator's.
+- **Same-name companies collide across the border and the ASX.** NZ's COUNT raised a US$6.5M seed (KBF/GD1) the same
+  month ASX:CUP Count Limited did a A$25M placement — unrelated firms. Check the entity before merging a hit.
+- **Capital Brief drops the currency unit.** "Remedy Robotics raises $62 million" is US$62M; the figure only becomes
+  A$92M by reading Startup Daily or the release. Never carry a bare "$" from Capital Brief into an AUD total.
+- **Tracxn's dated report URLs rot.** The H1 2026 semi-annual page now 404s; cite the figures via the Overnight
+  Success issue that reported them (18 July 2026) and keep the snapshot in `references/` rather than re-linking.
 
 ## Output shape
 
@@ -79,3 +104,10 @@ AEST week (Sat–Fri), so anchor on the current date rather than on the supplied
 ## References
 
 - `references/sources-and-benchmarks.md` — live URLs and the verified 2025/FY26 benchmark figures.
+
+## Verification status
+
+Last full run: 20 Nov 2026 (Fri cron). In-window sweep = Startup Daily funding RSS + main RSS, Overnight Success
+(Sat issue at `/p/<N>th-<month>-<year>`; the next Saturday's URL 404s until published), Capital Brief topic page,
+fintechnews.au funding, trymatchbox.com/news, leadprysm.com/news, QIC / Business Wire releases. The Tracxn
+semi-annual report page returns 404 as of this run — quote the snapshot from `references/` instead.

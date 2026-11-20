@@ -174,6 +174,17 @@ when `alembic.ini` exists; `compose down -v` afterwards. Symptom that proves a d
 rather than code being broken: **many `E` (errors, not failures) in one ordered block, then the process
 sitting at 0% CPU forever.**
 
+**The port regex above silently falls back to `:5432` when a compose file uses an interpolated mapping
+(verified 2026-11-20).** `["\'](\d+):5432["\']` cannot match
+`"127.0.0.1:${TEST_POSTGRES_PORT:-55432}:5432"` — the `127.0.0.1:` prefix and the `${…}` form both break
+it — so `port or "5432"` wins and the harness points pytest at a database that is not there, while
+compose actually publishes **55432** and the repo's own docs say **5433** (`AGENTS.md` DEBT-PG-12 for
+`tapease_portal_fastapi_a2square`: *"port 5432 belongs to another project (`chargerail`): never use it"*).
+That is the whole mechanism behind a leg that wedges at 0% CPU for 5,400 s. Before editing a parser,
+read the repo's CURRENT `docker-compose.test.yml` (compose contracts move) instead of the harness's
+top-of-file comment, which records what the contracts were when the parser was written; prefer passing
+an explicit `TEST_DATABASE_URL`/`DATABASE_URL` per repo over teaching the regex new syntax.
+
 ## Interpreters and timeouts must be chosen by TESTING, not by assumption (Sep 2026)
 
 Two bugs in `a2square_weekly_test_runner.py` produced the same useless output for weeks:

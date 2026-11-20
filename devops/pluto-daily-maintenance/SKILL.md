@@ -390,7 +390,8 @@ When you see `last_status: error` on a cron, classify before escalating:
   **2026-10-22 — the fix HOLDS; the next red was a different class.** `RESULT: FETCH_FAILED` + `HTTP: 503`
   from austrac.gov.au itself (live `200` when curled at 14:00) — a transient upstream 503, not a parser
   regression. Before re-opening a just-fixed parser, curl the page: a 503 serves no HTML, so the parser is
-  never reached.
+  never reached. Recurred 2026-11-20 (07:16 `HTTP: 503` / `FETCH_FAILED`, live 200 at 14:00): a 503 red
+  here is ALWAYS upstream until a curl proves otherwise.
 - **`5b95adcb27d4` (Blog Posts via Codex, Tue/Thu 08:00) — STANDING BLOCK, owner decision pending; do NOT
   re-derive or re-escalate, and do NOT report it as a fresh red.** It fails its own `git merge origin/dev`
   pre-flight and BLOCKS by design (nothing written/committed/pushed; tree left clean). 8 consecutive dead
@@ -599,14 +600,12 @@ When you see `last_status: error` on a cron, classify before escalating:
   failed a second time on a DIFFERENT chamber** (`cloud-infra` after 10 transcripts, same 60 s
   `TimeoutExpired`, `run_python` at line 161). Two days / two chambers confirms it is systemic load from
   the draining watcher, not a bad chamber. **3-day rule tripped 2026-11-18 (3rd chamber `agent-architecture`) → FIXED: `run_python` now takes `timeout=180` and catches `TimeoutExpired`, so one slow call no longer aborts the remaining chambers** (backup `~/.hermes/backups/scripts_20261118_140846/`; verified by py_compile + a stubbed-exception test of the extracted function + a full `--dry-run` ending RC 0). A timeout line now means raise the budget, never a per-chamber exclusion. 11-17 backend again `timed out after 5400 seconds` and `OVERALL: ❌ 328 passed,
-  10 failed` is again vitest+E2E only (backend UNKNOWN). **2026-11-18/19 (days 43-44) — backend timeout now FOUR consecutive days; only the E2E count moved.**
-  11-18: `OVERALL: ❌ 327 passed, 8 failed` (vitest 284p/1f, E2E 43p/7f). 11-19 05:13: `OVERALL: ❌ 326
-  passed, 9 failed` (vitest 284p/1f, E2E **42p/8f**, 387.0 s) — no backend number at all, so the OVERALL
-  total is vitest+E2E only. The backend leg has produced NO usable data since 11-15: the `--durations`
-  probe is mandatory Saturday work, not optional, and no daily tick may cut the 5400 s ceiling.
-  E2E is now drifting above the documented 4-7 failure band (9 then 8) under the SAME inline-`marginTop`
-  vs `margin-top` hydration diagnosis — read it as that one unresolved bug, not a new fault, but the
-  drift is now 2 consecutive runs so it stops being noise on the 3rd.
+  10 failed` is again vitest+E2E only (backend UNKNOWN). **2026-11-18→20 (days 43-45) — backend timeout FIVE consecutive days; E2E drifting, band otherwise flat.**
+  11-18 `327/8` (vitest 284p/1f, E2E 43p/7f), 11-19 `326/9` (42p/8f, 387 s), 11-20 `329/8` (286p/1f,
+  43p/7f, 301.8 s) — no backend number in ANY of them, so every OVERALL total is vitest+E2E only. The
+  `--durations` probe is mandatory Saturday work; no daily tick may cut the 5400 s ceiling. E2E sits at
+  7-8 failures for 3 consecutive runs under the SAME inline-`marginTop` hydration diagnosis — one
+  unresolved bug: watch for a NAMED non-whitelisted test rather than re-reporting the count.
 - **`SSM: Error response from daemon: No such container: amlhive-app-1` on `3ebed4e59ee3` (AML Hive Daily
   Business Report, 21:15) — a CONTAINER RENAME, and production is uniformly HEALTHY. Class this as a
   script fault, NOT a prod outage.** Seen 2026-10-26 21:15, the first report after the 0.50.185 deploy:
