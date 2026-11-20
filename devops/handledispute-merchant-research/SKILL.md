@@ -79,6 +79,19 @@ Report shape and the validated example: `references/skills.md` §9.7. Payload li
 
 ## Observed on production (v0.280.04)
 
+- **Report validator, accepted shape (verified on a stored report, 20 Nov 2026):** `outcome`
+  `AUSTRALIAN_CANDIDATE` is accepted for a `MATCHED` job; `geography` `AUSTRALIA`; `case_identity_assessment`
+  `SUPPORTED`/`UNDETERMINED`; `disposition` `INVESTIGATE`/`RULED_OUT`; `registrations[].kind` `ABN` with status
+  `ACTIVE`/`CANCELLED`; `source_type` `registry`/`website` (`other` is unproven — prefer `website`); source `status`
+  `SUCCESS`/`UNAVAILABLE`; contact `channel` `EMAIL`/`PHONE`/`WEB_FORM` and `purpose` `DISPUTE`/`SIGNUP`. 15 coverage rows
+  (5 areas × 3 candidates) accepted. A stored report returns `report_id`, `version`, `attempt`, `storage_status
+  STORED`, `readiness READY_FOR_REVIEW`, `job_state IN_PROGRESS`.
+- **`attempt` in the report response is the job's attempt number, not yours.** A job can sit on `attempt: 3` while your
+  first report stores fine — never infer that you retried, and never call `/fail` assuming a retry is still available.
+- **File-driven lease holder is a compliant way to spread research across tool calls.** One background process claims,
+  keeps the token in memory, and watches for `report_request.json` then `complete_request.json` written by the agent; it
+  injects the token itself. The token never lands on disk, and the claim → `/reports` → `/complete` sequence still runs in
+  one OS process. Reuse that pattern instead of holding the token in `execute_code` globals.
 - **`/reports` is deployed** on both job families: a fake job id returns `404 JOB_NOT_FOUND`,
   not `405`. A **completed** job rejects a late report with `409 LEASE_INVALID` — a report can
   only be stored while the lease is held, so the report must be sent *before* `/complete`.
@@ -89,9 +102,31 @@ Report shape and the validated example: `references/skills.md` §9.7. Payload li
 - **`/health` publishes** only `status`/`version`/`database`.
 - **There is no GET for a claimed job.** Whatever is not captured at claim time is gone.
 
+## Lease-token handling in this runtime (hard-won)
+
+- **Never hold the lease token in an `execute_code` kernel variable across calls.** The session
+  kernel restarts silently between calls (`execution_count` keeps rising, earlier globals are
+  gone), and the token cannot be re-fetched: there is no GET for a claimed job and a re-claim
+  returns `204` because the job is still held. The job then sits stranded until its 120-minute
+  lease lapses — a lost run.
+- **Do claim → research → `/reports` → `/complete` in ONE OS process.** Either one script run
+  with `terminal`, or a single `execute_code` cell that fetches everything itself. Write the
+  research to a report JSON file first (findings only, no secrets); that file may be reused, the
+  token may not.
+- **Recovery after a lost token:** the lease cannot be released, so wait for `lease_expires_at`
+  and then claim. Claim only accepts a match on the same `job_id`; a mismatched claim must be
+  left untouched and the waiter must exit, never `/fail` it. A waiter script that reads
+  `HANDLEDISPUTE_AGENT_KEY` at runtime and keeps the token in memory is compliant. The identity
+  lane cron (`0318817b1783`, every 10 min) also re-claims the job after the lease lapses and
+  researches it from scratch, so a lost token delays a job rather than losing it.
+
 ## Local lane mechanics (not part of the owner contract)
 
-- Base `https://api.handledispute.com.au`, 60s cadence.
+- Base `https://api.handledispute.com.au`. Cadence comes from **`HERMES_POLL_INTERVAL_SECONDS`**
+  in `~/.hermes/.env` (owner, 20 Nov 2026; currently **120 s**) — the lane-specific
+  `PLUTO_HERMES_HANDLEDISPUTE_INTERVAL` / `..._PREDISPUTE_INTERVAL` names are fallbacks only, and the
+  script defaults to 60 if none is readable. The cron schedule is static: it is `*/2 * * * *` to
+  match 120 s, so changing the variable alone does not change the tick — update the schedule too.
 - Claim tick `57805756dcc3` (`predispute_prod_claim_tick.sh` → `predispute_enrich_poll.py --prod`),
   gated worker `0128a604a0f5` (monitor `predispute_prod_queue_state.sh` → `idle` /
   `working:<job_id>` / `stuck:<job_id>`). Ops: `predispute_agent_ops.py --prod
@@ -103,6 +138,7 @@ Report shape and the validated example: `references/skills.md` §9.7. Payload li
   origin): it claims in-process, so the lease token never reaches a file, then researches,
   submits `/reports` and calls `/complete`. The enrichment tick deliberately does **not** claim
   identity — claiming there would strand the job on a 120-minute lease with no process holding
-  the token. Worst-case pickup for identity is 10 minutes; enrichment stays at 60 seconds.
+  the token. Worst-case pickup for identity is 10 minutes; enrichment follows the configured
+  120-second cadence (`*/2` on the claim tick and the gated enrichment worker).
 - Legacy staging pair `e3cc72366dd7` / `ff18d93e2d10` is **paused**; its key is not valid against
   the public API (401) — never resume it as-is.

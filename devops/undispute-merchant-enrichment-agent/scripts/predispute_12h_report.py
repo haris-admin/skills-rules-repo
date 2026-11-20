@@ -31,6 +31,7 @@ JOBS_FILE = pathlib.Path("/home/habib/.hermes/cron/jobs.json")
 ENV_FILE = pathlib.Path("/mnt/c/Users/habib/.hermes/.env")
 CLAIM_JOB = "57805756dcc3"      # PROD claim tick (the live lane)
 WORKER_JOB = "0128a604a0f5"     # PROD enrichment worker
+IDENTITY_JOB = "0318817b1783"   # PROD identity research worker (claim + report + complete)
 # The owner renamed PLUTO_HERMES_PREDISPUTE_* -> PLUTO_HERMES_HANDLEDISPUTE_*; accept both.
 KEY_VARS = ("HANDLEDISPUTE_AGENT_KEY",)
 BASE_VARS = ("PLUTO_HERMES_HANDLEDISPUTE_BASE_URL", "PLUTO_HERMES_PREDISPUTE_BASE_URL")
@@ -63,6 +64,26 @@ def health(origin: str) -> str:
         return "DOWN"
 
 
+INTERVAL_VARS = ("HERMES_POLL_INTERVAL_SECONDS", "PLUTO_HERMES_HANDLEDISPUTE_INTERVAL",
+                 "PLUTO_HERMES_PREDISPUTE_INTERVAL")
+
+
+def poll_interval() -> int:
+    """The poll cadence actually configured, canonical name first (default 60)."""
+    vals: dict[str, str] = {}
+    if ENV_FILE.exists():
+        for line in ENV_FILE.read_text(errors="replace").splitlines():
+            s = line.strip()
+            if s and not s.startswith("#") and "=" in s:
+                k, v = s.split("=", 1)
+                vals[k.strip()] = v.strip().strip('"').strip("'")
+    for k in INTERVAL_VARS:
+        v = vals.get(k, "")
+        if v.isdigit() and int(v) > 0:
+            return int(v)
+    return 60
+
+
 def env_settings() -> tuple[bool, str, bool]:
     """(key_present, base_url, insecure_optin) from the Hermes .env, accepting both
     the HANDLEDISPUTE and legacy PREDISPUTE spellings."""
@@ -89,7 +110,7 @@ def worker_states() -> dict[str, dict]:
         jobs = list(jobs.values()) if isinstance(jobs, dict) else jobs
         for j in jobs:
             jid = j.get("id")
-            if jid in (CLAIM_JOB, WORKER_JOB):
+            if jid in (CLAIM_JOB, WORKER_JOB, IDENTITY_JOB):
                 out[jid] = {
                     "enabled": bool(j.get("enabled")),
                     "state": j.get("state"),
@@ -129,7 +150,7 @@ def main() -> int:
     errors = {}
     try:
         con = sqlite3.connect(f"file:{EXEC_DB}?mode=ro", uri=True)
-        for jid in (CLAIM_JOB, WORKER_JOB):
+        for jid in (CLAIM_JOB, WORKER_JOB, IDENTITY_JOB):
             rows = con.execute("select finished_at, status, error from executions where job_id=? order by rowid desc limit ?", (jid, TICK_LIMIT)).fetchall()
             in_win = [r for r in rows if (t := ts_of(r[0])) and t >= cutoff]
             ticks[jid] = len(in_win)
@@ -209,7 +230,7 @@ def main() -> int:
         "☿ HandleDispute — 12h worker report (production lane)",
         f"   window: {win_from} → {win_to} AEST",
         f"   workers: {paused_note or 'state unknown'}",
-        f"   ticks: claim {ticks.get(CLAIM_JOB, '?')} · worker {ticks.get(WORKER_JOB, '?')}   (60s interval)",
+        f"   ticks: claim {ticks.get(CLAIM_JOB, '?')} · worker {ticks.get(WORKER_JOB, '?')}   ({poll_interval()}s interval)",
         f"   jobs: claimed {len(claimed)} · completed {len(completed)} · failed {len(failed)}"
         + (f" · heartbeats {len(heartbeats)}" if heartbeats else ""),
         f"   queue: {queue}",

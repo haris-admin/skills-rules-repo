@@ -75,7 +75,15 @@ BASE_VAR = "PLUTO_HERMES_PREDISPUTE_BASE_URL"
 # Single worker credential (owner, 2026-11-16): same value as AWS Secrets Manager.
 KEY_NAMES = ("HANDLEDISPUTE_AGENT_KEY",)
 PROD_BASE_DEFAULT = "https://api.handledispute.com.au"
-INTERVAL_VAR = "PLUTO_HERMES_PREDISPUTE_INTERVAL"
+# Canonical (owner, 20 Nov 2026): HERMES_POLL_INTERVAL_SECONDS in ~/.hermes/.env.
+# The earlier lane-specific names are still read as fallbacks so a rename never
+# silently reverts the loop to a wrong cadence.
+INTERVAL_VAR = "HERMES_POLL_INTERVAL_SECONDS"
+INTERVAL_ALIASES = (
+    "HERMES_POLL_INTERVAL_SECONDS",
+    "PLUTO_HERMES_HANDLEDISPUTE_INTERVAL",
+    "PLUTO_HERMES_PREDISPUTE_INTERVAL",
+)
 ALLOW_INSECURE_VAR = "PLUTO_HERMES_PREDISPUTE_ALLOW_INSECURE_LOCAL"
 
 # The owner renamed the lane variables PREDISPUTE -> HANDLEDISPUTE. The code below
@@ -175,9 +183,21 @@ def validate_config(env: dict[str, str]) -> tuple[str, str, int, str, bool]:
     """
     base = env.get(BASE_VAR, "")
     key_name, key = agent_key(env)
-    interval_raw = env.get(INTERVAL_VAR, "")
+    interval_raw = ""
+    for _name in INTERVAL_ALIASES:
+        if env.get(_name):
+            interval_raw = env[_name]
+            break
+    interval_name = INTERVAL_VAR if env.get(INTERVAL_VAR) else next(
+        (n for n in INTERVAL_ALIASES if env.get(n)), INTERVAL_VAR
+    )
+    if not interval_raw:
+        # A transient partial read of the Windows .env must not refuse a whole tick,
+        # and the contract's 60s cadence is the correct default.
+        interval_raw = "60"
+        interval_name = f"{INTERVAL_VAR} (default)"
 
-    missing = [n for n, v in ((BASE_VAR, base), (key_name, key), (INTERVAL_VAR, interval_raw)) if not v]
+    missing = [n for n, v in ((BASE_VAR, base), (key_name, key)) if not v]
     if missing:
         return "", "", 0, "missing required variable(s): " + ", ".join(missing), False
 
@@ -201,7 +221,7 @@ def validate_config(env: dict[str, str]) -> tuple[str, str, int, str, bool]:
     if not base.split("://", 1)[1].split("/", 1)[0]:
         return "", "", 0, f"{BASE_VAR} has no host", False
     if not interval_raw.isdigit() or int(interval_raw) <= 0:
-        return "", "", 0, f"{INTERVAL_VAR} must be a positive whole number of seconds", False
+        return "", "", 0, f"{interval_name} must be a positive whole number of seconds", False
     if any(ch.isspace() for ch in key):
         return "", "", 0, f"{key_name} must not contain whitespace", False
 
