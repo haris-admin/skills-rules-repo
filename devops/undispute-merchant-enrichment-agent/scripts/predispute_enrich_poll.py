@@ -62,10 +62,15 @@ STAGING_STATE_FILE = pathlib.Path("/home/habib/.hermes/cache/scratch/predispute_
 STAGING_LOG_FILE = pathlib.Path("/home/habib/.hermes/state/predispute_worker_log.jsonl")  # append-only, feeds the 12h report
 PROD_STATE_FILE = pathlib.Path("/home/habib/.hermes/cache/scratch/predispute_prod_worker_state.json")
 PROD_LOG_FILE = pathlib.Path("/home/habib/.hermes/state/predispute_prod_worker_log.jsonl")
+STAGING_IDENTITY_STATE_FILE = pathlib.Path("/home/habib/.hermes/cache/scratch/predispute_identity_state.json")
+PROD_IDENTITY_STATE_FILE = pathlib.Path("/home/habib/.hermes/cache/scratch/predispute_prod_identity_state.json")
 STATE_FILE = STAGING_STATE_FILE
+IDENTITY_STATE_FILE = STAGING_IDENTITY_STATE_FILE
 LOG_FILE = STAGING_LOG_FILE
 
 CLAIM_PATH = "/api/v1/agent/merchant-enrichment/claim"
+# Version 2.2 (OpenSpec 84f): both lanes are polled every cycle, identity after enrichment.
+IDENTITY_CLAIM_PATH = "/api/v1/agent/identity-research/claim"
 BASE_VAR = "PLUTO_HERMES_PREDISPUTE_BASE_URL"
 # Single worker credential (owner, 2026-11-16): same value as AWS Secrets Manager.
 KEY_NAMES = ("HANDLEDISPUTE_AGENT_KEY",)
@@ -336,10 +341,11 @@ def apply_lane(lane: str) -> None:
     activity log in separate files, so the two lanes can never share a lease or
     be mistaken for each other in a report.
     """
-    global STATE_FILE, LOG_FILE, BASE_VAR, KEY_NAMES, ALLOW_INSECURE_VAR
+    global STATE_FILE, IDENTITY_STATE_FILE, LOG_FILE, BASE_VAR, KEY_NAMES, ALLOW_INSECURE_VAR
     if lane != "prod":
         return
     STATE_FILE = PROD_STATE_FILE
+    IDENTITY_STATE_FILE = PROD_IDENTITY_STATE_FILE
     LOG_FILE = PROD_LOG_FILE
     BASE_VAR = "PLUTO_HERMES_PREDISPUTE_PROD_BASE_URL"
     KEY_NAMES = ("HANDLEDISPUTE_AGENT_KEY",)
@@ -389,52 +395,99 @@ def main() -> int:
         if not quiet:
             print(f"Pluto Hermes: WARNING insecure non-prod override active ({ALLOW_INSECURE_VAR}=1, private origin http://{host_of(base)})")
 
-    held = open_claim()
+    def _live_state(state_path: pathlib.Path) -> dict | None:
+        """A state file is 'held' only while its lease is still in the future."""
+        try:
+            if not state_path.exists():
+                return None
+            rec = json.loads(state_path.read_text())
+        except Exception:
+            return None
+        exp = rec.get("lease_expires_at")
+        if not exp:
+            return rec
+        try:
+            if datetime.fromisoformat(str(exp).replace("Z", "+00:00")) <= datetime.now(timezone.utc):
+                return None
+        except ValueError:
+            pass
+        return rec
+
+    # One job at a time across both lanes (version 2.2 rule), so a live lease on
+    # either lane means this cycle claims nothing.
+    held = open_claim() or _live_state(IDENTITY_STATE_FILE)
     if held and not force:
-        emit({"status": "busy", "job_id": held.get("job", {}).get("job_id"), "claimed_at": held.get("claimed_at")})
+        emit({"status": "busy", "lane": held.get("lane"), "job_id": held.get("job", {}).get("job_id"), "claimed_at": held.get("claimed_at")})
         return 0
 
-    worker_run_id = "mercury-predispute-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:8]
-    status, body = post(base + CLAIM_PATH, {"worker_run_id": worker_run_id}, {"X-Hermes-Agent-Key": key})
+    # Identity is polled by its own worker (`* * * * *` gate -> claim in-process), not
+    # here: the owner contract forbids writing the lease token to any file, so the
+    # identity claim and the research must happen in one process. Claiming it here
+    # would strand the job on a 120-minute lease with no worker holding the token.
+    lanes = (
+        ("enrichment", CLAIM_PATH, STATE_FILE),
+    )
+    failures = 0
+    for lane_name, claim_path, state_path in lanes:
+        # An empty enrichment lane never ends the cycle: the identity lane is still polled (84f).
+        worker_run_id = "mercury-predispute-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:8]
+        status, body = post(base + claim_path, {"worker_run_id": worker_run_id}, {"X-Hermes-Agent-Key": key})
 
-    if status == 204:
-        if quiet:
-            emit({"status": "no_work"})
+        if status == 204:
+            continue                                            # no work on this lane; silent, no log churn
+        if status != 200:
+            # 401 / 409 / 422 / 5xx / transport: report the category and try the other lane.
+            category = classify(status)
+            failures += 1
+            log_event("claim_failed", lane=lane_name, category=category, http_status=status, backend_base=base, run_id=worker_run_id)
+            if quiet:
+                emit({"status": "claim_failed", "lane": lane_name, "http_status": status, "category": category, "backend_base": base, "worker_run_id": worker_run_id}, always=True)
+            else:
+                print(f"Pluto Hermes: {lane_name} claim failed; category={category}; run_id={worker_run_id}")
+            continue
+
+        job = json.loads(body)
+        if lane_name == "identity":
+            acma_base, acma_ok = "", False
+            note = "identity job: 120-minute lease, no heartbeat; submit the report before /complete"
         else:
-            print(EMPTY_QUEUE_LOG)
-        return 0
-    if status != 200:
-        # 401 / 409 / 422 / 5xx / transport: report the category and stop.
-        # Never research or complete on a bad claim; never retry inside the cycle.
-        category = classify(status)
-        log_event("claim_failed", category=category, http_status=status, backend_base=base, run_id=worker_run_id)
-        if quiet:
-            emit({"status": "claim_failed", "http_status": status, "category": category, "backend_base": base, "worker_run_id": worker_run_id}, always=True)
-        else:
-            print(f"Pluto Hermes: claim failed; category={category}; run_id={worker_run_id}")
-        return 0
+            acma_base, acma_ok = resolve_acma_base(env)
+            note = "submit acma_expires_at as null; heartbeat every ~4 min (lease = 10 min)"
+        now = datetime.now(timezone.utc)
+        record = {
+            "status": "job_claimed",
+            "lane": lane_name,
+            "claimed_at": now.isoformat(),
+            "last_heartbeat_at": now.isoformat(),
+            "lease_expires_at": job.get("lease_expires_at"),
+            "backend_base": base,
+            "worker_run_id": worker_run_id,
+            "key_name": KEY_NAMES[0],
+            "job": job,
+            "acma_base_usable": acma_base,
+            "acma_reachable_from_wsl": acma_ok,
+            "note": note,
+        }
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        state_path.write_text(json.dumps(record, indent=2))
+        log_event("claimed", lane=lane_name, job_id=job.get("job_id"), merchant_name=job.get("merchant_name"), business_name=job.get("business_name"), abn=job.get("abn"), origin_case_id=job.get("origin_case_id"), worker_run_id=worker_run_id)
+        emit({
+            "status": "job_claimed",
+            "lane": lane_name,
+            "job_id": job.get("job_id"),
+            "business_name": job.get("business_name"),
+            "merchant_name": job.get("merchant_name"),
+            "abn": job.get("abn"),
+            "origin_case_id": job.get("origin_case_id"),
+            "worker_run_id": worker_run_id,
+            "lease_expires_at": job.get("lease_expires_at"),
+            "state_file": str(state_path),
+        }, always=True)
+        return 10
 
-    job = json.loads(body)
-    acma_base, acma_ok = resolve_acma_base(env)
-    now = datetime.now(timezone.utc)
-    record = {
-        "status": "job_claimed",
-        "claimed_at": now.isoformat(),
-        "last_heartbeat_at": now.isoformat(),
-        "lease_expires_at": job.get("lease_expires_at"),
-        "backend_base": base,
-        "worker_run_id": worker_run_id,
-        "key_name": KEY_NAMES[0],
-        "job": job,
-        "acma_base_usable": acma_base,
-        "acma_reachable_from_wsl": acma_ok,
-        "note": "submit acma_expires_at as null; heartbeat every ~4 min (lease = 10 min)",
-    }
-    STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    STATE_FILE.write_text(json.dumps(record, indent=2))
-    log_event("claimed", job_id=job.get("job_id"), merchant_name=job.get("merchant_name"), abn=job.get("abn"), origin_case_id=job.get("origin_case_id"), worker_run_id=worker_run_id)
-    emit({"status": "job_claimed", "job_id": job.get("job_id"), "merchant_name": job.get("merchant_name"), "abn": job.get("abn"), "origin_case_id": job.get("origin_case_id"), "worker_run_id": worker_run_id, "lease_expires_at": job.get("lease_expires_at"), "state_file": str(STATE_FILE)}, always=True)
-    return 10
+    if not failures and not quiet:
+        print(EMPTY_QUEUE_LOG)
+    return 0
 
 
 if __name__ == "__main__":

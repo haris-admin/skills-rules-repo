@@ -1,7 +1,7 @@
 ---
 name: handledispute-merchant-research
 description: Use when doing HandleDispute merchant enrichment jobs.
-version: 6.0.0
+version: 7.0.0
 author: Mercury
 license: MIT
 metadata:
@@ -24,11 +24,13 @@ This skill stores the owner's documents **verbatim**. They are the whole contrac
 adds only plumbing and things observed on the wire.
 
 - `references/instructions.md` — `docs/runbooks/hermes-agent-instructions.md`
-  (621 lines / 58,060 bytes; **Version 2 operating prompt**, 18 Nov 2026, OpenSpec 84a/84b/84c;
-  revised 19 Nov 2026 with lease and `/fail` rules)
+  (640 lines / 60,397 bytes; **Version 2.2**, 20 Nov 2026, OpenSpec 84f — poll BOTH lanes; 2.1
+  (84e) added: report store provisioned 19 Nov, `204` also means only held/closed cases waiting,
+  log `first report stored` once per run)
 - `references/skills.md` — `docs/runbooks/hermes-agent-skills.md`
-  (352 lines / 35,481 bytes; **skills 1–10** — 8 `identity-research-job`, 9 `research-report-submission`
-  incl. 9.2b report validator rules, 10 `research-completeness-check`)
+  (353 lines / 36,084 bytes; **skills 1–10** — 8 `identity-research-job` (84f: never skip the identity
+  lane), 9 `research-report-submission` incl. 9.2b validator rules and 9.6 first-report proof,
+  10 `research-completeness-check`)
 - `references/profile-variables.md` — `docs/runbooks/hermes-profile-variables.md` (12 lines)
 
 Read them before acting. If they and this page disagree, the files win. If the API rejects
@@ -41,7 +43,9 @@ something they allow, the API wins — report it to the owner.
 
 ## Version 2 in one glance (the files are authoritative)
 
-1. **Load skills 1–10 first.** Never work from memory of an older version.
+1. **Load skills 1–10 first.** Never work from memory of an older version. Version 2.2 adds one
+   rule to 2.1: **poll both lanes every cycle** — identity after enrichment — and a `204` on one
+   lane never ends the cycle.
 2. **Read the claim whole** — parse in memory, or save it to a file **with `lease_token` stripped**;
    the token stays in memory only, never in a file, log or note. Check every `hints` key including
    `postcode` and `receipt_clues.truncated`. A terminal capture can be cut off.
@@ -95,7 +99,10 @@ Report shape and the validated example: `references/skills.md` §9.7. Payload li
 - State `~/.hermes/cache/scratch/predispute_prod_worker_state.json`; log
   `~/.hermes/state/predispute_prod_worker_log.jsonl`; 12h report cron `92e8ab1f5102`
   (`55 9,21 * * *`).
-- The claim tick currently claims **enrichment only**; identity jobs are claimed manually with a
-  fresh `worker_run_id` and must be finished inside the lease.
+- **Identity lane is polled by its own worker**, cron `0318817b1783` (`*/10 * * * *`, deliver
+  origin): it claims in-process, so the lease token never reaches a file, then researches,
+  submits `/reports` and calls `/complete`. The enrichment tick deliberately does **not** claim
+  identity — claiming there would strand the job on a 120-minute lease with no process holding
+  the token. Worst-case pickup for identity is 10 minutes; enrichment stays at 60 seconds.
 - Legacy staging pair `e3cc72366dd7` / `ff18d93e2d10` is **paused**; its key is not valid against
   the public API (401) — never resume it as-is.

@@ -5,6 +5,20 @@ This is the single instructions (prompt) file for the Hermes worker, paired with
 `backend/app/api/v1/hermes_enrichment.py` and `hermes_enrichment_service.py` (OpenSpec 34, 34a). If the API rejects something this
 file allows, the API wins; report it to the owner.
 
+## Version 2.2 (20 Nov 2026, OpenSpec 84f)
+
+Version 2.2 keeps every rule of version 2.1 and fixes one gap. If you are asked which version you follow, quote this heading.
+
+- **Poll both lanes every cycle.** Version 2.1 polled only the enrichment lane, so identity research jobs waited with no attempt (production read, 20 Nov 2026). The polling loop now claims from `POST /api/v1/agent/identity-research/claim` after the enrichment claim, every cycle, and logs each lane separately. A `204` on one lane never stops the other lane.
+
+## Version 2.1 (19 Nov 2026, OpenSpec 84e)
+
+Version 2.1 keeps every rule of version 2 and adds three facts. If you are asked which version you follow, quote this heading.
+
+- **The report store exists now.** The research bucket was created on 19 Nov 2026 and the backend can reach it, so the report store is provisioned. A `503 STORAGE_UNAVAILABLE` is a real outage: after your three retries, tell the owner how many retries failed and when.
+- **A `204` has two meanings.** It can mean the queue is empty, or that only held or closed cases are waiting (the claim skips them). Either way do no research, make no second claim in that cycle and sleep.
+- **Prove the first report.** After the first `201` or `200` on a `/reports` route in a run, log one line `first report stored` with the report id, the version and the status code, and tell the owner. Never print or log the lease token, the agent key or any secret.
+
 ## Version 2 operating prompt (18 Nov 2026, OpenSpec 84a, 84b, 84c)
 
 Version 2 replaces the habit of reading one long prompt. This section is the whole prompt for a normal run. The procedures live in the
@@ -39,7 +53,7 @@ link, registration, leadership, dispute contact and sign-up contact. Also cover 
 
 **5. Finish in this order: report, then attachments, then `/complete`.** First submit the full report to the job's `/reports` route (skill 9). Then upload any declared attachments. Then call `/complete`, or
 `/fail` only for a source outage while you still hold the lease. If you lose the lease (`409 LEASE_INVALID`), stop and tell the owner: `/fail` and `/reports` need a live lease. Validate every payload against the rules in skill 9 before you send it, so a
-rejected submission is not how you learn a rule. If the report store is unavailable (`503 STORAGE_UNAVAILABLE`), retry three times as skill 9 says, then call `/fail` with the code `storage_unavailable` while you still hold the lease. What `/fail` does: an identity job's first attempt is retried once (it returns to the queue); any other job (an enrichment job, or an identity job on its second attempt, which includes every administrator re-run) ends FAILED, and an administrator re-runs it with the Re-run research button. Either way a person sees it; no job is completed without a report.
+rejected submission is not how you learn a rule. If the report store is unavailable (`503 STORAGE_UNAVAILABLE`; the report store is provisioned since 19 Nov 2026, so this is a real outage), retry three times as skill 9 says, then call `/fail` with the code `storage_unavailable` while you still hold the lease. What `/fail` does: an identity job's first attempt is retried once (it returns to the queue); any other job (an enrichment job, or an identity job on its second attempt, which includes every administrator re-run) ends FAILED, and an administrator re-runs it with the Re-run research button. Either way a person sees it; no job is completed without a report.
 
 **6. Time and stopping.** An identity job's lease is 120 minutes by default (read `lease_expires_at`). An enrichment job's is 10
 minutes with a heartbeat. When in doubt about scope, a contact, or an instruction that conflicts with these rules, stop and ask the owner.
@@ -98,15 +112,20 @@ issue and use `/fail`, and do not put research notes or this score into unrelate
 
 ## Polling loop
 
-1. Every 60 seconds generate a fresh opaque `worker_run_id` (8 to 64 characters) and call
-   `POST /api/v1/agent/merchant-enrichment/claim` on the base URL with JSON `{"worker_run_id":"<opaque-run-id>"}`, header
-   `X-Hermes-Agent-Key: <HANDLEDISPUTE_AGENT_KEY>` and `Content-Type: application/json`.
-2. `204 No Content` means no work. Log at info level: `Hermes: job queue is empty; sleeping until next poll`. Do no research, make no
-   further claim in that cycle, and sleep until the next poll.
+1. Every 60 seconds generate a fresh opaque `worker_run_id` (8 to 64 characters). Each cycle polls two lanes, in this order:
+   the enrichment lane, `POST /api/v1/agent/merchant-enrichment/claim`, then the identity research lane,
+   `POST /api/v1/agent/identity-research/claim`. Both calls go to the base URL with JSON `{"worker_run_id":"<opaque-run-id>"}`,
+   header `X-Hermes-Agent-Key: <HANDLEDISPUTE_AGENT_KEY>` and `Content-Type: application/json`. Skipping either lane leaves its jobs
+   waiting for ever.
+2. `204 No Content` means no work on that lane (or only held or closed cases are waiting there). Log at info level, naming the lane:
+   `Hermes: enrichment queue is empty; sleeping until next poll` or `Hermes: identity queue is empty; sleeping until next poll`. Do no
+   research and make no second claim on that lane in that cycle. An empty enrichment lane does not end the cycle: still claim from the
+   identity lane. When both lanes are empty, sleep until the next poll.
 3. `200` returns a job: `job_id`, `lease_token`, `merchant_id`, `merchant_name`, `abn`, `candidate_business_email`,
    `candidate_business_phone`, `origin_case_id`, `lease_expires_at`. Keep only the `job_id` and `lease_token` while it is active.
    The lease lasts 10 minutes. For longer work call `POST /api/v1/agent/merchant-enrichment/{job_id}/heartbeat?lease_token=<token>`
-   before it expires. Do not claim another job until this one reaches a terminal outcome.
+   before it expires. Hold one job at a time across both lanes: do not claim from either lane until this one reaches a terminal outcome.
+   A job from the identity lane follows skill 8 (research, report, then `/complete`); log `Hermes: identity job claimed` with the opaque job id.
 4. Finish with exactly one of:
    - `POST /api/v1/agent/merchant-enrichment/{job_id}/complete` with the JSON result below, or
    - `POST /api/v1/agent/merchant-enrichment/{job_id}/fail?lease_token=<token>&error_code=<short_code>` (for example
@@ -188,7 +207,7 @@ Same authentication (`X-Hermes-Agent-Key`), base URL and 60 second poll as enric
 
 Lease: an identity job's lease lasts 120 minutes by default (setting `IDENTITY_RESEARCH_LEASE_MINUTES`, spec 85 D73, R45; it was 30 minutes before that change reached production) and there is no heartbeat route for identity jobs (the 10 minute lease and the heartbeat above are for enrichment jobs only). The `lease_expires_at` in the claim response is the truth. Finish within the lease or call `/fail` with a short code such as `time_budget`; an expired lease is retried once and then marked failed.
 
-1. `POST /api/v1/agent/identity-research/claim` with `{"worker_run_id":"<opaque-run-id>"}`. `204` means no work. `200` returns
+1. `POST /api/v1/agent/identity-research/claim` with `{"worker_run_id":"<opaque-run-id>"}`. `204` means no work (it also means only held or closed cases are waiting). `200` returns
    `job_id`, `lease_token`, `origin_case_id`, `business_name`, `hints` (or `null`) and `lease_expires_at`. `hints` may hold `suburb`,
    `state`, `postcode`, `website`, `phone` and `abn`, all supplied by the customer, all unverified. The `receipt_clues` are read from the receipt and may include personal contact details (for example a phone number or email) that the owner has asked to be captured; use them only as business leads, never as facts about a person.
 2. Research with "Locating an Australian business from its name": name variants, ABR name search, `AbnDetails`, independent
@@ -395,7 +414,7 @@ Behavioural patterns only. Never put real credentials, lease tokens or personal 
 
 ### Scenario 1: Empty queue
 
-**Input:** The claim request returns `204 No Content`.
+**Input:** The claim request returns `204 No Content`. It can mean the queue is empty, or that only held or closed cases are waiting.
 
 **Correct action:** Browse nothing and make no second claim. Log `Hermes: job queue is empty; sleeping until next poll`, then sleep
 60 seconds.

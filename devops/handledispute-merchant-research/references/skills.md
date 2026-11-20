@@ -180,7 +180,7 @@ does not make the merchant action-ready for automated outreach.
 
 1. **Startup check:** Confirm `HANDLEDISPUTE_AGENT_KEY` is set and base URL is `https://api.handledispute.com.au`. Refuse to start otherwise.
 2. **Claim:** Every 60s, generate `worker_run_id` (8–64 chars) and `POST /api/v1/agent/merchant-enrichment/claim` with `X-Hermes-Agent-Key`.
-   - `204 No Content` → log `Hermes: job queue is empty; sleeping until next poll` and sleep 60s.
+   - `204 No Content` → no work, or only held or closed cases are waiting (the claim skips them). Log `Hermes: job queue is empty; sleeping until next poll` and sleep 60s.
    - `401` → stop and alert operator.
 3. **Lease management:** Hold one job at a time (10-minute lease). Call `POST /api/v1/agent/merchant-enrichment/{job_id}/heartbeat?lease_token=<token>` before expiry if Skills 1–6 take longer.
 4. **Push result back:**
@@ -198,7 +198,7 @@ live setting and recipient have not been independently verified. Hermes never se
 **When to use:** For a business the backend could not identify at intake (no merchant yet). It is a separate queue from the enrichment jobs and has its own routes; the enrichment routes are unchanged.
 
 **Procedure:**
-1. Poll `POST /api/v1/agent/identity-research/claim` with `{"worker_run_id": "<8 to 64 characters>"}` after the enrichment claim. `204` means no work. `200` returns `job_id`, `lease_token`, `origin_case_id`, `business_name`, `hints` and `lease_expires_at` (skill 9.1 says how to read it).
+1. Poll `POST /api/v1/agent/identity-research/claim` with `{"worker_run_id": "<8 to 64 characters>"}` in the same cycle, right after the enrichment claim (84f: never skip this lane). `204` means no work (it also means only held or closed cases are waiting). `200` returns `job_id`, `lease_token`, `origin_case_id`, `business_name`, `hints` and `lease_expires_at` (skill 9.1 says how to read it).
 2. Research with skills 1 to 4 and 10. Treat `hints` as leads, never facts.
 3. Submit the full report (skill 9), then finish with `/complete`. The outcome is one of `MATCHED`, `AMBIGUOUS`, `NOT_FOUND` or `OVERSEAS_ONLY`, sent through `/complete` with up to five candidates; the backend never links a merchant from it.
 4. The lease is 120 minutes by default and there is no heartbeat route for identity jobs. Read `lease_expires_at`.
@@ -266,7 +266,8 @@ For an identity job the `/complete` body has no contact field. Put every dispute
 1. `POST /api/v1/agent/identity-research/{job_id}/reports` (enrichment: `/api/v1/agent/merchant-enrichment/{job_id}/reports`) with `{"lease_token": "<from claim>", "idempotency_key": "<16 to 128 characters, new for this run, reused only to repeat the same body>", "report": <the report>}` and the `X-Hermes-Agent-Key` header. The report has `schema_version` `"1"` and `research_mode` `"claimed_job"`. `201` or `200` means stored. Read `readiness`: `STORED_AWAITING_ATTACHMENTS` means upload the files you declared first.
 2. Upload each declared attachment (multipart, route in the contract), only public pages or documents you fetched, never customer files.
 3. Then `/complete` (or `/fail` for a source outage while you still hold the lease). Order: report, attachments, completion. If you lost the lease, stop and tell the owner: `/fail` and `/reports` both need a live lease.
-4. Errors: `422 REPORT_INVALID` carries `findings` with the rule and field (never your text): fix and resubmit with a new `idempotency_key`. `409 LEASE_INVALID`: stop, do not retry, tell the owner. `503 STORAGE_UNAVAILABLE`: retry up to three times 30 seconds apart and then call `/fail` with the code `storage_unavailable` while you still hold the lease (owner decision D6 of 84c). What `/fail` does: an identity job's first attempt is retried once (it returns to the queue); any other job (an enrichment job, or an identity job on its second attempt, which includes every administrator re-run) ends FAILED and an administrator re-runs it with the Re-run research button. Either way a person sees it and no job is completed without a report. Never call `/complete` after a failed report submission, and never claim the report was stored unless you got `201` or `200`.
+4. Errors: `422 REPORT_INVALID` carries `findings` with the rule and field (never your text): fix and resubmit with a new `idempotency_key`. `409 LEASE_INVALID`: stop, do not retry, tell the owner. `503 STORAGE_UNAVAILABLE` (the report store is provisioned since 19 Nov 2026, so a repeated 503 is a real outage; tell the owner how many retries failed): retry up to three times 30 seconds apart and then call `/fail` with the code `storage_unavailable` while you still hold the lease (owner decision D6 of 84c). What `/fail` does: an identity job's first attempt is retried once (it returns to the queue); any other job (an enrichment job, or an identity job on its second attempt, which includes every administrator re-run) ends FAILED and an administrator re-runs it with the Re-run research button. Either way a person sees it and no job is completed without a report. Never call `/complete` after a failed report submission, and never claim the report was stored unless you got `201` or `200`.
+5. First report proof (version 2.1): after the first `201` or `200` on a `/reports` route in a run, log one line `first report stored` with the report id, the version and the status code, and tell the owner. Log it once per run. Never print or log the lease token, the agent key or any secret.
 
 ### 9.7 Worked example (invented business, validated by a test against the backend validator)
 
