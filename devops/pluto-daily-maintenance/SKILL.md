@@ -410,7 +410,8 @@ When you see `last_status: error` on a cron, classify before escalating:
   the script still stops cleanly and produces no report, and the blocker is still the lane's drift, which
   only the owner's A/B/C choice clears. Classify as the standing owner-decision block — do NOT open it
   as a new fault — but note `.version` is exactly the file a long-diverged branch collides on first, so
-  this is the expected shape of the same unresolved decision, not a worsening. Any future content run must also use the current bundle path `assets/YYYY-MM-DD-<slug>/`, not
+  this is the expected shape of the same unresolved decision, not a worsening. **2026-11-20: yet another
+  surface — `Status: 🔴 BLOCKED — codex_pr worktree unavailable` (same owner-decision block).** Any future content run must also use the current bundle path `assets/YYYY-MM-DD-<slug>/`, not
   `assets/blog-migration/<slug>/` (dev moved it 21 Sep). Detail: `environment.md` → "codex_pr IS NO LONGER
   A CONTENT LANE" + the 2026-10-06 status append.
 - **A paused job's stale `last_status: error` is NOT a current failure — read `enabled` before classifying.**
@@ -606,6 +607,12 @@ When you see `last_status: error` on a cron, classify before escalating:
   `--durations` probe is mandatory Saturday work; no daily tick may cut the 5400 s ceiling. E2E sits at
   7-8 failures for 3 consecutive runs under the SAME inline-`marginTop` hydration diagnosis — one
   unresolved bug: watch for a NAMED non-whitelisted test rather than re-reporting the count.
+  **2026-11-21 (day 46) — the timeout streak CLOSED with no intervention**: backend completed
+  `9683 passed, 45 failed (3698.7 s)` with `⚪ 35/45` gaps + `🔴 10 genuine`, OVERALL `10016 passed /
+  52 failed / 3 errors`. A leg that finishes under its ceiling after a timeout streak is the streak
+  ENDING — re-derive from that run's own output and never carry the timeout forward as live. The leg is
+  still at ~68 % of the 5400 s ceiling, so the Saturday `--durations` probe stays open; a resumed
+  timeout is a NEW occurrence.
 - **`SSM: Error response from daemon: No such container: amlhive-app-1` on `3ebed4e59ee3` (AML Hive Daily
   Business Report, 21:15) — a CONTAINER RENAME, and production is uniformly HEALTHY. Class this as a
   script fault, NOT a prod outage.** Seen 2026-10-26 21:15, the first report after the 0.50.185 deploy:
