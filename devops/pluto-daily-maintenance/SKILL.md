@@ -162,7 +162,7 @@ treat that marker as BLOCKED, never as a pass (the suite then ran on UNMERGED `p
 ### Task 4: Script Validation
 1. Check Python syntax of recently modified scripts: `python3 -m py_compile <script>`
 2. **`py_compile` is NOT proof for a script you just patched.** A newly referenced constant, helper, or import alias that was never defined compiles clean and dies with `NameError` at its next scheduled fire — with no test run in between. Before the schedule fires, (a) run a name-resolution check (AST pass: names loaded at module scope that are neither module-level definitions nor builtins), (b) run ONE live invocation and read its stdout for the expected counts, and (c) for collectors/drains, run it twice and confirm the second run reports "no changes" (idempotency) — a pipeline that double-writes or re-prunes on every run corrupts its own output.
-3. Verify all script paths referenced in cron jobs exist on disk (prepend `~/.hermes/scripts/` — the `script` field is basename-only)
+3. Verify all script paths referenced in cron jobs exist on disk (prepend `~/.hermes/scripts/` — the `script` field is basename-only). **A basename miss on an `enabled: false` job is usually a RETIREMENT, not a break: retired scripts are moved to `~/.hermes/scripts/retired/` while the job record keeps the old basename** (seen 2026-11-22, `a0b1f0f642af` → `retired/pluto_fleet_monitor.py`, superseded by `4f4dc2487b98` 05:00 + `6728be78d1bf` 11:00).`daily_cron_audit.py` already prints these as `retired/disabled, informational` — do not report them as missing scripts.
 4. Report broken scripts immediately
 5. **Hardcoded-credential sweep — and the two-party handshake that follows.** Grep the fleet scripts
    for literal secret assignments by SHAPE (never print the value; report `file:line` only). When you
@@ -610,7 +610,8 @@ When you see `last_status: error` on a cron, classify before escalating:
   **2026-11-21 (day 46) — the timeout streak CLOSED with no intervention**: backend completed
   `9683 passed, 45 failed (3698.7 s)` with `⚪ 35/45` gaps + `🔴 10 genuine`, OVERALL `10016 passed /
   52 failed / 3 errors`. A leg that finishes under its ceiling after a timeout streak is the streak
-  ENDING — re-derive from that run's own output and never carry the timeout forward as live. The leg is
+  ENDING — re-derive from that run's own output and never carry the timeout forward as live. **11-22 identical
+  (9683/45, ⚪35, 🔴10, 10016/52/3) — flat band, not an escalation.** The leg is
   still at ~68 % of the 5400 s ceiling, so the Saturday `--durations` probe stays open; a resumed
   timeout is a NEW occurrence.
 - **`SSM: Error response from daemon: No such container: amlhive-app-1` on `3ebed4e59ee3` (AML Hive Daily
