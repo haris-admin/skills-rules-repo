@@ -91,3 +91,13 @@ implementer being clever, remembering the project, or guessing intent.
 - [ ] A cold-start test by a small model passed twice, with no unsure items.
 - [ ] Decisions are recorded verbatim, with the question and the selected option.
 - [ ] State is Todo, labels `agent-ready` and one tier label are set, and the comment records the evidence.
+
+## Lessons from four cold-start checks (HandleDispute, 23 Nov 2026)
+
+- A cold-start reader finds real defects: an edit whose BEFORE block stops one line early (it would delete the lines after it), pytest ids that do not exist (parametrised timedelta ids are `delta0`, not the value), a cited file that does not exist, a contradiction between "one line only" and the lines the edit adds, and a log path that breaks the session's scratchpad rule. Fix each and repeat the check on the changed text.
+- Copy BEFORE blocks from the real file in the worktree, never from memory, and keep the line that follows the block.
+- A ticket that is second or third in a sequence has a preflight that stops until the earlier commit exists. That is intended; say so in one sentence so the reader does not count it as a defect.
+- If a probe settles a doubt (does the shell run the EXIT trap on SIGTERM), run the probe and write the result in the ticket instead of leaving a question.
+- State whether the test folder touches the shared database, with the file and line as evidence.
+- Move the state with a script that changes only the named tickets; do not use a tracker that also writes comments on other tickets.
+
