@@ -25,6 +25,11 @@ Read-only. No restarts, deploys, alarm changes or writes. Every `aws` command ca
 2. **Endpoints with timings.** `curl -s -o /dev/null -w '%{http_code} %{time_total}s\n' <url>` for the
    health, readiness and main public routes. Use the readiness endpoint for dependency health; a
    dependency-free health endpoint stays green through a database outage.
+2a. **Log archive freshness (Tap-Ease, added 21 Nov 2026).** List the last 10 UTC day prefixes of the archive bucket
+   (`aws s3 ls s3://<bucket>/<prefix>/<YYYYMMDD>/ --human-readable`, one call per day) and read the upload time next to each
+   file, not only the folder date. Several days sharing one upload time means batch uploads at deploy, not a daily job.
+   Expect yesterday's file by the checker's hour. `aws s3 ls` prints local time; `s3api list-objects-v2` prints UTC. A missing
+   day is a finding even when CloudWatch is healthy (CloudWatch is a second copy, not the archive).
 3. **Canaries.** `aws synthetics describe-canaries` and `get-canary-runs`: state, last result and age.
    A canary that never started is a finding.
 4. **Logs Insights, not `filter-log-events`.** For any window over a few hours use
@@ -43,6 +48,15 @@ Read-only. No restarts, deploys, alarm changes or writes. Every `aws` command ca
    writing "none surfaced".
 7. **Report.** One table: area, check, command, real result, status (OK, finding, unknown). State what
    was not checked. Log findings through the issue process; do not fix inside the review.
+
+## Shell gotchas seen in practice (21 Nov 2026)
+
+- In zsh an unquoted variable holding `--profile x --region y` is not word-split, so `aws $A ...` fails with "Unknown options".
+  Write the flags out, use a bash script (`#!/bin/bash`), or an array.
+- A Logs Insights helper that prints "expected one argument" for `--query-id` means `start-query` failed and returned nothing;
+  run `start-query` once by hand and read its error before looping. Use `--output json` and parse with Python
+  (`json.loads(text, strict=False)`) instead of JMESPath for result rows.
+- Run a long multi-query script with `timeout` below the tool limit so it does not move to the background half-finished.
 
 ## Never
 

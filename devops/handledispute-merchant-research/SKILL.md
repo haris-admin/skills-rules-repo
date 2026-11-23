@@ -1,7 +1,7 @@
 ---
 name: handledispute-merchant-research
 description: Use when doing HandleDispute merchant enrichment jobs.
-version: 4.0.0
+version: 5.1.0
 author: Mercury
 license: MIT
 metadata:
@@ -17,13 +17,17 @@ metadata:
 Load before any HandleDispute agent work: claiming or completing an enrichment job, an
 identity research job, or producing an identity lookup report for the owner.
 
+## Version 2 (18 Nov 2026): skills first
+
+The prompt's "Version 2 operating prompt" section is the whole prompt for a normal run. It tells you to load this skill and use skills 1 to 10 for every step. Skill 9 (`research-report-submission`) holds the claim handling, the `422` payload rules, the report body and the submit order (report, attachments, then `/complete`). Skill 10 (`research-completeness-check`) is the check you run before you finish: any area still empty is work to go back and do, not something to leave blank.
+
 ## The instructions ARE the stored files
 
 This skill stores the owner's two documents **verbatim**. They are the whole contract; this
 page does not restate, summarise or extend them.
 
-- `references/instructions.md` — `docs/runbooks/hermes-agent-instructions.md` (580 lines)
-- `references/skills.md` — `docs/runbooks/hermes-agent-skills.md` (201 lines, skills 1–8)
+- `references/instructions.md` — `docs/runbooks/hermes-agent-instructions.md` (621 lines, version 2 of 18 Nov 2026)
+- `references/skills.md` — `docs/runbooks/hermes-agent-skills.md` (352 lines, skills 1–10)
 - `references/profile-variables.md` — `docs/runbooks/hermes-profile-variables.md` (12 lines)
 
 ⚠️ **Credential (owner decision, 2026-11-16):** the single worker credential is
