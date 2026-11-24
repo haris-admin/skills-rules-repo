@@ -211,7 +211,7 @@ When you see `last_status: error` on a cron, classify before escalating:
 - **The podcast leg is RED by design: `cc76c11d35d2` (Capture Watchdog 06:25) and the chain's `verify`
   row.** ~63% of the corpus has no readable transcript (YouTube IP block; 63.2% / 1,657 episodes on
   2026-11-09 and rising as the corpus grows faster than transcripts resolve), so the watchdog tripping is
-  the designed signal, not a regression — the corpus grows faster than transcripts resolve. **The chain is
+  the designed signal, not a regression. **`63.5% unreachable by learning` is a REACH metric, not a loss rate** — the loss number comes from the integrity sweep, which no cron runs; the audit now prints `UNKNOWN` or a swept-denominator instead of a fake `0 (0.0%)` (fixed 2026-11-23 — see `podcast-knowledge-base` → "Capture-chain integrity"). **The chain is
   judged by the ONE 09:00 assertion job `7e4a2379157d`**, whose other rows (`ingest/chunk/export/
   alexandria/contract/palace/feed`) carry the real status. A `verify` leg reporting `locked=N error=1`
   (2026-10-04: 4 locked / 7 needs_human / 1 error) is a **single-episode** maker/checker failure — either

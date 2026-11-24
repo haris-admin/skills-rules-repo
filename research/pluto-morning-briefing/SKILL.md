@@ -244,7 +244,7 @@ Rules:
 - If genuinely nothing new was learned, say so honestly.
 - Never fabricate observations to fill the 5-10 line quota.
 
-TTS voice (OpenAI Nova) is generated inline during the 6:00 AM morning briefing (`c527fed4a1da`). For immediate delivery during manual briefing compilation:
+TTS voice (Gemini `Kore`, gTTS fallback — OpenAI TTS retired) is generated inline during the 6:00 AM morning briefing (`c527fed4a1da`). For immediate delivery during manual briefing compilation:
 
 ```bash
 cd ~/.hermes && /home/habib/.hermes/venv/bin/python3 scripts/voice_overview.py YYYY-MM-DD

@@ -56,7 +56,7 @@ python3 ~/.hermes/scripts/briefing_improver.py --feedback "A"
 **Schedule:** 20 5 * * * (5:20 AM AEST)  
 **Script:** `briefing_improver.py`
 
-Runs after Action Bridge (5:15 AM) and before Morning Briefing (6:00 AM). Produces internal briefing markdown consumed by the 6AM delivery cron.
+Runs after Action Bridge (5:17 AM) and before Morning Briefing (6:00 AM). Produces internal briefing markdown consumed by the 6AM delivery cron.
 
 ## 7 Portfolio Projects Monitored
 
