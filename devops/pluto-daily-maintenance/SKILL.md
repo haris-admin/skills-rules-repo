@@ -49,6 +49,13 @@ description: Pluto's lightweight daily maintenance engine — 4-task health chec
    Normalise CRLF on BOTH sides or every `/mnt/c` file reads as changed. Two classes of result:
    (a) **repairable now** — a skill absent from the repo entirely is a pure ADD: copy it in, run the
    frontmatter check, then path-scoped `git add -- <paths>` + `git commit -m "..." -- <paths>` + push.
+   **A 1/1 diff is NOT a merge — it is one stale line in the repo replaced by the WSL line.** When
+   `repo-only` lines are just SUPERSEDED VARIANTS of WSL lines (`Action Bridge (5:15)` vs `(5:17)`,
+   `OpenAI Nova` vs `Gemini Kore`), the WSL copy is still the superset and the fix is a straight
+   `cp` WSL→repo, then require `0` diff-lines. Only treat repo-only lines as a merge when they carry
+   content the WSL side has NO equivalent of (a section, not a correction). Seen 2026-11-24: four
+   skills flagged `DIFFERS` were all pure corrections (5:17 timing, Gemini TTS, reach-metric wording)
+   and mirrored in one scoped commit.
    (b) **Saturday scope** — a copy that DIFFERS needs a MERGE, because the repo side often carries
    sections the WSL side never had (see the fleet-skill-governance merge pitfall); a blind overwrite
    deletes them. Report the differing list, do not bulk-overwrite it from a daily tick.
