@@ -69,20 +69,18 @@ description: Pluto's lightweight daily maintenance engine — 4-task health chec
    counts to read 0 before `git add -- <path>`. Seen 2026-10-11 on `fleet-skill-governance`: WSL ahead by
    23 lines (`## Adopting a new STANDARD (not just a skill) — it lands on four surfaces`), repo-only 0 →
    additive mirror, commit `ff21de9`, repo/WSL 0/0 afterwards. If repo-only > 0, it is a MERGE — Saturday scope.
-   **Re-measured 2026-11-12: repo 406 SKILL.md vs WSL 264 by name; 73 WSL-only and 152
-   content-differing (2026-10-13: 191/380, 64 and 86; 2026-10-01: 65/97) — unchanged in character,
-   Saturday/merge scope, but the DIFFERS count is inflating: the hash keys by parent-dir NAME, the repo
-   carries 4 duplicated names (`apple-notes`, `apple-reminders`, `monitoring-alert-verification`,
-   `vulnerability-watcher`), and a TRAILING-NEWLINE-only difference hashes as a full divergence while
-   `diff … | grep -c '^[<>]'` reads **0/0**. So never treat a DIFFERS hit as content drift without the
-   line count — 0/0 means the copies agree and nothing needs mirroring (seen 2026-11-12 on
-   `tapease-upstream-watch`).**
-   **Re-measured 2026-10-01: repo 389 SKILL.md vs WSL 254; 65 WSL-only (excluding `.archive/`) and 97
-   content-differing.** Compare by skill NAME, not by path — `devops/fleet-skill-governance` reads as
-   repo-absent only because the repo files it under `agent-governance-and-git/` (byte-identical).
-   Seen
-   2026-09-23: repo held 341 SKILL.md vs 246 local, 112 WSL-only (several fleet-relevant, incl.
-   `acma-dncr-live-washing`, `alexandria-vault-sync`, `git-working-tree-hygiene`) and 104 differing.
+   **Re-measured 2026-11-25 (`.archive` excluded both sides): repo 416 SKILL.md vs WSL 178; 59 absent
+   by name, 81 content-differing.** The count drifts with corpus growth — judge the CLASS, never the
+   number. Compare by skill NAME, not path (`devops/fleet-skill-governance` reads as repo-absent only
+   because the repo files it under `agent-governance-and-git/`, byte-identical), and never trust a
+   DIFFERS hit without the line count: the hash keys by parent-dir name, the repo carries duplicate
+   names (`apple-notes`, `apple-reminders`, `monitoring-alert-verification`, `vulnerability-watcher`),
+   and a TRAILING-NEWLINE-only difference hashes as a full divergence while `diff … | grep -c '^[<>]'`
+   reads **0/0** (2026-11-12, `tapease-upstream-watch`). A 24h-touched skill with `repo_only=0` is a
+   pure ADD → `cp` WSL→repo, require `0` diff-lines, path-scoped commit+push (2026-11-25: mirrored
+   `monitoring-alert-verification`, `web-data-acquisition`, `handledispute-merchant-research` + 3
+   repo-absent Mercury skills, commit `af538c4`). `repo_only>0` is MERGE scope —
+   `pluto-autonomous-research` (31 repo-only lines) is the standing Saturday item.
 
 ### Task 2: Memory Grooming
 1. Check `~/.hermes/memories/MEMORY.md` for stale entries
