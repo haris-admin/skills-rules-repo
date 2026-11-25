@@ -43,6 +43,37 @@ fingerprint that was read rather than earned.
 All four are fixed the same way: **rank the evidence.** Immediate response < durable state —
 and a run that produced no output has produced no evidence.
 
+### Not scheduled is not failing
+
+A pipeline report that counts zero ticks and finds a dead dependency declares the pipeline broken —
+and is wrong whenever the worker was deliberately paused. Zero ticks has three causes: nothing was
+waiting, the worker was never scheduled, and the worker ran and failed. Only the third is a failure.
+
+- **Read the scheduler's own state before rendering ❌.** For every leg of the chain read
+  `~/.hermes/cron/jobs.json` (`enabled`, `state`, `paused_at`, `last_run_at`). All legs paused ⇒
+  render **⏸️ STANDBY** with the pause timestamp and say the counts are *expected* zeros, not
+  UNMEASURED. ❌/🔴 is reserved for legs that are scheduled and failing.
+- **A dependency-down finding is conditional on something being supposed to run.** Downtime matters
+  when work was scheduled; while the worker is paused the backend being unreachable is at most an
+  informational line. Emitting "PIPELINE DOWN / reporting over a dead dependency" over a paused
+  worker is a fake FAIL, and it trains the reader to ignore the alert that will eventually matter.
+- **A paused leg is not coverage.** It counts as neither green nor red — carry it in the coverage-gap
+  map, so "paused since …" cannot masquerade as a monitored pipeline.
+- **`executions.db` is pruned — an empty query means "aged out", not "never ran".** To prove a cron is
+  actually running, read the scheduler's job state first (`json.load(open('~/.hermes/cron/jobs.json'))['jobs']`,
+  matching on `job_id`; iterating the dict itself yields nothing, which looks exactly like a job that does
+  not exist), then the per-run ledger `~/.hermes/cron/output/<job_id>/*.md`. A ~200-byte file reading
+  `Status: silent (empty output)` is a healthy watchdog run that deliberately delivered nothing — only the
+  absence of FILES means it did not run. Finish with the checker's own `--report` mode for the live
+  picture; it is also where a deploy shows up between runs (`v0.280.04 (was 0.270.03)`).
+- **An empty intake is not proof the work does not exist.** A claim endpoint returning `204` (or an empty
+  queue) collapses four distinct states — never queued, already completed, already failed, and leased to
+  another worker — and there is often no read route to separate them. Before telling the user "there is no
+  job for that case", read the producer's ENQUEUE CONDITION in code: rows are typically created only when
+  a prerequisite field is unset (an unresolved merchant), only when a feature flag was on at intake time,
+  idempotently, and with exceptions swallowed so the customer path never blocks. State which of those
+  explains the absence and what would create the row; retrying the claim just returns the same `204`.
+
 ## Rules
 
 - **Read the SOURCE OF TRUTH — never a mirror of it.** A checker wired to a dashboard, cache or
@@ -64,6 +95,14 @@ and a run that produced no output has produced no evidence.
   checks at source. Report the estimate AND the billed figure, and name which is which.
 - **An acknowledgement is never a result.** If an API returns `enqueued` / `queued` /
   `accepted` / a job id, that proves the request was accepted — nothing more. Never ✅ on it.
+- **A claim/receive endpoint is not a health probe.** Calling `POST /claim` (or an SQS receive, a
+  lease acquisition) "just to test connectivity" is a WRITE: a `200` hands you a job and a live
+  lease, so the record moves to `claimed` under your name and strands if you never finish or
+  release it. Prove connectivity without side effects — a `/health` route, plus a negative
+  control (same call without the credential → `401`; a bogus-id call → `409`/`404` proves auth
+  without taking work). If a claim does return work, write the raw response to disk before
+  parsing it: claim APIs usually have no GET, so a truncated terminal capture loses fields you
+  cannot re-fetch.
 - **Never ❌ on an acknowledgement either.** An async run you could not observe is
   *unverified*, not failed. Confirming it is the checker's job, not the reader's puzzle.
 - **Verify by polling durable state until it ADVANCES**, then stop. Choose a signal that can
@@ -292,6 +331,25 @@ adapt:
 - **Plain-HTTP silence is a zone setting, not a fault.** If `http://host/` gives no answer while
   `https://` is healthy, that is "Always Use HTTPS" being off / :80 not proxied — render it as ℹ️
   with the fix, never as a warning, or a design choice sits in the alert path forever.
+- **A 200 on an auth-gated route is not exposure — and not a shipped feature either.** An admin
+  path can answer `200` with a sign-in shell: `/admin` returned the "Operations Desk" sign-in page
+  and `/admin/communications` returned "sign in first", both at status 200. Before reporting an
+  admin surface as open, fetch the body and look for gating markers (`sign in`, `password`,
+  `restricted`, `unauthorized`); before telling the owner a screen exists, look for a marker you
+  expect INSIDE it — the same 200 covers a route that was never built, because a catch-all serves
+  the shell for any path.
+- **A deep link belongs to the DEPLOYED build, not the repo.** Never hand the user a URL for a
+  record (case, job, review queue) because the page exists in `src/app`: enumerate the built route
+  directory (`.next/server/app/…`) and probe it. A backend can record results "for human review"
+  while the app ships no review screen at all — say that gap out loud instead of implying the link
+  works.
+- **A 403 on an authenticated API is usually the USER-AGENT, not the credential.** Edge WAF rules
+  reject the default library UA (`Python-urllib/3.x`, `Go-http-client`, `curl` without a name) while
+  the same request with a real UA succeeds — so the failure looks exactly like a rejected key and
+  sends you to rotate a credential that is fine. Establish the control first: an unauthenticated
+  call must return **401**, and the authenticated call returning **422/204/200** proves the key was
+  accepted. Then set an explicit UA (`<Product>Worker/<version>`) in every client that talks to the
+  edge, and check the status body for a CF error code (1010/1020) before touching auth.
 - **Planned hostnames belong in the config, not in the alerts.** A name that does not resolve yet
   (an API host not launched — `api.<domain>` here) is marked `planned`: it prints as "not yet live",
   raises nothing, and the normal probe takes over automatically the moment DNS answers. Never let an
@@ -343,7 +401,36 @@ site, monitor the pairing:
   deployed ⇒ that checkout cannot build what is live — check `git rev-list --count
   HEAD..origin/<branch>` before blaming the release, because a clone hundreds of commits behind
   produces exactly this; NEWER ⇒ something was committed and never shipped. Only a clean tree at
-  origin HEAD can prove a genuine release bug.
+  origin HEAD can prove a genuine release bug. **Read the manifest from the remote, not the
+  worktree**: `git show origin/<branch>:backend/pyproject.toml`. A local clone's manifest is the
+  version of a commit that may be dozens behind, so quoting it produces "drift" that is really
+  just a stale checkout — and the number looks authoritative enough that nobody re-checks it.
+- **A health payload's SCHEMA is part of the contract — assert the fields are still THERE.** A
+  deploy that slims `/health` from nine keys to three (`status`, `version`, `database`) silently
+  deletes the monitor's ability to prove anything beyond "something answered": the freshness
+  `timestamp`, the `service` and the `environment` it was printing all vanish, and any drift or
+  liveness comparison that depended on them quietly stops testing anything while still rendering
+  ✅. Require the keys explicitly (`health_require: [status, version, database, timestamp]`) and
+  raise a P2 finding naming the missing field when they disappear — the same rule as a value probe
+  whose fallback must be proven unreachable. When a deploy legitimately removes a field on purpose,
+  record the narrower contract so the next reader knows the check got weaker on purpose, not by
+  accident.
+- **A trimmed payload flips a monitor from fake-PASS to fake-FAIL — triage the schema before the
+  service.** Assertions written against the old shape (`environment == "production"`, `debug is
+  False`, a dependency block) do not degrade gracefully when the field stops being published: they
+  render 🔴 against a perfectly healthy service, and the usual reflex — relax the assertion to
+  "absent is fine" — deletes the proof without saying so. First diff the live payload against the
+  last green run and classify the drop as hardening (intentional, versioned) or regression (the app
+  lost its telemetry), then rewrite the assertion to the **narrower published contract** and name
+  the fields it no longer proves in the report. Only assert what the payload claims; infer nothing
+  from a missing key in either direction.
+- **A timestamp inside the health payload is the cheapest freshness proof there is — but establish
+  whose clock you are judging.** The app's own `timestamp` distinguishes a live process from a
+  cached edge response. Before calling it a server-clock fault, compare it against the HTTP `Date`
+  header, the host clock, and two or three independent network `Date` headers (different vendors): a
+  long-running session spans days, so the "today" carried in your own context can be stale by a
+  week and make a perfectly accurate server look ten days out. A clock claim is a three-way
+  comparison, never a single subtraction.
 - **A live site whose repo has hundreds of uncommitted files is running code that is not in
 git.** Print it as that sentence; it changes how the next deploy should be read.
 - **Quote the SHAs and the newest commit's timestamp beside any behind/ahead count.** While the
@@ -371,6 +458,28 @@ git.** Print it as that sentence; it changes how the next deploy should be read.
 Full config schema, per-host check types, the reporting-hours delivery gate and the repo-watch
 recipe: `references/site-and-repo-watch.md`.
 
+## "Have we checked the system?" is a bigger question than uptime
+
+When the user asks whether a system has been checked, a green monitor is not an answer — it proves
+the thing answers, not that it is correct, safe or complete. Run the wider audit: reachability and
+edge posture, health-schema diff, **API surface enumerated from the live spec**, a real headless
+render with console-error and DOM assertions, sitemap/internal-link crawl, repo-vs-deploy pairing,
+and a sibling header comparison across products on the same stack. Three rules that come out of it
+most often:
+
+- **A production `openapi.json` / Swagger UI is an exposure, not a convenience** — it publishes the
+  whole route map. Report the URLs, and re-probe rather than repeating an old verdict: it can be 200
+  today and 404 after the next deploy.
+- **Verify a claim in the DOM, not in the copy or the repo.** "The form collects nothing", "the CTA
+  works", "the page renders" are all checkable in the browser (`form, input` counts, click, console) and
+  all three have been wrong in files that said otherwise.
+- **State the blind spots in the same report.** What an external audit cannot see (origin certificate
+  behind the CDN, database integrity, anything needing a credential) belongs in the answer as a named
+  gap with what would close it — otherwise "checked" overclaims.
+
+Full pass-by-pass recipe, header matrix and the two false-broken-link traps (Cloudflare email
+obfuscation, a 404 nothing links to): `references/system-audit.md`.
+
 ## Assert the CHAIN, not the legs
 
 A pipeline built as independent time-sequenced jobs cannot report whether the CHAIN worked. Each leg
@@ -394,6 +503,31 @@ several of the survivors had stopped producing anything at all).
   to lie.
 - **Prove the assertor fails on the real break.** Its first run should be against a chain with a known-bad
   leg and it must name THAT leg; a chain assertion you have only ever seen pass is not a check.
+
+## "Weren't we tracking X?" — prove whether the monitor EXISTS before explaining it
+
+When the user asks why a recurring update stopped, the most common honest answer is that no job ever
+produced it. Establish that at the estate level before diagnosing anything:
+
+1. **Grep for the SOURCE identifier, not for the word "monitor".** Search every script, cron prompt,
+   config and data file for the thing's own ID or URL (spreadsheet id, repo slug, domain, account). A hit
+   means you have a job to debug; zero hits anywhere means the automation never existed.
+2. **Name the nearest analogues that DO exist and say why they are not it.** A funding-round radar and a
+   competitor watch both read as "investment tracking" in a job listing, and neither tracks a position.
+   Without this step the user reasonably concludes you failed to find the job.
+3. **Trace the memory to its real source** — a briefing line, a manual session, a conversation. That is how
+   "we were doing this weekly" is true with no job behind it, and saying so is more useful than denying it.
+4. **Then state it plainly:** nothing reads that source, so nothing has ever updated it, and there was no
+   cron present to complain. Silence from a job that does not exist is not a healthy monitor.
+
+- **A source that needs an interactive login can only ever fail silently — remove the login or wire the
+  counter.** Session-backed reads (browser profile, cookie jar, OAuth token) expire on their own schedule;
+  a browser major-version update alone clears a profile. The failure is not an error but a fetched
+  **sign-in page** — a `200` whose body is plausible, so the check reports the login page as data. Before
+  any recurring job depends on such a source, ask for the unauthenticated equivalent (a view link, a
+  public feed, a scoped read-only token). If none exists, pair it with the per-source consecutive-failure
+  counter above **and** assert a marker that only real data carries, so an expired session cannot render
+  as green.
 
 ## Recurring-item monitors (dedupe state, watchlists, vulnerability/competitor feeds)
 
@@ -472,6 +606,55 @@ tick, or it stops firing and nobody notices.
   incident IDs/statuses, scheduled-maintenance IDs and the names of non-operational components.
 - Page-specific capture traps, baseline storage and the waking prompt's language rules:
   `references/page-change-monitors.md`.
+
+### Delivery: change-only, and loud where a human will see it
+
+- **Alert on change only — never a daily digest of unchanged state.** A recurring "nothing changed"
+  summary is noise the recipient explicitly does not want; if a watch must prove it is alive, that is a
+  separate and much slower heartbeat, not the alert itself.
+- **Poll often enough to notify AT the event, not the next morning.** A twice-daily tick on cheap static
+  fetches is up to 12h late; an hourly tick costs nothing and stays silent unless something moved.
+  Choose the cadence from the latency the recipient wants, not from quota anxiety.
+- **A `no_agent` cron delivers stdout to exactly ONE target — reach the others from inside the script.**
+  Leave the cron's `deliver` on the primary chat and mirror to extra chats with
+  `hermes send --to <platform>:<chat_id> --file -` (message on stdin; reuses the gateway's bot
+  credentials, no agent loop). Keep the extra targets in a small JSON file so adding a destination is a
+  data edit, never a code change, and log a failed mirror to **stderr** so it is not delivered as though
+  it were part of the alert body.
+- **Make the chat copy LOUD, and derive it from the email body instead of writing a second formatter.**
+  Bold uppercase header with a severity emoji, a rule line, the timestamp, then the findings — one source
+  string transformed twice, so the two views can never drift apart.
+- **Cap the chat copy below the platform limit** (Telegram 4096 chars) and end with a pointer to the
+  full detail in the email. An alert that fails to send because it was too long is a missed alert.
+- **A bot cannot add itself to a group.** Group delivery is blocked until the human adds the bot and a
+  message arrives from that chat. Discover the id rather than guessing: `hermes send --list telegram`, or
+  the gateway's live `channel_directory.json` (id / name / type per chat). Never call `getUpdates` to
+  discover it — that competes with the gateway's own long-poll and takes its incoming updates.
+- **Prove the EMAIL path with a message you can read back, not with a send that returned True.** SMTP
+  acceptance proves the provider took the message, which is not the same as a human seeing it, and a
+  sender helper returning success is still the tool grading its own work. Aim the forced-change test at
+  an inbox you can read over IMAP (`himalaya envelope list -a <account> --page-size 6`), confirm the
+  expected subject and timestamp appear, then restore the baseline. When the real recipient's mailbox is
+  not readable from here, say exactly that in the hand-over — "accepted by the provider, arrival not
+  confirmed" — instead of implying delivery was verified.
+- **A provider that ACCEPTS for a nonexistent mailbox is the normal case, not an exception — so a 250
+  must be followed by a bounce check.** Purelymail takes the message, then returns
+  `We could not deliver… <rcpt>: User isn't located here (5.1.1)` to the SENDER's INBOX seconds later,
+  with `noreply@purelymail.com` as the From and the original subject prefixed `Re:`. So before testing a
+  redirect/test address, check the domain can receive at all (DNS-over-HTTPS `type=MX` plus the SPF
+  `TXT`, since the WSL image may carry no `dig` and an empty shell answer must never be read as "no MX"),
+  send, then poll the sender mailbox for that bounce and read its recipient line. No bounce after a
+  couple of minutes is a weak positive; only the recipient can confirm a landing. A bounce is the
+  finding, not a footnote — relaying it as "sent" sends everyone hunting a redirect setting that was
+  never the problem.
+- **A flag the check must obey has to sit in an env file the RUNNING JOB actually reads.** The owner
+  usually edits a different file from the one the process inherits (a Windows-side `.env` beside the
+  profile's own), so a gate reads as correctly set while every scheduled run sees nothing and behaves as
+  if the flag were off — a silent no-op, not an error. Mirror agent-side flags into the profile env the
+  cron children source, then prove it from a child (`bash -lc 'set -a; . <env>; set +a; echo $FLAG'`).
+  Flags that belong to a REMOTE service cannot be proven from a local file at all: assert them by
+  behaviour (a validating call answering `422` rather than `404`/`405` proves the feature is live) and
+  say plainly which ones remain unproven, instead of reporting a mixed set as "all set".
 
 ## Triage order for a reported failure
 
@@ -617,7 +800,8 @@ window; keep the two paths' coverage written down side by side.
   pushing recency into the query, the `items_seen`/`items_in_window`/`hits` liveness contract,
   precision gating on entity names, and rotating a large watchlist.
 - `references/page-change-monitors.md` — when the input is a page that changes in place: proving a
-  capture is substantive, diff-gated byte stability, baseline discipline, and the waking prompt.
+  capture is substantive, diff-gated byte stability, baseline discipline, the waking prompt, forced-change
+  testing, and multi-destination delivery (extra chats via `hermes send`).
 - `credential-exposure-remediation` — the follow-up when an audit surfaces a hardcoded secret in a
   checker or its cron prompt: containment vs rotation, the no-VCS backup, the literal sweep, and the
   rotation handover.
@@ -626,3 +810,6 @@ window; keep the two paths' coverage written down side by side.
   digest-at-fixed-hours delivery gate, repo→product resolution, and the repo-vs-deployed
   version-drift check.
 - `pluto-pipeline-orchestration` — where the fleet's various checkers sit in the schedule.
+- `scripts/mailbox_probe.py` — prove a mailbox can receive before trusting it: MX/SPF/DMARC over
+  DNS-over-HTTPS, an optional delivery test, and a bounce watch on the sender inbox
+  (`--send --watch 90`). Prints no secrets and sends nothing by default.

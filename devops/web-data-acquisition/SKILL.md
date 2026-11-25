@@ -190,6 +190,32 @@ registers, the failure mode is not an empty field — it is a confident wrong on
   result must be confirmed by reading the range back rather than trusting the write response. Recipe:
   `references/google-sheets-delivery.md`.
 
+## Market and fundamental data — verify, then repeat
+
+Equity prices and fundamentals come from keyless endpoints, not from the tracker being asked about.
+ASX names: `asx.api.markitdigital.com/asx-research/1.0/companies/<CODE>/key-statistics` (price, EPS,
+P/E, shares, enterprise value, four years of revenue and net profit, assets/liabilities). Any market,
+price history plus split events: `query1.finance.yahoo.com/v8/finance/chart/<SYM>` — `v7/finance/quote`
+answers `Unauthorized`, so never design on it. Non-ASX ratios: `stockanalysis.com` statistics pages,
+where the Malaysian (KLSE) slug takes the ticker *name*, not the numeric code.
+
+Three checks before any number reaches the user: **splits first** (an apparent +100% move is often a
+corporate action or a stale entry), **`net cash = market cap − enterprise value`** (trackers record
+gross cash as net cash), and **forward vs trailing P/E** (forward above trailing means earnings are
+expected to fall). When the source is the owner's own spreadsheet, audit it before quoting it: targets
+that equal the entry price × 5 and × 10 are arithmetic rather than valuation, a review log where every
+row says the same thing can never issue a sell, and the names missing from the latest review are where
+the unmanaged risk sits. Endpoints, slug quirks and the full audit checklist:
+`references/market-data-verification.md`.
+
+**Absence from the fleet is not absence of the activity.** Finding no cron, script or config that
+touches a dataset proves only that nothing here *automates* it — the owner may be maintaining it by
+hand in a spreadsheet, Notion database or other tool. Before reporting that something "was never
+built", ask for the artifact (link, file, repo) or search for it: a report that a tracker does not
+exist, when it exists and has simply gone stale, is the expensive wrong answer. Once the source is in
+hand, the useful finding is usually *when it stopped and why* — a browser-session dependency that
+expired silently is the common cause.
+
 ## Support files
 
 - `scripts/alexandria_discover.py` — free discovery sweep; prints provider/capability contracts for a set
@@ -202,6 +228,9 @@ registers, the failure mode is not an empty field — it is a confident wrong on
 - `references/google-sheets-delivery.md` — choosing a Sheets credential that survives a refresh, the
   service-account share step and its misleading 403, and the write order (grid expansion, RAW values,
   `userEnteredFormat` mask) plus read-back verification.
+- `references/market-data-verification.md` — keyless ASX / Yahoo / stockanalysis endpoints and their
+  slug quirks, the split and net-cash reconciliation checks, and the audit checklist for a watchlist or
+  tracker the owner maintains.
 
 ## Related
 

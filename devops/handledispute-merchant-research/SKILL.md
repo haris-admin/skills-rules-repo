@@ -92,6 +92,12 @@ Report shape and the validated example: `references/skills.md` §9.7. Payload li
   keeps the token in memory, and watches for `report_request.json` then `complete_request.json` written by the agent; it
   injects the token itself. The token never lands on disk, and the claim → `/reports` → `/complete` sequence still runs in
   one OS process. Reuse that pattern instead of holding the token in `execute_code` globals.
+  **Ready-made:** `~/.hermes/scripts/hd_identity_lease_holder.py` (identity lane). It writes
+  `~/.hermes/cache/scratch/hd_id_claim.json` (token stripped) plus `hd_id_holder_status.json`, then waits on
+  `hd_id_report_request.json` (`{"report":..., "idempotency_key":...}`) → `hd_id_report_response.json` →
+  `hd_id_complete_request.json` (`{"payload":...}`) → `hd_id_complete_response.json`; exits on its own, 55-minute life.
+  Start it with `terminal(command="python3 ...", background=true)` (in this runtime a shell `nohup ... &` is rejected
+  outright — "Foreground command uses shell-level background wrappers" — so use the tool's own background flag), then poll the status file — never re-implement it inline per run.
 - **`/reports` is deployed** on both job families: a fake job id returns `404 JOB_NOT_FOUND`,
   not `405`. A **completed** job rejects a late report with `409 LEASE_INVALID` — a report can
   only be stored while the lease is held, so the report must be sent *before* `/complete`.
