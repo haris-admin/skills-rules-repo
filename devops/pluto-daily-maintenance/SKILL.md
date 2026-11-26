@@ -104,6 +104,14 @@ date, not by status: `cd /mnt/c/Code/github/haris-admin/alexandria && git log -1
 --date=iso && git rev-list --left-right --count origin/main...HEAD` (the count must read `0\t0` —
 anything else means an unpushed commit). A non-zero `git status --porcelain` on `alexandria-ops` is
 usually an untracked cron-output subdir (e.g. `?? podcast-capture/`) and is NOT a push failure.
+**But "untracked" is not automatically benign — check whether it was EVER tracked before writing it off.**
+`git ls-files <dir> | wc -l` = 0 AND `git check-ignore -v <dir>` fails means nothing in that tree has ever
+reached the remote: every report that calls it "known untracked, not a failure" is describing an unbacked
+data leg. Verified 2026-11-26: `alexandria-ops/podcast-capture/` held 881 files / 15 MB (12 new in 24 h,
+not ignored, zero tracked) and had been excused this way in daily reports since 27 Sep, while
+`environment.md` describes it as the immutable per-episode raw record. Report the age, file count and
+size, say plainly that the record exists only on this box, and put the commit-vs-gitignore choice to the
+owner — do not mass-commit raw JSON unasked and do not keep repeating the benign phrasing.
 **`FileNotFoundError` raised inside `drain_reports()` is a TOCTOU against a SELF-PRUNING source dir,
 not a missing path and not a repo problem.** Seen 2026-10-25 11:08: `alexandria_ops_sync.py:132` died on
 `os.path.getsize('/home/habib/.hermes/cron/output/5678a363ce3b/2026-10-25_01-45-15.md')` — `5678a363ce3b`
