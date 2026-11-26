@@ -121,6 +121,7 @@ Combines vector similarity + full-text search + optional AU relevance filter.
   - **One-off video that is not in the KB:** `python3 ~/.hermes/scripts/fetch_one_transcript.py --video <ID> --out <path>` — tries English, then any track, then translates an available track to English, and exits 3 on a block so "no transcript" is never confused with thin data.
   - **UNLISTED videos cannot be enumerated.** Channel uploads, all channel playlists and `ytsearch` miss them completely; a session-5-style video reports `availability: unlisted` from yt-dlp metadata. Do not burn turns searching for siblings — the link has to be handed over (usually from program/cohort emails). Report "unlisted, needs the link" rather than "not found".
   - For a series, the batch path is `~/.hermes/scripts/baa_masterclass_add.py --video <ID> --session <N> --title "<title>"`, which transcribes and creates the Notion page in one command.
+  - **A one-off talk the user hands over is filed in THREE stores, not one** — vault brief + raw transcript, Notion page, Honcho session — and each store is read back before success is reported. Procedure, frontmatter contract, and the cheap way to analyse 100k chars of captions: `references/single-talk-intake.md`.
   - Rebuild if missing: `python3 -m venv /tmp/podcast_venv && /tmp/podcast_venv/bin/pip install yt-dlp youtube-transcript-api psycopg2-binary`
   - Note: `/tmp` is cleared on reboot — the venv will need rebuilding after restarts
 
@@ -131,7 +132,9 @@ The daily ingestion script at `~/.hermes/scripts/podcast_ingestor.py` is designe
 - **Max 3 new episodes per show per run** (not 10 — too aggressive)
 - **5-second delay between transcript downloads** within a show
 - **3-second delay between shows** 
-- **Auto-abort after 5 consecutive transcript failures** — indicates persistent IP block, stops the run to avoid burning quota
+- **Auto-abort is PER-SHOW since 2026-11-23** (was run-wide: `consecutive_failures >= 5` anywhere in the loop
+  `return`ed from `main()` and left every later channel unscanned). A single show with a cluster of
+  caption-lagging fresh uploads therefore killed the whole morning. See "Run-wide abort" below.
 - **Dynamic SINCE_DAYS=7** — only fetches episodes from the last week, computed as `(datetime.now() - timedelta(days=SINCE_DAYS))`
 - **15 videos per channel** max discovery (not 50) — keeps yt-dlp date-fetching fast
 
@@ -142,6 +145,29 @@ instead of declaring success. Without this, a newly registered channel reports `
 retry stops — the row exists, no episodes ever arrive, and nothing looks wrong.
 
 This allows the 4:00 AM ingestion cron to finish with buffer before the 5:02 AM insight extractor.
+
+### Run-wide abort — the 2026-11-23 false-green (FIXED, keep the guard honest)
+
+The 2026-11-23 04:00 run (`d4d77c41f6c0`) reported `status: ok` and ingested **0** episodes while 7 new
+uploads were waiting. `Lenny's` + `All-In` + `Masters of Scale` all had fresh 2026-11-21/22 uploads whose
+captions had not appeared yet (`download_transcript` returns `None`, not an exception, for those), which
+tripped the **run-wide** `consecutive_failures >= 5` guard after show 10 of 39 — the remaining 29 channels
+were never scanned, and the exit code was still 0.
+
+Detection (do this before trusting any "0 new episodes" morning):
+```bash
+# 1. last row inserted, and whether it advances
+psql ... -c "SELECT max(created_at) FROM podcast_kb.episodes;"
+# 2. what the run actually printed — the cron keeps stdout here
+tail -30 ~/.hermes/cron/output/d4d77c41f6c0/$(ls -t ~/.hermes/cron/output/d4d77c41f6c0 | head -1)
+```
+A run that stops mid-list ("🛑 … Stopping" / "Ingested so far: 0") is a stoppage, **not** a quiet Sunday.
+
+Fix (applied 2026-11-23 to `podcast_ingestor.py`): `consecutive_failures` resets per show, and the only
+run-wide stop is `barren_shows >= 6` — six *consecutive shows that had new videos but produced zero
+transcripts*. Recovery: just re-run the script; caption lag resolves within hours and the 3-day lookback
+re-attempts the same videos. The same-day re-run recovered **37 episodes** across all 39 channels, then
+`podcast_chunker.py` → 13 episodes / 321 chunks (thin clips are flagged, not chunked).
 
 ### A just-published episode: captions lag, and the sweep may have run minutes early
 
@@ -318,7 +344,7 @@ When a podcast channel merits its own MemPalace chamber (rather than mixing into
 6. Each episode becomes a ChromaDB document with title, transcript (if available), source URL, and published date
 
 Chambers created this way: `aie-podcast` (aiDotEngineer, 372 episodes, June 2026).
-Scripts: `/tmp/aie_chamber_ingest.py` (main ingestion, newest-first, `--limit` + `--dry-run` flags) and `/tmp/aie_continue.py` (offset-based resumption, accepts `OFFSET LIMIT` args, skips already-ingested episodes). Both auto-abort at 5 consecutive transcript failures.
+Scripts used for that run were one-off `/tmp/aie_chamber_ingest.py` + `/tmp/aie_continue.py` (main ingestion newest-first with `--limit`/`--dry-run`; offset-based resumption, both auto-abort at 5 consecutive transcript failures). **Both are gone — `/tmp` does not survive a reboot.** Do not cite the `/tmp` path as a runnable command: re-ingest a channel with `podcast_ingest_channels.py` (or re-create the helper from this section's spec), and confirm via `scripts/probe_palace_landed.py`.
 
 ## Capture-chain integrity — measure each link before theorising
 
@@ -334,6 +360,8 @@ python3 ~/.hermes/scripts/podcast_capture_audit.py                        # tota
 python3 ~/.hermes/scripts/podcast_capture_audit.py --by-podcast --ledger   # per show + last 60 days
 python3 ~/.hermes/scripts/podcast_capture_audit.py --json                  # machine-readable
 ```
+
+**The audit's integrity counters are only as good as `~/.hermes/cache/scratch/transcript_integrity.jsonl`, and NOTHING schedules the sweep that writes it.** `podcast_transcript_integrity.py` takes ~1.1 s/episode (~55 min for 2 984) and is resumable via `--shard K/N`, so a hand-run covers only what it reached (254 of 2 984 on 2026-11-23). Scratch is pruned after 24 h idle, so the file then disappears — and before the 2026-11-23 fix every bucket defaulted to `0`, printing `content we cannot vouch for: 0 (0.0%)` as an ALL-CLEAR on the same screen as `1895 unreachable`. The audit now prints `UNKNOWN` when the file is missing and divides by `integrity_swept`, not the corpus: **quote the swept denominator** (`68.1% of the 254 swept`, coverage 8.5%) — never the corpus-wide rate — and treat `unreachable by learning` (chunks < 8) as a REACH metric, not a loss rate (57 of those are legitimately short clips, 24 were verified complete). Fragments cluster at exactly 10 000 transcript chars → the store truncates transcripts at 10 k, so the repair is a re-fetch (`podcast_transcript_repair.py`), not re-chunking.
 
 Read-only, and **exits 1 whenever any episode is unreachable** — so it can be scheduled fail-closed.
 It reports, per link: episodes with a transcript, with any chunks, meeting the reader's `>= 8` chunk
@@ -879,6 +907,7 @@ work** — you get a live ingest instead of usage text.
 - `references/chamber-routing-and-stores.md` — chamber router (build + calibration rules), free-tier pacing/routing model, and the three-stores / palace CONTRACT (queue honesty, NAMED-exception rule, reconcile invariants). Extracted 2026-10-11 to clear the 100k SKILL.md ceiling.
 - `references/scanning-status-report.md` — answering "is the YouTube scanning still running and what did it produce?": the funnel from run logs, the API→yt-dlp fallback health tell, where the insight output lands, and the coverage caveat to state with it
 - `references/transcript-sources-and-fallback.md` — where to get a transcript or summary when the KB is stale (podscripts.co / finance.biggo.com / Apple-Podbean), the freshness query to run first, and the quote-attribution rules (confirm the speaker; check the on-record wording before repeating a paraphrase)
+- `references/single-talk-intake.md` — end-to-end for one supplied video: fetch, cheap structure analysis of a 100k-char transcript (term census → 9-window sampling → ordinal extraction), vault frontmatter/body contract, Notion and Honcho landing, and the read-back checklist
 
 ## The daily pipeline (the chain, and the thing that asserts it)
 
