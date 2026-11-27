@@ -91,8 +91,12 @@ AEST week (Sat–Fri), so anchor on the current date rather than on the supplied
   month ASX:CUP Count Limited did a A$25M placement — unrelated firms. Check the entity before merging a hit.
 - **Capital Brief drops the currency unit.** "Remedy Robotics raises $62 million" is US$62M; the figure only becomes
   A$92M by reading Startup Daily or the release. Never carry a bare "$" from Capital Brief into an AUD total.
-- **Tracxn's dated report URLs rot.** The H1 2026 semi-annual page now 404s; cite the figures via the Overnight
-  Success issue that reported them (18 July 2026) and keep the snapshot in `references/` rather than re-linking.
+- **Tracxn's report URLs rot and come back.** The H1 2026 semi-annual page 404'd in Nov but resolves again at the
+  full slug (`/d/insights/market-reports/australia-tech-semi-annual-funding-report-h1-2026/__MyLDaB…`) — if the short
+  URL fails, `web_search "Tracxn Australia tech funding report 2026"` to recover the live slug. Keep the figures in
+  `references/` either way.
+- **Tracxn cumulative "through <month>" figures are as unstable as its geography page** (e.g. "A$5.58B / 162 rounds
+  through October 2026"). Quote only the dated semi-annual/quarterly report, never a rolling YTD.
 
 ## Output shape
 
@@ -107,7 +111,10 @@ AEST week (Sat–Fri), so anchor on the current date rather than on the supplied
 
 ## Verification status
 
-Last full run: 20 Nov 2026 (Fri cron). In-window sweep = Startup Daily funding RSS + main RSS, Overnight Success
-(Sat issue at `/p/<N>th-<month>-<year>`; the next Saturday's URL 404s until published), Capital Brief topic page,
-fintechnews.au funding, trymatchbox.com/news, leadprysm.com/news, QIC / Business Wire releases. The Tracxn
-semi-annual report page returns 404 as of this run — quote the snapshot from `references/` instead.
+Last full run: 27 Nov 2026 (Fri cron, window 21–27 Nov). In-window sweep = Startup Daily funding RSS + main RSS
+(Overnight Success `/p/<N>th-<month>-<year>`, previous Saturday's issue is current), SmartCompany tag pages,
+fintechnews.au funding, trymatchbox.com/news, leadprysm.com/news, Cut Through insights, ASX announcement search for
+regtech placements. Notes from this run: SmartCompany's weekly round-up lags — it had not published the current
+week's wrap by Fri 08:00, so SD's funding RSS was the sole inventory; the Tracxn H1 report URL resolved again (see
+pitfalls); a web_search for AU regtech/AML rounds in-window returns only overseas deals (NABU, Arva AI) — treat
+those as out-of-scope and do not pad the 🚩 block with them.
