@@ -81,6 +81,15 @@ Extracted from `SKILL.md` 2026-11-27 when the file hit the 100,000-char cap (97,
   **collection-failure/pytest-cache signature** — 19 s and zero tests collected is never a pass (No Fake
   Pass Rule); it also invalidates that run's count. Escalate only on a change in the COUNT TREND or a
   change in component (frontend/E2E were green through this window).
+  **2026-11-21→11-28 — NEW STEADY BASELINE (8 identical runs): `❌ 10015 passed, 52 failed, 3 errors`.**
+  Backend `9683 passed, 45 failed` (35 = SQLite-vs-PostgreSQL suite gaps, issue-134; **10 genuine
+  assertions**), frontend 288/1, E2E 44/6. The documented 6-8/day figure is SUPERSEDED — read the trend,
+  not the number. Two standing degradations live inside it: (a) **all three legs print
+  `Diagnosis: [Diagnosis skipped: timed out after 120s]` on every run**, so `reviews/test_diagnoses.log`
+  gains nothing and the 10 genuine failures stay UNNAMED — a count with no actionable content; (b)
+  `⚪ 'poetry' not found — fallback to venv pytest` is permanent on this host (expected, not a finding).
+  Escalate only on a count-trend break, a leg reaching 0 collected, or the diagnosis timeout persisting
+  after the runner's 120 s budget is raised.
   **TWO REAL ESCALATIONS on 2026-10-07 — these are NOT the standing backlog:**
   (a) **Count-trend break: `7641 passed, 31 failed`** (≈4× the baseline) on the first run after
   `git merge origin/dev` landed (`03e74c26`, 6 commits ahead of dev; backend deps reinstalled). A merge
