@@ -58,6 +58,20 @@ business names are the trading name the customer sees and companies are the lega
 Parse: `ABN status` (+ `from <date>` when cancelled), `Entity type`, GST registration,
 `Main business location: <STATE> <POSTCODE>`, `Entity name`.
 
+**Need name → ABN instead of ABN → status?** Use the ABR JSON API (`MatchingNames` /
+`AbnDetails`, GUID-authenticated): JSONP wrapper, `BusinessName` that is sometimes a string, and a
+`Score` that is relevance not confidence. Full endpoint list and traps:
+`references/abr-json-api.md`. Run a control query before trusting a zero-hit result.
+
+- **`IsCurrent` is the NAME record, not the ABN status.** A name search cheerfully returns entries whose
+  ABN is Cancelled, so a page of hits can be mostly dead entities that look live. Resolve every
+  candidate's status through `AbnDetails.AbnStatus` before counting, ranking or calling anything active.
+- **One trading name can belong to a whole franchise network.** Expect a brand owner plus per-store
+  franchisees (trusts, `Pty Ltd`, sole traders) under different ABNs with mixed statuses, so a strong
+  name match is an ambiguity, not an identity. Settle the entity from an identifier the customer already
+  holds — the ABN on the receipt/invoice — or from the brand's own terms/promotions page naming its ABN,
+  and keep every other matching entity as a listed alternative with its exact status.
+
 - Rate-limit to **~1 request/second**.
 - **Expect a large cancelled share.** In the first real sample an ABN from the ASIC extract marked
   "Registered" came back **Cancelled since 2022**. Never treat an ASIC status as proof of life.
@@ -70,12 +84,20 @@ Active **and** the website resolves; say which check failed otherwise.
 ## Step 3 — contacts from the entity's own site
 
 1. Discover the domain by search on the trading name, then **prefer the host that contains a name token**.
-2. **Exclude aggregators explicitly** — see Pitfalls; they are what you get if you do not.
-3. Fetch the homepage, then the `contact`/`about`/`team` links. Extract `mailto:` emails, `tel:` links
+2. **Gate the jurisdiction before anything else.** A 100% name match on a foreign business is worth
+   nothing: accept a site only when the host is under `.au`, or the page carries a checksum-valid ABN, or
+   shows a `+61`/`0X` number beside an Australian state name. A `.co.uk` page describing NSW is still the
+   wrong business.
+3. **Exclude aggregators explicitly** — see Pitfalls; they are what you get if you do not. Score identity
+   separately from locality: a directory page names the suburb too, so require a distinctive business-name
+   token in the domain, or at least two in the page body.
+4. Fetch the homepage, then the `contact`/`about`/`team` links. Extract `mailto:` emails, `tel:` links
    and AU patterns (`0[2378] xxxx xxxx`, `04xx xxx xxx`, `13/1300/1800 xxx xxx`).
-4. Normalise `+61`/`0061` → leading `0` **before** classifying; otherwise every mobile is misread as
+5. **Keep an email only when its domain matches the site host.** Pages embed partners' and template
+   vendors' addresses; an address on an unrelated domain is a different company's contact.
+6. Normalise `+61`/`0061` → leading `0` **before** classifying; otherwise every mobile is misread as
    `other`. Classify landline / mobile / service; put the mobile in its own column.
-5. Mobiles are the scarcest field — they live on individual agent profile pages, not the contact page.
+7. Mobiles are the scarcest field — they live on individual agent profile pages, not the contact page.
    Crawl profile pages when mobiles matter; do not report 04xx coverage from a homepage-only pass.
 
 ## Step 4 — size (use lawful proxies only)
@@ -93,6 +115,12 @@ Professionals, Richardson & Wrench, Stockdale & Leggo, Nelson Alexander, Jellis 
 Kay & Burton, Biggin & Scott, Woodards, Fletchers, Starr Partners, The Agency, Colliers, JLL, CBRE,
 Knight Frank, Savills, Cushman & Wakefield).
 
+Definition to apply: **more than 3 suburbs/branches = enterprise** (5+ is certain); boutique is 1–3. Two
+signals are free and need no web access: **domain collision** (one website appearing on several licence
+records in different suburbs) and **shared contact** (one phone/email on 3+ records = one operator holding
+several licensed entities). Apply shared contact as a demotion pass after extraction, never during
+classification.
+
 - **Name match = high precision.** Use it as the primary signal (`group_evidence=name`).
 - **Body-text mention = false positives.** A whole-page scan matched an independent agency to CBRE
   because a listing mentioned them. Restrict the second signal to the footer/copyright block
@@ -103,7 +131,15 @@ Knight Frank, Savills, Cushman & Wakefield).
 - **ACT** — full bulk: `https://www.data.act.gov.au/resource/rggi-3jr9.json?$limit=50000` (Socrata,
   ~1,755 licence rows). Columns include `email` and address fields that are **empty for every row**;
   names + licence numbers only.
-- **NSW** — `verify.licence.nsw.gov.au` (search-oriented; postcode-range harvests work).
+- **NSW** — undocumented JSON API behind the SPA, unauthenticated: base
+  `https://verify.licence.nsw.gov.au/publicregisterapi/api/v1`, endpoints `advQuery`, `areasNoCount`,
+  `details/{licenceType}/{licenceId}`. **`pageSize` is hard-capped at 200** — larger values return HTTP 400
+  and a truncated set fails silently, so segment by postcode, then subdivide a dense postcode by its suburb
+  `locationId`. Needs a browser User-Agent plus `Origin`/`Referer` (the default `urllib` UA is blocked) and
+  pace ~1 req/s; sustained fast calls earn a temporary IP ban, so cache every response and rebuild the output
+  from cache, not from whichever process wrote the CSV last. Publishes ABN/ACN but no phone/email at any
+  depth. Full parameter shapes are in the `web-data-acquisition` skill (its AU entity-enrichment
+  reference file).
 - **VIC** — `registers.consumer.vic.gov.au/EAsearch`. Data.Vic's CAV datasets are **aggregate counts**,
   not licence records.
 - **QLD** — Office of Fair Trading; `data.qld.gov.au` carries no agent register (only cadastral/pool safety).
