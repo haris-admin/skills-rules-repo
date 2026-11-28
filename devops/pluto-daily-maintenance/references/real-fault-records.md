@@ -53,7 +53,7 @@ Extracted from `SKILL.md` 2026-11-27 when the file hit the 100,000-char cap (97,
   only the owner's A/B/C choice clears. Classify as the standing owner-decision block — do NOT open it
   as a new fault — but note `.version` is exactly the file a long-diverged branch collides on first, so
   this is the expected shape of the same unresolved decision, not a worsening. **2026-11-20: yet another
-  surface — `Status: 🔴 BLOCKED — codex_pr worktree unavailable` (same owner-decision block).** Any future content run must also use the current bundle path `assets/YYYY-MM-DD-<slug>/`, not
+  surface — `Status: 🔴 BLOCKED — codex_pr worktree unavailable` (same owner-decision block).** Any future content run must also use the current bundle path `assets/YYYY-MM-DD-<slug>/`, not `assets/blog-migration/<slug>/` (dev moved it 21 Sep). **Streak check 2026-11-28: SIX consecutive weekly runs BLOCKED (10-23, 10-30, 11-06, 11-13, 11-20, 11-27), zero Codex reviews produced since Oct.** A weekly job's `last_status: error` always reads as "stale, do not re-escalate", so this never surfaces as a live red — report the SIX-RUN STREAK and the owner's A/B/C lane choice, never "stale, ignore".
   `assets/blog-migration/<slug>/` (dev moved it 21 Sep). Detail: `environment.md` → "codex_pr IS NO LONGER
   A CONTENT LANE" + the 2026-10-06 status append.
 - **A paused job's stale `last_status: error` is NOT a current failure — read `enabled` before classifying.**
